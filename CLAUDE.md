@@ -350,9 +350,21 @@ This means the booking insert doesn't need a transaction wrapping a manual check
 
 \- \[x] Location timezone is now a real `<select>` (all IANA zones via `Intl.supportedValuesOf("timeZone")`) instead of a free-text input, on the "Add a location" form in `/admin`.
 
-\- \[ ] \*\*Needs manual step:\*\* `supabase/migrations/0006\_booking\_configuration.sql` has not been applied to the live Supabase project yet \\-\\- run it in the Supabase SQL editor, same as prior migrations.
+\- \[x] `supabase/migrations/0006\_booking\_configuration.sql` applied to the live Supabase project; booking configuration requests verified end-to-end (player request \\-\\> stored \\-\\> shown to player and admin).
 
 \- Additional-organizations support (self-serve club setup \\+ admin-assisted creation with ownership transfer to a user) is spec'd but explicitly deferred by the user \\-\\- see the `v2-org-creation-deferred` memory for the full two-path spec and the RLS/platform-admin considerations it'll need.
 
 \- Org onboarding is still manual/SQL in v2 (no self\\-serve org signup), and an admin belonging to multiple orgs still lands on their first membership \\-\\- both deliberate scope cuts, not gaps.
+
+\- \[ ] Booking cancellation \\-\\- `bookings.status` already supports `'cancelled'` and the double\\-booking exclusion constraint already only applies `where (status = 'confirmed')`, so a cancelled booking correctly frees its slot with no schema change. No cancel action/UI exists yet, for either the player (their own bookings on `/bookings`) or admin (bookings at their org's courts).
+
+\- \[ ] Location admin page to manage sites and times \\-\\- a page for admins to manage a location's (site's) own settings and hours, distinct from the existing per\\-court availability editor at `/admin/locations/\[locationId]/courts/\[courtId]`.
+
+\- \[ ] Role\\-based navigation sidebar \\-\\- persistent nav that differs by who's logged in (player vs. org member, and possibly by `org\_members.role` \\-\\- owner/admin/staff).
+
+\- \[ ] General navigation / post\\-login landing per user type \\-\\- what a player vs. an org admin sees and lands on right after logging in; ties into the sidebar work above. Not yet designed.
+
+\- \[ ] Email confirmations for bookings and cancellations \\-\\- no transactional email is sent today on booking create or cancel. Will need an email provider decision (Supabase Auth's built\\-in email is for auth flows only, not transactional app email).
+
+\- \[ ] Availability reconfiguration \\-\\- rework `availability\_rules` from a single open/close block per day into: an admin sets general open hours for the day, then can individually block or re\\-enable specific 30\\-min slots within that window (rather than the whole window being uniformly open). Needs a data model change \\-\\- likely a new per\\-court, per\\-slot table (extending or alongside `slot\_overrides`, which currently only does whole\\-day closures or a single custom open/close override, not per\\-slot granularity) \\-\\- and a corresponding change to `computeOpenSlots` in `src/lib/availability.ts` to also exclude explicitly\\-blocked slots.
 
