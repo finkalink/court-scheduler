@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
+import { formatRequestedConfig } from "@/lib/courtConfig";
 
 export default async function MyBookingsPage() {
   const supabase = await createClient();
@@ -16,7 +17,7 @@ export default async function MyBookingsPage() {
   const { data: bookings } = await supabase
     .from("bookings")
     .select(
-      "id, start_time, end_time, status, price, court:courts(name, location:locations(name, timezone))"
+      "id, start_time, end_time, status, price, requested_net_height, requested_court_lines, court:courts(name, location:locations(name, timezone, organization:organizations(name)))"
     )
     .eq("user_id", user.id)
     .order("start_time", { ascending: false });
@@ -38,6 +39,9 @@ export default async function MyBookingsPage() {
         {(bookings ?? []).map((booking) => {
           const court = Array.isArray(booking.court) ? booking.court[0] : booking.court;
           const location = Array.isArray(court?.location) ? court?.location[0] : court?.location;
+          const organization = Array.isArray(location?.organization)
+            ? location?.organization[0]
+            : location?.organization;
           const timezone = location?.timezone ?? "UTC";
           const dateLabel = formatInTimeZone(new Date(booking.start_time), timezone, "EEE, MMM d");
           const timeLabel = `${formatInTimeZone(new Date(booking.start_time), timezone, "h:mm a")} – ${formatInTimeZone(new Date(booking.end_time), timezone, "h:mm a")}`;
@@ -51,7 +55,15 @@ export default async function MyBookingsPage() {
                 <p className="font-medium">
                   {dateLabel} · {timeLabel}
                 </p>
-                <p className="text-sm text-gray-600">{court?.name}</p>
+                <p className="text-sm text-gray-600">
+                  {court?.name}
+                  {organization?.name ? ` · ${organization.name}` : ""}
+                </p>
+                {formatRequestedConfig(booking.requested_net_height, booking.requested_court_lines) && (
+                  <p className="text-sm text-gray-600">
+                    {formatRequestedConfig(booking.requested_net_height, booking.requested_court_lines)}
+                  </p>
+                )}
               </div>
               <span
                 className={

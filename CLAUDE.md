@@ -324,7 +324,7 @@ This means the booking insert doesn't need a transaction wrapping a manual check
 
 \- \[x] Player: book a slot  
 
-\- \[ ] Deploy to Vercel
+\- \[x] Deploy to Vercel — live at https://court-scheduler-gold.vercel.app. Note: the Vercel project was originally connected before any app code existed in the repo, so it auto-detected Framework Preset as "Other" and never re-detected on later pushes (silently served static output instead of the Next.js app — 404 on every route despite "successful" builds). Fixed by manually setting Framework Preset to "Next.js" in Project Settings → General.
 
 \- \[x] Concurrency verified: two simultaneous overlapping inserts (identical range, then partial overlap) against the same court both hit the DB directly — one got `201`, the other was rejected with `23P01` in both cases. The exclusion constraint is doing its job independent of the app layer.
 
@@ -335,4 +335,24 @@ This means the booking insert doesn't need a transaction wrapping a manual check
 \- \[x] Time-selection UI: player-facing slot grid groups the (now much denser) 15-min-step slots into collapsible per-hour sections (native `<details>`, no JS needed) instead of one flat button grid.
 
 \- Known follow-up: the initial RLS policies on `locations`/`courts`/`availability\_rules`/`slot\_overrides` required `authenticated`, which silently hid the court from anonymous visitors. Fixed in `supabase/migrations/0003\_public\_read.sql` — these are non-sensitive facility fields, readable by `anon`.
+
+\- \[x] v2: Player-facing directory \\-\\- home page (`/`) lists all locations with an active court across every org, drilling into `/locations/\[locationId]` then `/locations/\[locationId]/courts/\[courtId]` for the booking calendar (previously hardcoded to the one seeded court via `.limit(1).single()`).
+
+\- \[x] v2: Admin can manage multiple locations and courts within their org \\-\\- `/admin` is now an org dashboard (list locations, add a location), `/admin/locations/\[locationId]` lists/adds courts and toggles `is\_active`, `/admin/locations/\[locationId]/courts/\[courtId]` is the per-court weekly availability editor (previously hardcoded to the one seeded court). New actions `createLocation`, `createCourt`, `updateCourtActive` in `src/app/admin/actions.ts`; authorization is enforced entirely by the existing RLS policies from `0002\_rls.sql`, no new app-level checks needed.
+
+\- \[x] v2: No schema/RLS changes were needed for the org/location/court hierarchy itself \\-\\- confirms the v1 design note that it was already shaped for this. One RLS gap was found and fixed: `organizations` was still member-only readable (`0002\_rls.sql`), which silently blank\\-ed the org name once the player UI started embedding it through `locations`. Fixed the same way as the v1 courts/locations gap, in `supabase/migrations/0004\_public\_org\_read.sql`.
+
+\- \[x] `supabase/migrations/0004\_public\_org\_read.sql` applied to the live Supabase project and the full v2 admin CRUD flow (add location \\-\\> add court \\-\\> set availability \\-\\> toggle active) manually verified by the user, logged in.
+
+\- \[x] Court notes: optional free-text `courts.notes` field (`supabase/migrations/0005\_court\_notes.sql`), editable per-court in `/admin/locations/\[locationId]` alongside the active/inactive toggle, shown to players on the court's booking page when set.
+
+\- \[x] Booking configuration requests: players can optionally request a net height (men's/women's) and court lines (4s/6s) when booking \\-\\- volleyball-specific, matches the sport this app currently serves. Booking is now a two-step flow: the slot grid at `/locations/\[locationId]/courts/\[courtId]` links to a confirm page at `.../book` (new) with the two selects, which posts to `createBooking`. Requested config is stored on `bookings` (`supabase/migrations/0006\_booking\_configuration.sql`, nullable columns, no RLS change needed) and shown back to the player on `/bookings` and to the court's admin on `/admin/locations/\[locationId]/courts/\[courtId]` under a new "Upcoming bookings" section (time + requested config only, no player identity \\-\\- there's still no admin view of *who* booked, deliberately, since that would need a new RLS-visible path into player profiles that wasn't asked for). Shared option lists/formatting in `src/lib/courtConfig.ts`.
+
+\- \[x] Location timezone is now a real `<select>` (all IANA zones via `Intl.supportedValuesOf("timeZone")`) instead of a free-text input, on the "Add a location" form in `/admin`.
+
+\- \[ ] \*\*Needs manual step:\*\* `supabase/migrations/0006\_booking\_configuration.sql` has not been applied to the live Supabase project yet \\-\\- run it in the Supabase SQL editor, same as prior migrations.
+
+\- Additional-organizations support (self-serve club setup \\+ admin-assisted creation with ownership transfer to a user) is spec'd but explicitly deferred by the user \\-\\- see the `v2-org-creation-deferred` memory for the full two-path spec and the RLS/platform-admin considerations it'll need.
+
+\- Org onboarding is still manual/SQL in v2 (no self\\-serve org signup), and an admin belonging to multiple orgs still lands on their first membership \\-\\- both deliberate scope cuts, not gaps.
 

@@ -5,8 +5,87 @@ import { createClient } from "@/lib/supabase/server";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6];
 
+export async function createLocation(formData: FormData) {
+  const orgId = String(formData.get("org_id"));
+  const name = String(formData.get("name"));
+  const address = String(formData.get("address") || "") || null;
+  const timezone = String(formData.get("timezone") || "UTC");
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("locations").insert({
+    org_id: orgId,
+    name,
+    address,
+    timezone,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin");
+}
+
+export async function createCourt(formData: FormData) {
+  const locationId = String(formData.get("location_id"));
+  const name = String(formData.get("name"));
+  const surfaceType = String(formData.get("surface_type") || "") || null;
+  const notes = String(formData.get("notes") || "") || null;
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("courts").insert({
+    location_id: locationId,
+    name,
+    surface_type: surfaceType,
+    notes,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/locations/${locationId}`);
+}
+
+export async function updateCourtNotes(formData: FormData) {
+  const courtId = String(formData.get("court_id"));
+  const locationId = String(formData.get("location_id"));
+  const notes = String(formData.get("notes") || "") || null;
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("courts").update({ notes }).eq("id", courtId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/locations/${locationId}`);
+  revalidatePath(`/locations/${locationId}/courts/${courtId}`);
+}
+
+export async function updateCourtActive(formData: FormData) {
+  const courtId = String(formData.get("court_id"));
+  const locationId = String(formData.get("location_id"));
+  const isActive = String(formData.get("is_active")) === "true";
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("courts")
+    .update({ is_active: !isActive })
+    .eq("id", courtId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/locations/${locationId}`);
+  revalidatePath("/");
+  revalidatePath(`/locations/${locationId}`);
+}
+
 export async function saveAvailability(formData: FormData) {
   const courtId = String(formData.get("court_id"));
+  const locationId = String(formData.get("location_id") || "");
   const supabase = await createClient();
 
   const rows = DAYS.map((day) => {
@@ -38,6 +117,8 @@ export async function saveAvailability(formData: FormData) {
     }
   }
 
-  revalidatePath("/admin");
-  revalidatePath("/");
+  if (locationId) {
+    revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
+    revalidatePath(`/locations/${locationId}/courts/${courtId}`);
+  }
 }
