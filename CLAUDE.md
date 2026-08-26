@@ -314,15 +314,25 @@ This means the booking insert doesn't need a transaction wrapping a manual check
 
 
 
-\- \[ ] Supabase project created, schema migrated  
+\- \[x] Supabase project created, schema migrated  
 
-\- \[ ] Auth wired up  
+\- \[x] Auth wired up  
 
-\- \[ ] Admin: set availability for a court  
+\- \[x] Admin: set availability for a court  
 
-\- \[ ] Player: view open slots  
+\- \[x] Player: view open slots  
 
-\- \[ ] Player: book a slot  
+\- \[x] Player: book a slot  
 
 \- \[ ] Deploy to Vercel
+
+\- \[x] Concurrency verified: two simultaneous overlapping inserts (identical range, then partial overlap) against the same court both hit the DB directly — one got `201`, the other was rejected with `23P01` in both cases. The exclusion constraint is doing its job independent of the app layer.
+
+\- \[x] Player: view all of their own bookings (`/bookings` page)
+
+\- \[x] Booking start times offered every 15 minutes, rolling (not just on the hour) — bookings themselves stay 60 minutes long; only the offered *start* granularity changed. `computeOpenSlots` takes separate `durationMinutes` (default 60) and `stepMinutes` (default 15) now.
+
+\- \[x] Time-selection UI: player-facing slot grid groups the (now much denser) 15-min-step slots into collapsible per-hour sections (native `<details>`, no JS needed) instead of one flat button grid.
+
+\- Known follow-up: the initial RLS policies on `locations`/`courts`/`availability\_rules`/`slot\_overrides` required `authenticated`, which silently hid the court from anonymous visitors. Fixed in `supabase/migrations/0003\_public\_read.sql` — these are non-sensitive facility fields, readable by `anon`.
 
