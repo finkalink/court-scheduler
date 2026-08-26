@@ -53,6 +53,12 @@ Build each phase fully before starting the next. Don't build ahead speculatively
 \- \*\*Payments (phase 3+):\*\* Stripe Connect (platform takes a cut, orgs get payouts)
 
 
+\## UI notes
+
+\- Mobile-first — players will primarily book from their phone
+
+\- Web-secondary — players may book from website on computer
+
 
 \## Data model (target shape — build incrementally)
 
