@@ -6,7 +6,7 @@
 
 
 
-A multi-tenant court booking platform, starting with volleyball, built to eventually support leagues, tournaments, and pickup/open-play events. Think "Skedda meets Playbypoint" for volleyball courts.
+A multi-tenant court booking platform, starting with volleyball, built to eventually support leagues, tournaments, and pickup/open-play events. 
 
 
 
