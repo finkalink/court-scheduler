@@ -1,23 +1,30 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createCourt, updateCourtActive, updateCourtNotes } from "@/app/admin/actions";
+import { createCourt, updateCourtActive, updateCourt, updateLocation } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
+
+const TIMEZONES = Intl.supportedValuesOf("timeZone").sort();
 
 export default async function AdminLocationPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locationId: string }>;
-  searchParams: Promise<{ court_added?: string; notes_saved?: string; active_changed?: string }>;
+  searchParams: Promise<{
+    court_added?: string;
+    court_saved?: string;
+    active_changed?: string;
+    location_saved?: string;
+  }>;
 }) {
   const { locationId } = await params;
-  const { court_added, notes_saved, active_changed } = await searchParams;
+  const { court_added, court_saved, active_changed, location_saved } = await searchParams;
   const supabase = await createClient();
 
   const { data: location } = await supabase
     .from("locations")
-    .select("id, name")
+    .select("id, name, address, timezone")
     .eq("id", locationId)
     .single();
 
@@ -38,6 +45,49 @@ export default async function AdminLocationPage({
       </Link>
 
       <h2 className="mt-4 text-lg font-medium">{location.name} — Courts</h2>
+
+      <details className="mt-2">
+        <summary className="w-fit cursor-pointer text-sm underline">Edit location</summary>
+        <form action={updateLocation} className="mt-2 flex max-w-sm flex-col gap-3">
+          <input type="hidden" name="location_id" value={locationId} />
+          <label className="flex flex-col gap-1 text-sm">
+            Name
+            <input
+              name="name"
+              defaultValue={location.name}
+              required
+              className="rounded border px-3 py-2"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Address
+            <input
+              name="address"
+              defaultValue={location.address ?? ""}
+              className="rounded border px-3 py-2"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Timezone
+            <select
+              name="timezone"
+              defaultValue={location.timezone}
+              required
+              className="rounded border px-3 py-2"
+            >
+              {TIMEZONES.map((tz) => (
+                <option key={tz} value={tz}>
+                  {tz}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+            Save
+          </button>
+          {location_saved && <p className="text-xs text-green-800">Location saved.</p>}
+        </form>
+      </details>
 
       {court_added && <SuccessBanner>Court added.</SuccessBanner>}
 
@@ -80,23 +130,57 @@ export default async function AdminLocationPage({
               </p>
             )}
 
-            <form action={updateCourtNotes} className="mt-3 flex flex-col gap-2">
-              <input type="hidden" name="court_id" value={court.id} />
-              <input type="hidden" name="location_id" value={locationId} />
-              <label className="flex flex-col gap-1 text-xs text-gray-600">
-                Court notes (shown to players)
-                <textarea
-                  name="notes"
-                  defaultValue={court.notes ?? ""}
-                  rows={2}
-                  className="rounded border px-3 py-2 text-sm"
-                />
-              </label>
-              <button type="submit" className="w-fit text-xs underline">
-                Save notes
-              </button>
-              {notes_saved === court.id && <p className="text-xs text-green-800">Notes saved.</p>}
-            </form>
+            <details className="mt-3">
+              <summary className="w-fit cursor-pointer text-xs underline">Edit court</summary>
+              <form action={updateCourt} className="mt-2 flex flex-col gap-2">
+                <input type="hidden" name="court_id" value={court.id} />
+                <input type="hidden" name="location_id" value={locationId} />
+                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                  Name
+                  <input
+                    name="name"
+                    defaultValue={court.name}
+                    required
+                    className="rounded border px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                  Surface type
+                  <input
+                    name="surface_type"
+                    defaultValue={court.surface_type ?? ""}
+                    className="rounded border px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                  Booking block size
+                  <select
+                    name="slot_size_minutes"
+                    defaultValue={String(court.slot_size_minutes ?? 60)}
+                    className="rounded border px-3 py-2 text-sm"
+                  >
+                    <option value="60">Full hour</option>
+                    <option value="30">Half hour</option>
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                  Court notes (shown to players)
+                  <textarea
+                    name="notes"
+                    defaultValue={court.notes ?? ""}
+                    rows={2}
+                    className="rounded border px-3 py-2 text-sm"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  className="w-fit rounded bg-black px-3 py-1.5 text-xs text-white"
+                >
+                  Save
+                </button>
+                {court_saved === court.id && <p className="text-xs text-green-800">Saved.</p>}
+              </form>
+            </details>
           </li>
         ))}
       </ul>

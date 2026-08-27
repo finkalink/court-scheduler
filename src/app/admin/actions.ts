@@ -28,6 +28,29 @@ export async function createLocation(formData: FormData) {
   redirect("/admin?location_added=1");
 }
 
+export async function updateLocation(formData: FormData) {
+  const locationId = String(formData.get("location_id"));
+  const name = String(formData.get("name"));
+  const address = String(formData.get("address") || "") || null;
+  const timezone = String(formData.get("timezone") || "UTC");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("locations")
+    .update({ name, address, timezone })
+    .eq("id", locationId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin");
+  revalidatePath(`/admin/locations/${locationId}`);
+  revalidatePath("/");
+  revalidatePath(`/locations/${locationId}`, "layout");
+  redirect(`/admin/locations/${locationId}?location_saved=1`);
+}
+
 export async function createCourt(formData: FormData) {
   const locationId = String(formData.get("location_id"));
   const name = String(formData.get("name"));
@@ -52,21 +75,28 @@ export async function createCourt(formData: FormData) {
   redirect(`/admin/locations/${locationId}?court_added=1`);
 }
 
-export async function updateCourtNotes(formData: FormData) {
+export async function updateCourt(formData: FormData) {
   const courtId = String(formData.get("court_id"));
   const locationId = String(formData.get("location_id"));
+  const name = String(formData.get("name"));
+  const surfaceType = String(formData.get("surface_type") || "") || null;
   const notes = String(formData.get("notes") || "") || null;
+  const slotSizeMinutes = Number(formData.get("slot_size_minutes")) === 30 ? 30 : 60;
 
   const supabase = await createClient();
-  const { error } = await supabase.from("courts").update({ notes }).eq("id", courtId);
+  const { error } = await supabase
+    .from("courts")
+    .update({ name, surface_type: surfaceType, notes, slot_size_minutes: slotSizeMinutes })
+    .eq("id", courtId);
 
   if (error) {
     throw new Error(error.message);
   }
 
   revalidatePath(`/admin/locations/${locationId}`);
+  revalidatePath(`/locations/${locationId}`);
   revalidatePath(`/locations/${locationId}/courts/${courtId}`);
-  redirect(`/admin/locations/${locationId}?notes_saved=${courtId}`);
+  redirect(`/admin/locations/${locationId}?court_saved=${courtId}`);
 }
 
 export async function updateCourtActive(formData: FormData) {
