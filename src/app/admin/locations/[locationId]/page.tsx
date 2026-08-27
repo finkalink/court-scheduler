@@ -46,7 +46,7 @@ export default async function AdminLocationPage({
 
       <h2 className="mt-4 text-lg font-medium">{location.name} — Courts</h2>
 
-      <details className="mt-2">
+      <details className="mt-2" open={Boolean(location_saved)}>
         <summary className="w-fit cursor-pointer text-sm underline">Edit location</summary>
         <form action={updateLocation} className="mt-2 flex max-w-sm flex-col gap-3">
           <input type="hidden" name="location_id" value={locationId} />
@@ -130,7 +130,7 @@ export default async function AdminLocationPage({
               </p>
             )}
 
-            <details className="mt-3">
+            <details className="mt-3" open={court_saved === court.id}>
               <summary className="w-fit cursor-pointer text-xs underline">Edit court</summary>
               <form action={updateCourt} className="mt-2 flex flex-col gap-2">
                 <input type="hidden" name="court_id" value={court.id} />
