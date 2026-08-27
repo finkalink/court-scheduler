@@ -356,7 +356,11 @@ This means the booking insert doesn't need a transaction wrapping a manual check
 
 \- Org onboarding is still manual/SQL in v2 (no self\\-serve org signup), and an admin belonging to multiple orgs still lands on their first membership \\-\\- both deliberate scope cuts, not gaps.
 
-\- \[ ] Booking cancellation \\-\\- `bookings.status` already supports `'cancelled'` and the double\\-booking exclusion constraint already only applies `where (status = 'confirmed')`, so a cancelled booking correctly frees its slot with no schema change. No cancel action/UI exists yet, for either the player (their own bookings on `/bookings`) or admin (bookings at their org's courts).
+\- \[x] Booking cancellation \\-\\- new shared `cancelBooking` action (`src/app/actions/bookings.ts`) sets `status = 'cancelled'`; no schema change needed since the exclusion constraint already only applies `where (status = 'confirmed')`, and RLS's existing `bookings update own or member` policy is what actually decides who's allowed to cancel which row \\-\\- the action itself does no ownership check. Wired up as a "Cancel" button on the player's own confirmed bookings at `/bookings`, and on each upcoming booking in the admin court view at `/admin/locations/\[locationId]/courts/\[courtId]`.
+
+\- \[x] Admin booking modification \\-\\- admins can now edit a booking's requested net height / court lines (new `updateBookingConfig` action in `src/app/admin/actions.ts`) directly from the "Upcoming bookings" list on the admin court page, in addition to cancelling it. Still no admin visibility into *who* booked (unchanged, deliberate).
+
+\- Typecheck (`tsc --noEmit`) is clean for both of the above and the admin court page loads without server errors, but the full click\\-through (sign up \\-\\> confirm email \\-\\> book \\-\\> cancel as a player; edit/cancel as an admin) hasn't been manually verified yet \\-\\- the sandboxed browser used for testing can't follow the Supabase email\\-confirmation link (blocked from navigating to a new external domain), so live verification is pending a manual pass.
 
 \- \[ ] Location admin page to manage sites and times \\-\\- a page for admins to manage a location's (site's) own settings and hours, distinct from the existing per\\-court availability editor at `/admin/locations/\[locationId]/courts/\[courtId]`.
 

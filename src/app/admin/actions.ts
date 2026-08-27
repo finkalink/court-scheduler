@@ -122,3 +122,26 @@ export async function saveAvailability(formData: FormData) {
     revalidatePath(`/locations/${locationId}/courts/${courtId}`);
   }
 }
+
+export async function updateBookingConfig(formData: FormData) {
+  const bookingId = String(formData.get("booking_id"));
+  const locationId = String(formData.get("location_id"));
+  const courtId = String(formData.get("court_id"));
+  const requestedNetHeight = String(formData.get("requested_net_height") || "") || null;
+  const requestedCourtLines = String(formData.get("requested_court_lines") || "") || null;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("bookings")
+    .update({
+      requested_net_height: requestedNetHeight,
+      requested_court_lines: requestedCourtLines,
+    })
+    .eq("id", bookingId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
+}

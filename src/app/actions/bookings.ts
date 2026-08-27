@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 const EXCLUSION_VIOLATION = "23P01";
@@ -44,4 +45,29 @@ export async function createBooking(formData: FormData) {
   }
 
   redirect(`${courtPath}?date=${date}&booked=1`);
+}
+
+// Shared by both the player's own "My bookings" page and the admin court
+// page — RLS ("bookings update own or member") is what actually decides
+// whether this caller is allowed to cancel this particular booking.
+export async function cancelBooking(formData: FormData) {
+  const bookingId = String(formData.get("booking_id"));
+  const locationId = String(formData.get("location_id") || "");
+  const courtId = String(formData.get("court_id") || "");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("bookings")
+    .update({ status: "cancelled" })
+    .eq("id", bookingId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/bookings");
+  if (locationId && courtId) {
+    revalidatePath(`/locations/${locationId}/courts/${courtId}`);
+    revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
+  }
 }

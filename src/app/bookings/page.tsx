@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
 import { formatRequestedConfig } from "@/lib/courtConfig";
+import { cancelBooking } from "@/app/actions/bookings";
 
 export default async function MyBookingsPage() {
   const supabase = await createClient();
@@ -17,7 +18,7 @@ export default async function MyBookingsPage() {
   const { data: bookings } = await supabase
     .from("bookings")
     .select(
-      "id, start_time, end_time, status, price, requested_net_height, requested_court_lines, court:courts(name, location:locations(name, timezone, organization:organizations(name)))"
+      "id, start_time, end_time, status, price, requested_net_height, requested_court_lines, court:courts(id, name, location:locations(id, name, timezone, organization:organizations(name)))"
     )
     .eq("user_id", user.id)
     .order("start_time", { ascending: false });
@@ -65,15 +66,27 @@ export default async function MyBookingsPage() {
                   </p>
                 )}
               </div>
-              <span
-                className={
-                  booking.status === "confirmed"
-                    ? "rounded bg-green-50 px-2 py-1 text-xs text-green-800"
-                    : "rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
-                }
-              >
-                {booking.status}
-              </span>
+              <div className="flex flex-col items-end gap-2">
+                <span
+                  className={
+                    booking.status === "confirmed"
+                      ? "rounded bg-green-50 px-2 py-1 text-xs text-green-800"
+                      : "rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                  }
+                >
+                  {booking.status}
+                </span>
+                {booking.status === "confirmed" && (
+                  <form action={cancelBooking}>
+                    <input type="hidden" name="booking_id" value={booking.id} />
+                    <input type="hidden" name="location_id" value={location?.id ?? ""} />
+                    <input type="hidden" name="court_id" value={court?.id ?? ""} />
+                    <button type="submit" className="text-xs text-red-700 underline">
+                      Cancel
+                    </button>
+                  </form>
+                )}
+              </div>
             </li>
           );
         })}
