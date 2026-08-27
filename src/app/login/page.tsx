@@ -9,7 +9,7 @@ export default async function LoginPage({
 
   return (
     <div className="mx-auto mt-16 max-w-sm px-4 sm:px-0">
-      <h1 className="text-2xl font-semibold">Sign in</h1>
+      <h1 className="text-2xl font-semibold">Sign In</h1>
 
       {message && <p className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800">{message}</p>}
       {error && <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}

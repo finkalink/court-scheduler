@@ -47,7 +47,7 @@ export default async function BookCourtPage({
         &larr; Pick a different time
       </Link>
 
-      <h1 className="mt-4 text-xl font-semibold sm:text-2xl">Confirm booking</h1>
+      <h1 className="mt-4 text-xl font-semibold sm:text-2xl">Confirm Booking</h1>
       <p className="mt-1 text-sm text-gray-600">
         {court.name} — {location?.name}
       </p>

@@ -19,7 +19,7 @@ export default async function Home() {
 
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-      <h1 className="text-xl font-semibold sm:text-2xl">Find a court</h1>
+      <h1 className="text-xl font-semibold sm:text-2xl">Find a Court</h1>
 
       {uniqueLocations.length === 0 && (
         <p className="mt-6 text-sm text-gray-600">No locations available yet.</p>

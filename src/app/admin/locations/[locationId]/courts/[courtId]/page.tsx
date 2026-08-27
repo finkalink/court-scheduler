@@ -56,7 +56,7 @@ export default async function AdminCourtAvailabilityPage({
         &larr; Courts
       </Link>
 
-      <h2 className="mt-4 text-lg font-medium">Weekly availability — {court.name}</h2>
+      <h2 className="mt-4 text-lg font-medium">Weekly Availability — {court.name}</h2>
       <p className="mt-1 text-sm text-gray-600">
         Leave both times blank for a day the court is closed. Saving replaces the full week.
       </p>
@@ -90,7 +90,7 @@ export default async function AdminCourtAvailabilityPage({
         {saved && <SuccessBanner>Availability saved.</SuccessBanner>}
       </form>
 
-      <h2 className="mt-10 text-lg font-medium">Upcoming bookings</h2>
+      <h2 className="mt-10 text-lg font-medium">Upcoming Bookings</h2>
 
       {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
 

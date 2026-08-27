@@ -22,11 +22,15 @@ export default function AppShell({
   const adminActive = pathname.startsWith("/admin");
 
   const linkClass = (active: boolean) =>
-    `block rounded px-3 py-2 text-sm ${active ? "bg-gray-100 font-medium" : "text-gray-700 hover:bg-gray-50"}`;
+    `block rounded px-3 py-2 text-sm ${
+      active
+        ? "bg-gray-100 font-medium dark:bg-neutral-800"
+        : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-neutral-800"
+    }`;
 
   return (
     <div className="min-h-screen">
-      <div className="flex items-center justify-between border-b bg-white px-4 py-3 text-gray-900 sm:hidden">
+      <div className="flex items-center justify-between border-b bg-white px-4 py-3 text-gray-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-100 sm:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -47,7 +51,7 @@ export default function AppShell({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-white text-gray-900 transition-transform sm:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-white text-gray-900 transition-transform dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-100 sm:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -67,7 +71,7 @@ export default function AppShell({
 
         <nav className="flex flex-1 flex-col gap-1 px-2">
           <Link href="/" className={linkClass(findCourtActive)} onClick={() => setOpen(false)}>
-            Find a court
+            Find a Court
           </Link>
           {userEmail && (
             <Link
@@ -75,27 +79,27 @@ export default function AppShell({
               className={linkClass(bookingsActive)}
               onClick={() => setOpen(false)}
             >
-              My bookings
+              My Bookings
             </Link>
           )}
           {isOrgMember && (
             <>
-              <div className="my-2 border-t" />
+              <div className="my-2 border-t dark:border-neutral-800" />
               <Link
                 href="/admin"
                 className={linkClass(adminActive)}
                 onClick={() => setOpen(false)}
               >
-                Admin dashboard
+                Admin Dashboard
               </Link>
             </>
           )}
         </nav>
 
-        <div className="border-t px-4 py-3 text-sm">
+        <div className="border-t px-4 py-3 text-sm dark:border-neutral-800">
           {userEmail ? (
             <div className="flex flex-col gap-2">
-              <span className="truncate text-gray-600">{userEmail}</span>
+              <span className="truncate text-gray-600 dark:text-gray-400">{userEmail}</span>
               <form action={signOut}>
                 <button type="submit" className="text-left underline">
                   Sign out
@@ -105,10 +109,10 @@ export default function AppShell({
           ) : (
             <div className="flex flex-col gap-2">
               <Link href="/login" className="underline" onClick={() => setOpen(false)}>
-                Sign in
+                Sign In
               </Link>
               <Link href="/signup" className="underline" onClick={() => setOpen(false)}>
-                Sign up
+                Sign Up
               </Link>
             </div>
           )}
