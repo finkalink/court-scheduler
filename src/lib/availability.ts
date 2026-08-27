@@ -1,5 +1,10 @@
 import { fromZonedTime } from "date-fns-tz";
 
+// A day (in the weekly template) or a specific date (in an override) can
+// have more than one open range -- e.g. 9am-12pm and 4-9pm -- so both the
+// admin forms and the DB rows are capped at this many ranges each.
+export const MAX_RANGES_PER_DAY = 3;
+
 export interface AvailabilityRule {
   day_of_week: number; // 0 = Sunday .. 6 = Saturday
   open_time: string; // "HH:MM:SS"
@@ -48,48 +53,57 @@ export function computeOpenSlots({
   durationMinutes = 60,
   stepMinutes = 15,
 }: ComputeOpenSlotsParams): Slot[] {
-  const override = overrides.find((o) => o.date === date);
+  // A date can have several override rows (one per custom range); any of
+  // them marked is_closed takes precedence over the rest.
+  const dayOverrides = overrides.filter((o) => o.date === date);
 
-  if (override?.is_closed) {
+  let ranges: { open: string; close: string }[];
+
+  if (dayOverrides.some((o) => o.is_closed)) {
     return [];
-  }
-
-  let openTime: string | null = null;
-  let closeTime: string | null = null;
-
-  if (override?.custom_open && override?.custom_close) {
-    openTime = override.custom_open;
-    closeTime = override.custom_close;
+  } else if (dayOverrides.length > 0) {
+    ranges = dayOverrides
+      .filter((o) => o.custom_open && o.custom_close)
+      .map((o) => ({ open: o.custom_open!, close: o.custom_close! }));
   } else {
-    const rule = rules.find((r) => r.day_of_week === dayOfWeekFor(date));
-    if (!rule) return [];
-    openTime = rule.open_time;
-    closeTime = rule.close_time;
+    const dow = dayOfWeekFor(date);
+    ranges = rules.filter((r) => r.day_of_week === dow).map((r) => ({ open: r.open_time, close: r.close_time }));
   }
 
-  const openInstant = fromZonedTime(`${date}T${openTime}`, timezone);
-  const closeInstant = fromZonedTime(`${date}T${closeTime}`, timezone);
+  if (ranges.length === 0) return [];
 
   const bookedMs = bookedRanges.map((b) => ({
     start: new Date(b.start_time).getTime(),
     end: new Date(b.end_time).getTime(),
   }));
 
-  const slots: Slot[] = [];
   const stepMs = stepMinutes * 60_000;
   const durationMs = durationMinutes * 60_000;
 
-  for (
-    let start = openInstant.getTime();
-    start + durationMs <= closeInstant.getTime();
-    start += stepMs
-  ) {
-    const end = start + durationMs;
-    const overlapsBooking = bookedMs.some((b) => start < b.end && end > b.start);
-    if (!overlapsBooking) {
-      slots.push({ start: new Date(start).toISOString(), end: new Date(end).toISOString() });
+  // Ranges can be adjacent or (in theory) overlap, so start times are
+  // deduped across ranges before being returned.
+  const seenStarts = new Set<number>();
+  const slots: Slot[] = [];
+
+  for (const { open, close } of ranges) {
+    const openInstant = fromZonedTime(`${date}T${open}`, timezone);
+    const closeInstant = fromZonedTime(`${date}T${close}`, timezone);
+
+    for (
+      let start = openInstant.getTime();
+      start + durationMs <= closeInstant.getTime();
+      start += stepMs
+    ) {
+      if (seenStarts.has(start)) continue;
+      const end = start + durationMs;
+      const overlapsBooking = bookedMs.some((b) => start < b.end && end > b.start);
+      if (!overlapsBooking) {
+        seenStarts.add(start);
+        slots.push({ start: new Date(start).toISOString(), end: new Date(end).toISOString() });
+      }
     }
   }
 
+  slots.sort((a, b) => a.start.localeCompare(b.start));
   return slots;
 }

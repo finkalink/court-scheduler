@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createCourt, updateCourtActive, updateCourt, updateLocation } from "@/app/admin/actions";
+import {
+  createCourt,
+  updateCourtActive,
+  updateCourt,
+  updateLocation,
+  applyLocationHours,
+} from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
+import WeeklyHoursFields from "@/components/WeeklyHoursFields";
 
 const TIMEZONES = Intl.supportedValuesOf("timeZone").sort();
 
@@ -16,10 +23,12 @@ export default async function AdminLocationPage({
     court_saved?: string;
     active_changed?: string;
     location_saved?: string;
+    hours_applied?: string;
   }>;
 }) {
   const { locationId } = await params;
-  const { court_added, court_saved, active_changed, location_saved } = await searchParams;
+  const { court_added, court_saved, active_changed, location_saved, hours_applied } =
+    await searchParams;
   const supabase = await createClient();
 
   const { data: location } = await supabase
@@ -184,6 +193,25 @@ export default async function AdminLocationPage({
           </li>
         ))}
       </ul>
+
+      <details className="mt-8">
+        <summary className="w-fit cursor-pointer text-sm font-medium underline">
+          Set hours for all courts
+        </summary>
+        <p className="mt-2 max-w-md text-sm text-gray-600">
+          Applies one weekly schedule to every court at this location, replacing each court&apos;s
+          own hours. Use this to set them all up at once; edit a court individually afterward for
+          exceptions.
+        </p>
+        <form action={applyLocationHours} className="mt-4 flex flex-col gap-3">
+          <input type="hidden" name="location_id" value={locationId} />
+          <WeeklyHoursFields rangesByDay={new Map()} />
+          <button type="submit" className="mt-2 w-fit rounded bg-black px-4 py-2 text-sm text-white">
+            Apply to all courts
+          </button>
+          {hours_applied && <SuccessBanner>Hours applied to all courts.</SuccessBanner>}
+        </form>
+      </details>
 
       <h3 className="mt-8 text-sm font-medium">Add a court</h3>
       <form action={createCourt} className="mt-3 flex flex-col gap-3">
