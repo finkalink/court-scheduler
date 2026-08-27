@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createLocation } from "@/app/admin/actions";
+import SuccessBanner from "@/components/SuccessBanner";
 
 const TIMEZONES = Intl.supportedValuesOf("timeZone").sort();
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ location_added?: string }>;
+}) {
+  const { location_added } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -34,6 +40,8 @@ export default async function AdminPage() {
   return (
     <div>
       <h2 className="text-lg font-medium">{org?.name} — Locations</h2>
+
+      {location_added && <SuccessBanner>Location added.</SuccessBanner>}
 
       {(!locations || locations.length === 0) && (
         <p className="mt-1 text-sm text-gray-600">No locations yet. Add one below.</p>

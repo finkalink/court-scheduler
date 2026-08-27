@@ -5,15 +5,20 @@ import { createClient } from "@/lib/supabase/server";
 import { saveAvailability, updateBookingConfig } from "@/app/admin/actions";
 import { cancelBooking } from "@/app/actions/bookings";
 import { NET_HEIGHT_OPTIONS, COURT_LINES_OPTIONS } from "@/lib/courtConfig";
+import { formatBookingDate } from "@/lib/dateFormat";
+import SuccessBanner from "@/components/SuccessBanner";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export default async function AdminCourtAvailabilityPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locationId: string; courtId: string }>;
+  searchParams: Promise<{ saved?: string; config_saved?: string; cancelled?: string }>;
 }) {
   const { locationId, courtId } = await params;
+  const { saved, config_saved, cancelled } = await searchParams;
   const supabase = await createClient();
 
   const { data: court } = await supabase
@@ -82,9 +87,12 @@ export default async function AdminCourtAvailabilityPage({
         <button type="submit" className="mt-4 w-fit rounded bg-black px-4 py-2 text-sm text-white">
           Save
         </button>
+        {saved && <SuccessBanner>Availability saved.</SuccessBanner>}
       </form>
 
       <h2 className="mt-10 text-lg font-medium">Upcoming bookings</h2>
+
+      {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
 
       {(!upcomingBookings || upcomingBookings.length === 0) && (
         <p className="mt-1 text-sm text-gray-600">No upcoming bookings.</p>
@@ -92,7 +100,7 @@ export default async function AdminCourtAvailabilityPage({
 
       <ul className="mt-4 flex flex-col gap-3">
         {(upcomingBookings ?? []).map((booking) => {
-          const dateLabel = formatInTimeZone(new Date(booking.start_time), timezone, "EEE, MMM d");
+          const dateLabel = formatBookingDate(booking.start_time, timezone);
           const timeLabel = `${formatInTimeZone(new Date(booking.start_time), timezone, "h:mm a")} – ${formatInTimeZone(new Date(booking.end_time), timezone, "h:mm a")}`;
           return (
             <li key={booking.id} className="rounded border border-gray-300 px-4 py-3">
@@ -104,6 +112,11 @@ export default async function AdminCourtAvailabilityPage({
                   <input type="hidden" name="booking_id" value={booking.id} />
                   <input type="hidden" name="location_id" value={locationId} />
                   <input type="hidden" name="court_id" value={court.id} />
+                  <input
+                    type="hidden"
+                    name="redirect_to"
+                    value={`/admin/locations/${locationId}/courts/${court.id}`}
+                  />
                   <button type="submit" className="text-xs text-red-700 underline">
                     Cancel
                   </button>
@@ -148,6 +161,7 @@ export default async function AdminCourtAvailabilityPage({
                 <button type="submit" className="text-xs underline">
                   Save
                 </button>
+                {config_saved === booking.id && <span className="text-xs text-green-800">Saved.</span>}
               </form>
             </li>
           );

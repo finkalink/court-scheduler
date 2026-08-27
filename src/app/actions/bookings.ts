@@ -54,6 +54,7 @@ export async function cancelBooking(formData: FormData) {
   const bookingId = String(formData.get("booking_id"));
   const locationId = String(formData.get("location_id") || "");
   const courtId = String(formData.get("court_id") || "");
+  const redirectTo = String(formData.get("redirect_to") || "/bookings");
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -70,4 +71,6 @@ export async function cancelBooking(formData: FormData) {
     revalidatePath(`/locations/${locationId}/courts/${courtId}`);
     revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
   }
+
+  redirect(`${redirectTo}${redirectTo.includes("?") ? "&" : "?"}cancelled=1`);
 }

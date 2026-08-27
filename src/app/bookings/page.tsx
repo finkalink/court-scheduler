@@ -3,9 +3,16 @@ import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
 import { formatRequestedConfig } from "@/lib/courtConfig";
+import { formatBookingDate } from "@/lib/dateFormat";
 import { cancelBooking } from "@/app/actions/bookings";
+import SuccessBanner from "@/components/SuccessBanner";
 
-export default async function MyBookingsPage() {
+export default async function MyBookingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ cancelled?: string }>;
+}) {
+  const { cancelled } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -32,6 +39,8 @@ export default async function MyBookingsPage() {
         </Link>
       </div>
 
+      {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
+
       {(!bookings || bookings.length === 0) && (
         <p className="mt-6 text-sm text-gray-600">You haven&apos;t booked any slots yet.</p>
       )}
@@ -44,7 +53,7 @@ export default async function MyBookingsPage() {
             ? location?.organization[0]
             : location?.organization;
           const timezone = location?.timezone ?? "UTC";
-          const dateLabel = formatInTimeZone(new Date(booking.start_time), timezone, "EEE, MMM d");
+          const dateLabel = formatBookingDate(booking.start_time, timezone);
           const timeLabel = `${formatInTimeZone(new Date(booking.start_time), timezone, "h:mm a")} – ${formatInTimeZone(new Date(booking.end_time), timezone, "h:mm a")}`;
 
           return (
@@ -81,6 +90,7 @@ export default async function MyBookingsPage() {
                     <input type="hidden" name="booking_id" value={booking.id} />
                     <input type="hidden" name="location_id" value={location?.id ?? ""} />
                     <input type="hidden" name="court_id" value={court?.id ?? ""} />
+                    <input type="hidden" name="redirect_to" value="/bookings" />
                     <button type="submit" className="text-xs text-red-700 underline">
                       Cancel
                     </button>

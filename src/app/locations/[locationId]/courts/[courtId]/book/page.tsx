@@ -4,6 +4,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
 import { createBooking } from "@/app/actions/bookings";
 import { NET_HEIGHT_OPTIONS, COURT_LINES_OPTIONS } from "@/lib/courtConfig";
+import { formatBookingDate } from "@/lib/dateFormat";
 
 export default async function BookCourtPage({
   params,
@@ -37,7 +38,7 @@ export default async function BookCourtPage({
 
   const location = Array.isArray(court.location) ? court.location[0] : court.location;
   const timezone = location?.timezone ?? "UTC";
-  const dateLabel = formatInTimeZone(new Date(start), timezone, "EEEE, MMM d");
+  const dateLabel = formatBookingDate(start, timezone);
   const timeLabel = `${formatInTimeZone(new Date(start), timezone, "h:mm a")} – ${formatInTimeZone(new Date(end), timezone, "h:mm a")}`;
 
   return (
