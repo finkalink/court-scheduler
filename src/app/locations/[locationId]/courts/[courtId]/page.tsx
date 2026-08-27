@@ -17,9 +17,6 @@ export default async function CourtPage({
   const { date: dateParam, error, booked } = await searchParams;
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const { data: court } = await supabase
     .from("courts")
@@ -78,23 +75,9 @@ export default async function CourtPage({
         &larr; {location?.name}
       </Link>
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-semibold sm:text-2xl">
-          {court.name} — {location?.name}
-        </h1>
-        {user ? (
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <Link href="/bookings" className="underline">
-              My bookings
-            </Link>
-            <span>{user.email}</span>
-          </div>
-        ) : (
-          <Link href="/login" className="text-sm underline">
-            Sign in to book
-          </Link>
-        )}
-      </div>
+      <h1 className="mt-4 text-xl font-semibold sm:text-2xl">
+        {court.name} — {location?.name}
+      </h1>
 
       {court.notes && <p className="mt-2 text-sm text-gray-600">{court.notes}</p>}
 

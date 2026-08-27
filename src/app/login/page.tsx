@@ -15,7 +15,7 @@ export default async function LoginPage({
       {error && <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
       <form action={signIn} className="mt-6 flex flex-col gap-4">
-        <input type="hidden" name="next" value={next ?? "/"} />
+        <input type="hidden" name="next" value={next ?? ""} />
         <label className="flex flex-col gap-1 text-sm">
           Email
           <input name="email" type="email" required className="rounded border px-3 py-2" />

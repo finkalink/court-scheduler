@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "@/app/actions/auth";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -29,21 +27,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-      <div className="flex items-center justify-between border-b pb-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold">Admin</h1>
-          <Link href="/" className="text-sm underline">
-            Player view
-          </Link>
-        </div>
-        <form action={signOut}>
-          <button type="submit" className="text-sm underline">
-            Sign out
-          </button>
-        </form>
-      </div>
-      <div className="mt-6">{children}</div>
-    </div>
+    <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">{children}</div>
   );
 }

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
@@ -32,12 +31,7 @@ export default async function MyBookingsPage({
 
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold sm:text-2xl">My bookings</h1>
-        <Link href="/" className="text-sm underline">
-          Book a slot
-        </Link>
-      </div>
+      <h1 className="text-xl font-semibold sm:text-2xl">My bookings</h1>
 
       {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
 

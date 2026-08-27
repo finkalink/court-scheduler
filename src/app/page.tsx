@@ -3,9 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export default async function Home() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const { data: locations } = await supabase
     .from("locations")
@@ -22,21 +19,7 @@ export default async function Home() {
 
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-semibold sm:text-2xl">Find a court</h1>
-        {user ? (
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <Link href="/bookings" className="underline">
-              My bookings
-            </Link>
-            <span>{user.email}</span>
-          </div>
-        ) : (
-          <Link href="/login" className="text-sm underline">
-            Sign in to book
-          </Link>
-        )}
-      </div>
+      <h1 className="text-xl font-semibold sm:text-2xl">Find a court</h1>
 
       {uniqueLocations.length === 0 && (
         <p className="mt-6 text-sm text-gray-600">No locations available yet.</p>
