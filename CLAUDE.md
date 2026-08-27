@@ -398,3 +398,5 @@ This means the booking insert doesn't need a transaction wrapping a manual check
 
 \- \[ ] "My bookings" tabs \\-\\- split `/bookings` into "Upcoming bookings" and "Past bookings" tabs instead of one flat list sorted by `start_time` descending. Needs a definition of the upcoming/past boundary (`start_time` vs. now) and a tab UI \\-\\- either a small client component or two server\\-rendered sections toggled via a query param, consistent with how the rest of the app avoids client state where it can.
 
+\- \[x] Fixed a bug reported by the user: editing a location's or a court's details from `/admin/locations/\[locationId]` showed no confirmation the save went through. The `location\_saved`/`court\_saved` confirmation text from the "Save confirmation messages" entry above was rendering correctly all along \\-\\- it just lived inside the "Edit location"/"Edit court" `<details>` disclosures, which reset to their default closed state on the post\\-save redirect, hiding the message from view. Both disclosures now pass `open={...}` keyed off their own save flag so they stay open through the redirect that just saved them.
+
