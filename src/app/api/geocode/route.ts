@@ -24,15 +24,21 @@ export type GeocodeResult = {
   label: string;
   simpleAddress: string;
   postalCode: string | null;
+  city: string | null;
   latitude: number;
   longitude: number;
   formattedAddress: string;
   timezone: string | null;
 };
 
+export function extractCity(address: NominatimAddress | undefined): string | null {
+  if (!address) return null;
+  return address.city ?? address.town ?? address.village ?? address.hamlet ?? null;
+}
+
 function buildSimpleAddress(address: NominatimAddress | undefined, fallback: string): string {
   if (!address) return fallback;
-  const city = address.city ?? address.town ?? address.village ?? address.hamlet;
+  const city = extractCity(address);
   const street = [address.house_number, address.road].filter(Boolean).join(" ");
   const parts = [street, city, address.state].filter(Boolean);
   return parts.length > 0 ? parts.join(", ") : fallback;
@@ -77,6 +83,7 @@ export async function GET(request: NextRequest) {
       label: r.display_name,
       simpleAddress: buildSimpleAddress(r.address, r.display_name),
       postalCode: r.address?.postcode ?? null,
+      city: extractCity(r.address),
       latitude,
       longitude,
       formattedAddress: r.display_name,
