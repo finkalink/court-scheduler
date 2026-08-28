@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentMembership } from "@/lib/orgMembership";
 import { createLocation } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
 import LocationFormFields from "@/components/LocationFormFields";
@@ -15,30 +16,21 @@ export default async function AdminPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("org_id, organization:organizations(name)")
-    .eq("user_id", user?.id ?? "")
-    .limit(1)
-    .maybeSingle();
+  const membership = await getCurrentMembership(supabase, user?.id);
 
   if (!membership) {
     return null; // admin/layout.tsx already handles the no-membership state.
   }
 
-  const org = Array.isArray(membership.organization)
-    ? membership.organization[0]
-    : membership.organization;
-
   const { data: locations } = await supabase
     .from("locations")
     .select("id, name, address, courts(id)")
-    .eq("org_id", membership.org_id)
+    .eq("org_id", membership.orgId)
     .order("name");
 
   return (
     <div>
-      <h2 className="text-lg font-medium">{org?.name} — Locations</h2>
+      <h2 className="text-lg font-medium">{membership.orgName} — Locations</h2>
 
       {location_added && <SuccessBanner>Location added.</SuccessBanner>}
 
@@ -65,7 +57,7 @@ export default async function AdminPage({
 
       <h3 className="mt-8 text-sm font-medium">Add a location</h3>
       <form action={createLocation} className="mt-3 flex flex-col gap-3">
-        <input type="hidden" name="org_id" value={membership.org_id} />
+        <input type="hidden" name="org_id" value={membership.orgId} />
         <label className="flex flex-col gap-1 text-sm">
           Name
           <input name="name" required className="rounded border px-3 py-2" />

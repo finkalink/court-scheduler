@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentMembership } from "@/lib/orgMembership";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 
@@ -25,16 +26,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let isOrgMember = false;
-  if (user) {
-    const { data: membership } = await supabase
-      .from("org_members")
-      .select("org_id")
-      .eq("user_id", user.id)
-      .limit(1)
-      .maybeSingle();
-    isOrgMember = !!membership;
-  }
+  const membership = await getCurrentMembership(supabase, user?.id);
 
   return (
     <html
@@ -42,7 +34,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <AppShell userEmail={user?.email ?? null} isOrgMember={isOrgMember}>
+        <AppShell userEmail={user?.email ?? null} isOrgMember={!!membership}>
           {children}
         </AppShell>
       </body>
