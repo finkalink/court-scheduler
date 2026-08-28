@@ -101,6 +101,9 @@ export default async function MyBookingsPage({
                     {formatRequestedConfig(booking.requested_net_height, booking.requested_court_lines)}
                   </p>
                 )}
+                <Link href={`/bookings/${booking.id}`} className="text-sm underline">
+                  View details
+                </Link>
               </div>
               <div className="flex flex-col items-end gap-2">
                 <span

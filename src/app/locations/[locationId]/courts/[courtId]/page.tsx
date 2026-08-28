@@ -13,10 +13,10 @@ export default async function CourtPage({
   searchParams,
 }: {
   params: Promise<{ locationId: string; courtId: string }>;
-  searchParams: Promise<{ date?: string; error?: string; booked?: string }>;
+  searchParams: Promise<{ date?: string; error?: string }>;
 }) {
   const { locationId, courtId } = await params;
-  const { date: dateParam, error, booked } = await searchParams;
+  const { date: dateParam, error } = await searchParams;
 
   const supabase = await createClient();
   const userAgent = (await headers()).get("user-agent");
@@ -103,9 +103,6 @@ export default async function CourtPage({
 
       {court.notes && <p className="mt-2 text-sm text-gray-600">{court.notes}</p>}
 
-      {booked && (
-        <p className="mt-4 rounded bg-green-50 p-3 text-sm text-green-800">Booking confirmed.</p>
-      )}
       {error && <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
       <div className="mt-6 flex items-center justify-between">

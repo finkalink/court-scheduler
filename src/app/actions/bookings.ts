@@ -27,14 +27,18 @@ export async function createBooking(formData: FormData) {
     redirect(`/login?next=${encodeURIComponent(bookPath)}`);
   }
 
-  const { error } = await supabase.from("bookings").insert({
-    court_id: courtId,
-    user_id: user.id,
-    start_time: startTime,
-    end_time: endTime,
-    requested_net_height: requestedNetHeight,
-    requested_court_lines: requestedCourtLines,
-  });
+  const { data: booking, error } = await supabase
+    .from("bookings")
+    .insert({
+      court_id: courtId,
+      user_id: user.id,
+      start_time: startTime,
+      end_time: endTime,
+      requested_net_height: requestedNetHeight,
+      requested_court_lines: requestedCourtLines,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     const message =
@@ -44,7 +48,7 @@ export async function createBooking(formData: FormData) {
     redirect(`${courtPath}?date=${date}&error=${encodeURIComponent(message)}`);
   }
 
-  redirect(`${courtPath}?date=${date}&booked=1`);
+  redirect(`/bookings/${booking.id}?booked=1`);
 }
 
 // Shared by both the player's own "My bookings" page and the admin court
