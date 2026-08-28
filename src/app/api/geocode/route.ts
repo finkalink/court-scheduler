@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import tzLookup from "tz-lookup";
 
 type NominatimAddress = {
   house_number?: string;
@@ -26,6 +27,7 @@ export type GeocodeResult = {
   latitude: number;
   longitude: number;
   formattedAddress: string;
+  timezone: string | null;
 };
 
 function buildSimpleAddress(address: NominatimAddress | undefined, fallback: string): string {
@@ -61,14 +63,26 @@ export async function GET(request: NextRequest) {
 
   const results = (await response.json()) as NominatimResult[];
 
-  const geocoded: GeocodeResult[] = results.map((r) => ({
-    label: r.display_name,
-    simpleAddress: buildSimpleAddress(r.address, r.display_name),
-    postalCode: r.address?.postcode ?? null,
-    latitude: Number(r.lat),
-    longitude: Number(r.lon),
-    formattedAddress: r.display_name,
-  }));
+  const geocoded: GeocodeResult[] = results.map((r) => {
+    const latitude = Number(r.lat);
+    const longitude = Number(r.lon);
+    let timezone: string | null = null;
+    try {
+      timezone = tzLookup(latitude, longitude);
+    } catch {
+      // Outside tz-lookup's coverage (e.g. open ocean) -- leave it unset.
+    }
+
+    return {
+      label: r.display_name,
+      simpleAddress: buildSimpleAddress(r.address, r.display_name),
+      postalCode: r.address?.postcode ?? null,
+      latitude,
+      longitude,
+      formattedAddress: r.display_name,
+      timezone,
+    };
+  });
 
   return NextResponse.json(geocoded);
 }

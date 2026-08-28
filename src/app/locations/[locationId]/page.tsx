@@ -68,7 +68,7 @@ export default async function LocationPage({
           <li key={court.id}>
             <Link
               href={`/locations/${locationId}/courts/${court.id}`}
-              className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50"
+              className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
             >
               <p className="font-medium">{court.name}</p>
               {court.surface_type && (

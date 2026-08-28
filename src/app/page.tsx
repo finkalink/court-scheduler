@@ -42,7 +42,7 @@ export default async function Home() {
             userAgent,
           });
           return (
-            <li key={location.id} className="rounded border border-gray-300 px-4 py-3 hover:bg-gray-50">
+            <li key={location.id} className="rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800">
               <Link href={`/locations/${location.id}`} className="block">
                 <p className="font-medium">{location.name}</p>
                 <p className="text-sm text-gray-600">{org?.name}</p>

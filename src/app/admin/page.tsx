@@ -2,9 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createLocation } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
-import AddressLookup from "@/components/AddressLookup";
-
-const TIMEZONES = Intl.supportedValuesOf("timeZone").sort();
+import LocationFormFields from "@/components/LocationFormFields";
 
 export default async function AdminPage({
   searchParams,
@@ -53,7 +51,7 @@ export default async function AdminPage({
           <li key={location.id}>
             <Link
               href={`/admin/locations/${location.id}`}
-              className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50"
+              className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
             >
               <p className="font-medium">{location.name}</p>
               <p className="text-sm text-gray-600">
@@ -72,28 +70,14 @@ export default async function AdminPage({
           Name
           <input name="name" required className="rounded border px-3 py-2" />
         </label>
-        <AddressLookup
+        <LocationFormFields
           defaultAddress=""
           defaultPostalCode={null}
           defaultLatitude={null}
           defaultLongitude={null}
           defaultFormattedAddress={null}
+          defaultTimezone="America/Los_Angeles"
         />
-        <label className="flex flex-col gap-1 text-sm">
-          Timezone
-          <select
-            name="timezone"
-            defaultValue="America/Los_Angeles"
-            required
-            className="rounded border px-3 py-2"
-          >
-            {TIMEZONES.map((tz) => (
-              <option key={tz} value={tz}>
-                {tz}
-              </option>
-            ))}
-          </select>
-        </label>
         <button type="submit" className="mt-1 w-fit rounded bg-black px-4 py-2 text-sm text-white">
           Add location
         </button>

@@ -3,9 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createCourt, updateCourtActive, updateCourt, updateLocation } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
-import AddressLookup from "@/components/AddressLookup";
-
-const TIMEZONES = Intl.supportedValuesOf("timeZone").sort();
+import LocationFormFields from "@/components/LocationFormFields";
 
 export default async function AdminLocationPage({
   params,
@@ -60,28 +58,14 @@ export default async function AdminLocationPage({
               className="rounded border px-3 py-2"
             />
           </label>
-          <AddressLookup
+          <LocationFormFields
             defaultAddress={location.address ?? ""}
             defaultPostalCode={location.postal_code ?? null}
             defaultLatitude={location.latitude ?? null}
             defaultLongitude={location.longitude ?? null}
             defaultFormattedAddress={location.formatted_address ?? null}
+            defaultTimezone={location.timezone}
           />
-          <label className="flex flex-col gap-1 text-sm">
-            Timezone
-            <select
-              name="timezone"
-              defaultValue={location.timezone}
-              required
-              className="rounded border px-3 py-2"
-            >
-              {TIMEZONES.map((tz) => (
-                <option key={tz} value={tz}>
-                  {tz}
-                </option>
-              ))}
-            </select>
-          </label>
           <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
             Save
           </button>

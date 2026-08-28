@@ -62,7 +62,7 @@ export default function TimeBlockPicker({
               className={
                 selected
                   ? "rounded border border-black bg-black px-3 py-2 text-center text-sm text-white"
-                  : "rounded border border-gray-300 px-3 py-2 text-center text-sm hover:bg-gray-100"
+                  : "rounded border border-gray-300 px-3 py-2 text-center text-sm hover:bg-gray-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
               }
             >
               {label}
