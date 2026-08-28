@@ -38,12 +38,13 @@ export default async function TeamPage({
     .eq("org_id", membership.orgId)
     .order("role");
 
-  const userIds = (memberRows ?? []).map((m) => m.user_id);
-  const { data: userRows } = userIds.length
-    ? await supabase.from("users").select("id, email").in("id", userIds)
-    : { data: [] as { id: string; email: string }[] };
+  const { data: userRows } = await supabase.rpc("list_org_member_emails", {
+    target_org_id: membership.orgId,
+  });
 
-  const emailById = new Map((userRows ?? []).map((u) => [u.id, u.email]));
+  const emailById = new Map(
+    (userRows ?? []).map((u: { user_id: string; email: string }) => [u.user_id, u.email])
+  );
 
   return (
     <div>
