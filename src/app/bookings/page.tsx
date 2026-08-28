@@ -1,17 +1,20 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
 import { formatRequestedConfig } from "@/lib/courtConfig";
 import { formatBookingDate } from "@/lib/dateFormat";
 import { cancelBooking } from "@/app/actions/bookings";
+import { categorizeBookingTime, groupBookingsByTime, isCancellable } from "@/lib/bookingStatus";
 import SuccessBanner from "@/components/SuccessBanner";
 
 export default async function MyBookingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cancelled?: string }>;
+  searchParams: Promise<{ cancelled?: string; tab?: string }>;
 }) {
-  const { cancelled } = await searchParams;
+  const { cancelled, tab } = await searchParams;
+  const activeTab = tab === "past" ? "past" : "upcoming";
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,18 +32,47 @@ export default async function MyBookingsPage({
     .eq("user_id", user.id)
     .order("start_time", { ascending: false });
 
+  const now = new Date();
+  const { upcoming, inProgress, past } = groupBookingsByTime(bookings ?? [], now);
+  const visibleBookings = activeTab === "past" ? past : [...inProgress, ...upcoming];
+
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <h1 className="text-xl font-semibold sm:text-2xl">My Bookings</h1>
 
       {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
 
-      {(!bookings || bookings.length === 0) && (
-        <p className="mt-6 text-sm text-gray-600">You haven&apos;t booked any slots yet.</p>
+      <div className="mt-4 flex gap-4 border-b border-gray-300 dark:border-neutral-800">
+        <Link
+          href="/bookings?tab=upcoming"
+          className={
+            activeTab === "upcoming"
+              ? "border-b-2 border-black px-1 pb-2 text-sm font-medium dark:border-white"
+              : "px-1 pb-2 text-sm text-gray-600 dark:text-neutral-400"
+          }
+        >
+          Upcoming
+        </Link>
+        <Link
+          href="/bookings?tab=past"
+          className={
+            activeTab === "past"
+              ? "border-b-2 border-black px-1 pb-2 text-sm font-medium dark:border-white"
+              : "px-1 pb-2 text-sm text-gray-600 dark:text-neutral-400"
+          }
+        >
+          Past
+        </Link>
+      </div>
+
+      {visibleBookings.length === 0 && (
+        <p className="mt-6 text-sm text-gray-600">
+          {activeTab === "past" ? "No past bookings." : "You don't have any upcoming bookings."}
+        </p>
       )}
 
       <ul className="mt-6 flex flex-col gap-3">
-        {(bookings ?? []).map((booking) => {
+        {visibleBookings.map((booking) => {
           const court = Array.isArray(booking.court) ? booking.court[0] : booking.court;
           const location = Array.isArray(court?.location) ? court?.location[0] : court?.location;
           const organization = Array.isArray(location?.organization)
@@ -49,6 +81,7 @@ export default async function MyBookingsPage({
           const timezone = location?.timezone ?? "UTC";
           const dateLabel = formatBookingDate(booking.start_time, timezone);
           const timeLabel = `${formatInTimeZone(new Date(booking.start_time), timezone, "h:mm a")} – ${formatInTimeZone(new Date(booking.end_time), timezone, "h:mm a")}`;
+          const timeStatus = categorizeBookingTime(booking.start_time, booking.end_time, now);
 
           return (
             <li
@@ -79,7 +112,10 @@ export default async function MyBookingsPage({
                 >
                   {booking.status}
                 </span>
-                {booking.status === "confirmed" && (
+                {timeStatus === "in_progress" && booking.status === "confirmed" && (
+                  <span className="text-xs text-gray-500">In progress</span>
+                )}
+                {isCancellable(booking.status, timeStatus) && (
                   <form action={cancelBooking}>
                     <input type="hidden" name="booking_id" value={booking.id} />
                     <input type="hidden" name="location_id" value={location?.id ?? ""} />
