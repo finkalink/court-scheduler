@@ -60,7 +60,7 @@ export default async function AdminLocationPage({
 
       {hours_pushed && <SuccessBanner>Hours applied to all courts.</SuccessBanner>}
 
-      {(location.latitude == null || location.longitude == null) && (
+      {canManage && (location.latitude == null || location.longitude == null) && (
         <p className="mt-2 rounded bg-yellow-50 p-3 text-sm text-yellow-800">
           This location&apos;s address hasn&apos;t been verified, so players won&apos;t see
           weather forecasts. Verify it below.

@@ -62,25 +62,29 @@ export default async function AdminPage({
         ))}
       </ul>
 
-      <h3 className="mt-8 text-sm font-medium">Add a location</h3>
-      <form action={createLocation} className="mt-3 flex flex-col gap-3">
-        <input type="hidden" name="org_id" value={membership.orgId} />
-        <label className="flex flex-col gap-1 text-sm">
-          Name
-          <input name="name" required className="rounded border px-3 py-2" />
-        </label>
-        <LocationFormFields
-          defaultAddress=""
-          defaultPostalCode={null}
-          defaultLatitude={null}
-          defaultLongitude={null}
-          defaultFormattedAddress={null}
-          defaultTimezone="America/Los_Angeles"
-        />
-        <button type="submit" className="mt-1 w-fit rounded bg-black px-4 py-2 text-sm text-white">
-          Add location
-        </button>
-      </form>
+      {isOwnerOrAdmin(membership.role) && (
+        <>
+          <h3 className="mt-8 text-sm font-medium">Add a location</h3>
+          <form action={createLocation} className="mt-3 flex flex-col gap-3">
+            <input type="hidden" name="org_id" value={membership.orgId} />
+            <label className="flex flex-col gap-1 text-sm">
+              Name
+              <input name="name" required className="rounded border px-3 py-2" />
+            </label>
+            <LocationFormFields
+              defaultAddress=""
+              defaultPostalCode={null}
+              defaultLatitude={null}
+              defaultLongitude={null}
+              defaultFormattedAddress={null}
+              defaultTimezone="America/Los_Angeles"
+            />
+            <button type="submit" className="mt-1 w-fit rounded bg-black px-4 py-2 text-sm text-white">
+              Add location
+            </button>
+          </form>
+        </>
+      )}
     </div>
   );
 }
