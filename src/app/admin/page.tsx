@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
+import { isOwnerOrAdmin } from "@/lib/orgRoles";
 import { createLocation } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
 import LocationFormFields from "@/components/LocationFormFields";
@@ -31,6 +32,12 @@ export default async function AdminPage({
   return (
     <div>
       <h2 className="text-lg font-medium">{membership.orgName} — Locations</h2>
+
+      {isOwnerOrAdmin(membership.role) && (
+        <Link href="/admin/team" className="mt-2 block w-fit text-sm underline">
+          Team &rarr;
+        </Link>
+      )}
 
       {location_added && <SuccessBanner>Location added.</SuccessBanner>}
 
