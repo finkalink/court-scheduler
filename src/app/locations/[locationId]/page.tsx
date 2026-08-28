@@ -15,7 +15,7 @@ export default async function LocationPage({
 
   const { data: location } = await supabase
     .from("locations")
-    .select("id, name, address, latitude, longitude, organization:organizations(name)")
+    .select("id, name, address, latitude, longitude, organization:organizations(id, name)")
     .eq("id", locationId)
     .single();
 
@@ -42,8 +42,8 @@ export default async function LocationPage({
 
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-      <Link href="/" className="text-sm underline">
-        &larr; All locations
+      <Link href={`/clubs/${org?.id ?? ""}`} className="text-sm underline">
+        &larr; {org?.name ?? "Club"}
       </Link>
 
       <h1 className="mt-4 text-xl font-semibold sm:text-2xl">{location.name}</h1>
