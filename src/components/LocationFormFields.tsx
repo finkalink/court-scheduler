@@ -7,6 +7,7 @@ import TimezoneSelect from "@/components/TimezoneSelect";
 export default function LocationFormFields({
   defaultAddress,
   defaultPostalCode,
+  defaultCity,
   defaultLatitude,
   defaultLongitude,
   defaultFormattedAddress,
@@ -14,6 +15,7 @@ export default function LocationFormFields({
 }: {
   defaultAddress: string;
   defaultPostalCode: string | null;
+  defaultCity: string | null;
   defaultLatitude: number | null;
   defaultLongitude: number | null;
   defaultFormattedAddress: string | null;
@@ -26,6 +28,7 @@ export default function LocationFormFields({
       <AddressLookup
         defaultAddress={defaultAddress}
         defaultPostalCode={defaultPostalCode}
+        defaultCity={defaultCity}
         defaultLatitude={defaultLatitude}
         defaultLongitude={defaultLongitude}
         defaultFormattedAddress={defaultFormattedAddress}

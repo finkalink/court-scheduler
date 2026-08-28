@@ -74,6 +74,7 @@ export default async function AdminPage({
             <LocationFormFields
               defaultAddress=""
               defaultPostalCode={null}
+              defaultCity={null}
               defaultLatitude={null}
               defaultLongitude={null}
               defaultFormattedAddress={null}

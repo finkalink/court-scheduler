@@ -48,12 +48,14 @@ async function replaceAvailabilityRules(
 
 function geocodeFieldsFromFormData(formData: FormData) {
   const postalCode = String(formData.get("postal_code") || "") || null;
+  const city = String(formData.get("city") || "") || null;
   const latitude = formData.get("latitude");
   const longitude = formData.get("longitude");
   const formattedAddress = String(formData.get("formatted_address") || "") || null;
 
   return {
     postal_code: postalCode,
+    city,
     latitude: latitude ? Number(latitude) || null : null,
     longitude: longitude ? Number(longitude) || null : null,
     formatted_address: formattedAddress,

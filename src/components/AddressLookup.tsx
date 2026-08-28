@@ -5,6 +5,7 @@ import type { GeocodeResult } from "@/app/api/geocode/route";
 
 type Geocode = {
   postalCode: string | null;
+  city: string | null;
   latitude: number;
   longitude: number;
   formattedAddress: string;
@@ -13,6 +14,7 @@ type Geocode = {
 export default function AddressLookup({
   defaultAddress,
   defaultPostalCode,
+  defaultCity,
   defaultLatitude,
   defaultLongitude,
   defaultFormattedAddress,
@@ -20,6 +22,7 @@ export default function AddressLookup({
 }: {
   defaultAddress: string;
   defaultPostalCode: string | null;
+  defaultCity: string | null;
   defaultLatitude: number | null;
   defaultLongitude: number | null;
   defaultFormattedAddress: string | null;
@@ -30,6 +33,7 @@ export default function AddressLookup({
     defaultLatitude != null && defaultLongitude != null
       ? {
           postalCode: defaultPostalCode,
+          city: defaultCity,
           latitude: defaultLatitude,
           longitude: defaultLongitude,
           formattedAddress: defaultFormattedAddress ?? defaultAddress,
@@ -58,6 +62,7 @@ export default function AddressLookup({
     setAddress(result.simpleAddress);
     setGeocode({
       postalCode: result.postalCode,
+      city: result.city,
       latitude: result.latitude,
       longitude: result.longitude,
       formattedAddress: result.formattedAddress,
@@ -91,6 +96,7 @@ export default function AddressLookup({
         </div>
       </label>
       <input type="hidden" name="postal_code" value={geocode?.postalCode ?? ""} />
+      <input type="hidden" name="city" value={geocode?.city ?? ""} />
       <input type="hidden" name="latitude" value={geocode?.latitude ?? ""} />
       <input type="hidden" name="longitude" value={geocode?.longitude ?? ""} />
       <input type="hidden" name="formatted_address" value={geocode?.formattedAddress ?? ""} />

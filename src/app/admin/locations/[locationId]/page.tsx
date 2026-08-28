@@ -26,7 +26,7 @@ export default async function AdminLocationPage({
 
   const { data: location } = await supabase
     .from("locations")
-    .select("id, name, address, timezone, postal_code, latitude, longitude, formatted_address, org_id")
+    .select("id, name, address, timezone, postal_code, city, latitude, longitude, formatted_address, org_id")
     .eq("id", locationId)
     .single();
 
@@ -84,6 +84,7 @@ export default async function AdminLocationPage({
             <LocationFormFields
               defaultAddress={location.address ?? ""}
               defaultPostalCode={location.postal_code ?? null}
+              defaultCity={location.city ?? null}
               defaultLatitude={location.latitude ?? null}
               defaultLongitude={location.longitude ?? null}
               defaultFormattedAddress={location.formatted_address ?? null}
