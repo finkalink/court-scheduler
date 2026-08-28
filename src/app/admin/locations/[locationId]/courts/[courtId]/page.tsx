@@ -2,10 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
-import { saveAvailability, updateBookingConfig } from "@/app/admin/actions";
+import {
+  saveAvailability,
+  updateBookingConfig,
+  saveSlotOverride,
+  deleteSlotOverride,
+} from "@/app/admin/actions";
 import { cancelBooking } from "@/app/actions/bookings";
 import { NET_HEIGHT_OPTIONS, COURT_LINES_OPTIONS } from "@/lib/courtConfig";
-import { formatBookingDate } from "@/lib/dateFormat";
+import { formatBookingDate, formatCalendarDate, formatTimeOfDay } from "@/lib/dateFormat";
 import SuccessBanner from "@/components/SuccessBanner";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -15,10 +20,18 @@ export default async function AdminCourtAvailabilityPage({
   searchParams,
 }: {
   params: Promise<{ locationId: string; courtId: string }>;
-  searchParams: Promise<{ saved?: string; config_saved?: string; cancelled?: string }>;
+  searchParams: Promise<{
+    saved?: string;
+    config_saved?: string;
+    cancelled?: string;
+    override_saved?: string;
+    override_deleted?: string;
+    override_error?: string;
+  }>;
 }) {
   const { locationId, courtId } = await params;
-  const { saved, config_saved, cancelled } = await searchParams;
+  const { saved, config_saved, cancelled, override_saved, override_deleted, override_error } =
+    await searchParams;
   const supabase = await createClient();
 
   const { data: court } = await supabase
@@ -41,6 +54,13 @@ export default async function AdminCourtAvailabilityPage({
     .eq("court_id", court.id);
 
   const rulesByDay = new Map((rules ?? []).map((r) => [r.day_of_week, r]));
+
+  const { data: overrides } = await supabase
+    .from("slot_overrides")
+    .select("id, date, is_closed, custom_open, custom_close")
+    .eq("court_id", court.id)
+    .gte("date", formatInTimeZone(new Date(), timezone, "yyyy-MM-dd"))
+    .order("date");
 
   const { data: upcomingBookings } = await supabase
     .from("bookings")
@@ -88,6 +108,70 @@ export default async function AdminCourtAvailabilityPage({
           Save
         </button>
         {saved && <SuccessBanner>Availability saved.</SuccessBanner>}
+      </form>
+
+      <h2 className="mt-10 text-lg font-medium">Date Overrides</h2>
+      <p className="mt-1 text-sm text-gray-600">
+        One-off exceptions to the weekly hours above — a holiday closure, or a single day with
+        different hours.
+      </p>
+
+      {override_saved && <SuccessBanner>Override saved.</SuccessBanner>}
+      {override_deleted && <SuccessBanner>Override removed.</SuccessBanner>}
+      {override_error && (
+        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800">{override_error}</p>
+      )}
+
+      {(!overrides || overrides.length === 0) && (
+        <p className="mt-1 text-sm text-gray-600">No upcoming overrides.</p>
+      )}
+
+      <ul className="mt-4 flex flex-col gap-2">
+        {(overrides ?? []).map((override) => (
+          <li
+            key={override.id}
+            className="flex items-center justify-between rounded border border-gray-300 px-4 py-2"
+          >
+            <span className="text-sm">
+              {formatCalendarDate(override.date)} —{" "}
+              {override.is_closed
+                ? "Closed"
+                : `${formatTimeOfDay(override.custom_open!)} – ${formatTimeOfDay(override.custom_close!)}`}
+            </span>
+            <form action={deleteSlotOverride}>
+              <input type="hidden" name="override_id" value={override.id} />
+              <input type="hidden" name="court_id" value={court.id} />
+              <input type="hidden" name="location_id" value={locationId} />
+              <button type="submit" className="text-xs text-red-700 underline">
+                Remove
+              </button>
+            </form>
+          </li>
+        ))}
+      </ul>
+
+      <form action={saveSlotOverride} className="mt-4 flex flex-wrap items-end gap-3">
+        <input type="hidden" name="court_id" value={court.id} />
+        <input type="hidden" name="location_id" value={locationId} />
+        <label className="flex flex-col gap-1 text-xs text-gray-600">
+          Date
+          <input type="date" name="date" required className="rounded border px-3 py-2 text-sm" />
+        </label>
+        <label className="flex items-center gap-2 text-xs text-gray-600">
+          <input type="checkbox" name="is_closed" />
+          Closed all day
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-600">
+          Custom open
+          <input type="time" name="custom_open" className="rounded border px-3 py-2 text-sm" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-600">
+          Custom close
+          <input type="time" name="custom_close" className="rounded border px-3 py-2 text-sm" />
+        </label>
+        <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+          Add Override
+        </button>
       </form>
 
       <h2 className="mt-10 text-lg font-medium">Upcoming Bookings</h2>

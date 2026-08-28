@@ -3,8 +3,47 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { validateSlotOverride } from "@/lib/slotOverride";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6];
+
+function rulesFromFormData(courtId: string, formData: FormData) {
+  return DAYS.map((day) => {
+    const open = formData.get(`open_${day}`);
+    const close = formData.get(`close_${day}`);
+    if (!open || !close) return null;
+    return {
+      court_id: courtId,
+      day_of_week: day,
+      open_time: String(open),
+      close_time: String(close),
+    };
+  }).filter((row): row is NonNullable<typeof row> => row !== null);
+}
+
+// Full-week replace: simplest correct model for v1 (one rule per day).
+async function replaceAvailabilityRules(
+  supabase: SupabaseClient,
+  courtId: string,
+  rows: ReturnType<typeof rulesFromFormData>
+) {
+  const { error: deleteError } = await supabase
+    .from("availability_rules")
+    .delete()
+    .eq("court_id", courtId);
+
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
+
+  if (rows.length > 0) {
+    const { error: insertError } = await supabase.from("availability_rules").insert(rows);
+    if (insertError) {
+      throw new Error(insertError.message);
+    }
+  }
+}
 
 function geocodeFieldsFromFormData(formData: FormData) {
   const postalCode = String(formData.get("postal_code") || "") || null;
@@ -140,40 +179,89 @@ export async function saveAvailability(formData: FormData) {
   const locationId = String(formData.get("location_id") || "");
   const supabase = await createClient();
 
-  const rows = DAYS.map((day) => {
-    const open = formData.get(`open_${day}`);
-    const close = formData.get(`close_${day}`);
-    if (!open || !close) return null;
-    return {
-      court_id: courtId,
-      day_of_week: day,
-      open_time: String(open),
-      close_time: String(close),
-    };
-  }).filter((row): row is NonNullable<typeof row> => row !== null);
-
-  // Full-week replace: simplest correct model for v1 (one rule per day).
-  const { error: deleteError } = await supabase
-    .from("availability_rules")
-    .delete()
-    .eq("court_id", courtId);
-
-  if (deleteError) {
-    throw new Error(deleteError.message);
-  }
-
-  if (rows.length > 0) {
-    const { error: insertError } = await supabase.from("availability_rules").insert(rows);
-    if (insertError) {
-      throw new Error(insertError.message);
-    }
-  }
+  await replaceAvailabilityRules(supabase, courtId, rulesFromFormData(courtId, formData));
 
   if (locationId) {
     revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
     revalidatePath(`/locations/${locationId}/courts/${courtId}`);
     redirect(`/admin/locations/${locationId}/courts/${courtId}?saved=1`);
   }
+}
+
+// Writes the same weekly hours (already validated/confirmed by the caller)
+// into every court at the location, overwriting each court's existing
+// availability_rules.
+export async function pushHoursToAllCourts(formData: FormData) {
+  const locationId = String(formData.get("location_id"));
+  const supabase = await createClient();
+
+  const { data: courts, error: courtsError } = await supabase
+    .from("courts")
+    .select("id")
+    .eq("location_id", locationId);
+
+  if (courtsError) {
+    throw new Error(courtsError.message);
+  }
+
+  for (const court of courts ?? []) {
+    await replaceAvailabilityRules(supabase, court.id, rulesFromFormData(court.id, formData));
+  }
+
+  revalidatePath(`/admin/locations/${locationId}`);
+  for (const court of courts ?? []) {
+    revalidatePath(`/admin/locations/${locationId}/courts/${court.id}`);
+    revalidatePath(`/locations/${locationId}/courts/${court.id}`);
+  }
+  redirect(`/admin/locations/${locationId}?hours_pushed=1`);
+}
+
+export async function saveSlotOverride(formData: FormData) {
+  const courtId = String(formData.get("court_id"));
+  const locationId = String(formData.get("location_id"));
+
+  const result = validateSlotOverride({
+    date: String(formData.get("date") || ""),
+    isClosed: formData.get("is_closed") === "on",
+    customOpen: String(formData.get("custom_open") || ""),
+    customClose: String(formData.get("custom_close") || ""),
+  });
+
+  if (!result.valid) {
+    redirect(
+      `/admin/locations/${locationId}/courts/${courtId}?override_error=${encodeURIComponent(result.error)}`
+    );
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("slot_overrides")
+    .upsert({ court_id: courtId, ...result.value }, { onConflict: "court_id,date" });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
+  revalidatePath(`/locations/${locationId}/courts/${courtId}`);
+  redirect(`/admin/locations/${locationId}/courts/${courtId}?override_saved=1`);
+}
+
+export async function deleteSlotOverride(formData: FormData) {
+  const overrideId = String(formData.get("override_id"));
+  const courtId = String(formData.get("court_id"));
+  const locationId = String(formData.get("location_id"));
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("slot_overrides").delete().eq("id", overrideId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
+  revalidatePath(`/locations/${locationId}/courts/${courtId}`);
+  redirect(`/admin/locations/${locationId}/courts/${courtId}?override_deleted=1`);
 }
 
 export async function updateBookingConfig(formData: FormData) {

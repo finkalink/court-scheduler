@@ -15,10 +15,11 @@ export default async function AdminLocationPage({
     court_saved?: string;
     active_changed?: string;
     location_saved?: string;
+    hours_pushed?: string;
   }>;
 }) {
   const { locationId } = await params;
-  const { court_added, court_saved, active_changed, location_saved } = await searchParams;
+  const { court_added, court_saved, active_changed, location_saved, hours_pushed } = await searchParams;
   const supabase = await createClient();
 
   const { data: location } = await supabase
@@ -45,7 +46,13 @@ export default async function AdminLocationPage({
 
       <h2 className="mt-4 text-lg font-medium">{location.name} — Courts</h2>
 
-      <details className="mt-2" open={Boolean(location_saved)}>
+      <Link href={`/admin/locations/${locationId}/hours`} className="mt-2 block w-fit text-sm underline">
+        General Hours &rarr;
+      </Link>
+
+      {hours_pushed && <SuccessBanner>Hours applied to all courts.</SuccessBanner>}
+
+      <details className="mt-4" open={Boolean(location_saved)}>
         <summary className="w-fit cursor-pointer text-sm underline">Edit location</summary>
         <form action={updateLocation} className="mt-2 flex max-w-sm flex-col gap-3">
           <input type="hidden" name="location_id" value={locationId} />

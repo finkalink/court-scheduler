@@ -14,3 +14,13 @@ export function formatBookingDate(instant: Date | string, timezone: string): str
 export function formatCalendarDate(dateString: string): string {
   return formatInTimeZone(`${dateString}T12:00:00Z`, "UTC", DATE_FORMAT);
 }
+
+// For a plain "HH:MM" (or "HH:MM:SS") time of day with no associated date or
+// timezone -- e.g. an availability_rules/slot_overrides open/close time.
+export function formatTimeOfDay(time: string): string {
+  const [hourStr, minuteStr] = time.split(":");
+  const hour24 = Number(hourStr);
+  const period = hour24 >= 12 ? "PM" : "AM";
+  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  return `${hour12}:${minuteStr} ${period}`;
+}
