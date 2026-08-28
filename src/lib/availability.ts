@@ -39,6 +39,35 @@ function dayOfWeekFor(date: string): number {
   return new Date(`${date}T12:00:00Z`).getUTCDay();
 }
 
+export interface DayHours {
+  openTime: string; // "HH:MM" or "HH:MM:SS"
+  closeTime: string;
+}
+
+// The open/close window for a single calendar date: an override closes the
+// day, or supplies its own hours (only when both custom times are set);
+// otherwise falls back to the weekly rule. Returns null when there's no
+// window at all (closed override, or no rule for that day of week).
+export function resolveDayHours(
+  date: string,
+  rules: AvailabilityRule[],
+  overrides: SlotOverride[]
+): DayHours | null {
+  const override = overrides.find((o) => o.date === date);
+
+  if (override?.is_closed) {
+    return null;
+  }
+
+  if (override?.custom_open && override?.custom_close) {
+    return { openTime: override.custom_open, closeTime: override.custom_close };
+  }
+
+  const rule = rules.find((r) => r.day_of_week === dayOfWeekFor(date));
+  if (!rule) return null;
+  return { openTime: rule.open_time, closeTime: rule.close_time };
+}
+
 export function computeOpenSlots({
   date,
   timezone,
@@ -48,27 +77,11 @@ export function computeOpenSlots({
   durationMinutes = 60,
   stepMinutes = 15,
 }: ComputeOpenSlotsParams): Slot[] {
-  const override = overrides.find((o) => o.date === date);
+  const hours = resolveDayHours(date, rules, overrides);
+  if (!hours) return [];
 
-  if (override?.is_closed) {
-    return [];
-  }
-
-  let openTime: string | null = null;
-  let closeTime: string | null = null;
-
-  if (override?.custom_open && override?.custom_close) {
-    openTime = override.custom_open;
-    closeTime = override.custom_close;
-  } else {
-    const rule = rules.find((r) => r.day_of_week === dayOfWeekFor(date));
-    if (!rule) return [];
-    openTime = rule.open_time;
-    closeTime = rule.close_time;
-  }
-
-  const openInstant = fromZonedTime(`${date}T${openTime}`, timezone);
-  const closeInstant = fromZonedTime(`${date}T${closeTime}`, timezone);
+  const openInstant = fromZonedTime(`${date}T${hours.openTime}`, timezone);
+  const closeInstant = fromZonedTime(`${date}T${hours.closeTime}`, timezone);
 
   const bookedMs = bookedRanges.map((b) => ({
     start: new Date(b.start_time).getTime(),

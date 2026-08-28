@@ -3,9 +3,15 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
-import { computeOpenSlots, type AvailabilityRule, type SlotOverride } from "@/lib/availability";
-import { formatCalendarDate } from "@/lib/dateFormat";
+import {
+  computeOpenSlots,
+  resolveDayHours,
+  type AvailabilityRule,
+  type SlotOverride,
+} from "@/lib/availability";
+import { formatCalendarDate, formatTimeOfDay } from "@/lib/dateFormat";
 import { buildMapsUrl } from "@/lib/maps";
+import { fetchHourlyForecast, filterHoursToWindow, describeWeatherCode } from "@/lib/weather";
 import TimeBlockPicker from "./TimeBlockPicker";
 
 export default async function CourtPage({
@@ -69,6 +75,20 @@ export default async function CourtPage({
     stepMinutes: slotSizeMinutes,
   });
 
+  const dayHours = resolveDayHours(date, (rules ?? []) as AvailabilityRule[], (overrides ?? []) as SlotOverride[]);
+  let hourlyForecast: ReturnType<typeof filterHoursToWindow> = [];
+  if (dayHours && location?.latitude != null && location?.longitude != null) {
+    const forecast = await fetchHourlyForecast({
+      latitude: location.latitude,
+      longitude: location.longitude,
+      date,
+      timezone,
+    });
+    if (forecast) {
+      hourlyForecast = filterHoursToWindow(forecast, dayHours.openTime, dayHours.closeTime);
+    }
+  }
+
   const prevDate = formatInTimeZone(
     new Date(new Date(`${date}T12:00:00Z`).getTime() - 86_400_000),
     "UTC",
@@ -114,6 +134,27 @@ export default async function CourtPage({
           Next day &rarr;
         </Link>
       </div>
+
+      {hourlyForecast.length > 0 && (
+        <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+          {hourlyForecast.map((hour) => {
+            const { emoji, label } = describeWeatherCode(hour.weatherCode);
+            return (
+              <div
+                key={hour.time}
+                className="flex shrink-0 flex-col items-center rounded border border-gray-300 px-3 py-2 text-center text-xs"
+              >
+                <span className="font-medium">{formatTimeOfDay(hour.time.slice(11, 16))}</span>
+                <span className="mt-1 text-lg" title={label}>
+                  {emoji}
+                </span>
+                <span>{Math.round(hour.temperature)}°F</span>
+                <span className="text-gray-600">{Math.round(hour.precipitationProbability)}%</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mt-6">
         {slots.length === 0 ? (

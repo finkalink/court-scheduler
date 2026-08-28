@@ -52,6 +52,13 @@ export default async function AdminLocationPage({
 
       {hours_pushed && <SuccessBanner>Hours applied to all courts.</SuccessBanner>}
 
+      {(location.latitude == null || location.longitude == null) && (
+        <p className="mt-2 rounded bg-yellow-50 p-3 text-sm text-yellow-800">
+          This location&apos;s address hasn&apos;t been verified, so players won&apos;t see
+          weather forecasts. Verify it below.
+        </p>
+      )}
+
       <details className="mt-4" open={Boolean(location_saved)}>
         <summary className="w-fit cursor-pointer text-sm underline">Edit location</summary>
         <form action={updateLocation} className="mt-2 flex max-w-sm flex-col gap-3">
