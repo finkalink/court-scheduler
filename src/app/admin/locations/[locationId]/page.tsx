@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createCourt, updateCourtActive, updateCourt, updateLocation } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
 import LocationFormFields from "@/components/LocationFormFields";
+import { getRoleForOrg } from "@/lib/orgMembership";
+import { isOwnerOrAdmin } from "@/lib/orgRoles";
 
 export default async function AdminLocationPage({
   params,
@@ -24,13 +26,19 @@ export default async function AdminLocationPage({
 
   const { data: location } = await supabase
     .from("locations")
-    .select("id, name, address, timezone, postal_code, latitude, longitude, formatted_address")
+    .select("id, name, address, timezone, postal_code, latitude, longitude, formatted_address, org_id")
     .eq("id", locationId)
     .single();
 
   if (!location) {
     notFound();
   }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const role = await getRoleForOrg(supabase, user?.id, location.org_id);
+  const canManage = role ? isOwnerOrAdmin(role) : false;
 
   const { data: courts } = await supabase
     .from("courts")
@@ -52,40 +60,42 @@ export default async function AdminLocationPage({
 
       {hours_pushed && <SuccessBanner>Hours applied to all courts.</SuccessBanner>}
 
-      {(location.latitude == null || location.longitude == null) && (
+      {canManage && (location.latitude == null || location.longitude == null) && (
         <p className="mt-2 rounded bg-yellow-50 p-3 text-sm text-yellow-800">
           This location&apos;s address hasn&apos;t been verified, so players won&apos;t see
           weather forecasts. Verify it below.
         </p>
       )}
 
-      <details className="mt-4" open={Boolean(location_saved)}>
-        <summary className="w-fit cursor-pointer text-sm underline">Edit location</summary>
-        <form action={updateLocation} className="mt-2 flex max-w-sm flex-col gap-3">
-          <input type="hidden" name="location_id" value={locationId} />
-          <label className="flex flex-col gap-1 text-sm">
-            Name
-            <input
-              name="name"
-              defaultValue={location.name}
-              required
-              className="rounded border px-3 py-2"
+      {canManage && (
+        <details className="mt-4" open={Boolean(location_saved)}>
+          <summary className="w-fit cursor-pointer text-sm underline">Edit location</summary>
+          <form action={updateLocation} className="mt-2 flex max-w-sm flex-col gap-3">
+            <input type="hidden" name="location_id" value={locationId} />
+            <label className="flex flex-col gap-1 text-sm">
+              Name
+              <input
+                name="name"
+                defaultValue={location.name}
+                required
+                className="rounded border px-3 py-2"
+              />
+            </label>
+            <LocationFormFields
+              defaultAddress={location.address ?? ""}
+              defaultPostalCode={location.postal_code ?? null}
+              defaultLatitude={location.latitude ?? null}
+              defaultLongitude={location.longitude ?? null}
+              defaultFormattedAddress={location.formatted_address ?? null}
+              defaultTimezone={location.timezone}
             />
-          </label>
-          <LocationFormFields
-            defaultAddress={location.address ?? ""}
-            defaultPostalCode={location.postal_code ?? null}
-            defaultLatitude={location.latitude ?? null}
-            defaultLongitude={location.longitude ?? null}
-            defaultFormattedAddress={location.formatted_address ?? null}
-            defaultTimezone={location.timezone}
-          />
-          <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
-            Save
-          </button>
-          {location_saved && <p className="text-xs text-green-800">Location saved.</p>}
-        </form>
-      </details>
+            <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+              Save
+            </button>
+            {location_saved && <p className="text-xs text-green-800">Location saved.</p>}
+          </form>
+        </details>
+      )}
 
       {court_added && <SuccessBanner>Court added.</SuccessBanner>}
 
@@ -112,14 +122,16 @@ export default async function AdminLocationPage({
                   {court.slot_size_minutes === 30 ? "Half-hour blocks" : "Full-hour blocks"}
                 </p>
               </div>
-              <form action={updateCourtActive}>
-                <input type="hidden" name="court_id" value={court.id} />
-                <input type="hidden" name="location_id" value={locationId} />
-                <input type="hidden" name="is_active" value={String(court.is_active)} />
-                <button type="submit" className="text-sm underline">
-                  {court.is_active ? "Deactivate" : "Activate"}
-                </button>
-              </form>
+              {canManage && (
+                <form action={updateCourtActive}>
+                  <input type="hidden" name="court_id" value={court.id} />
+                  <input type="hidden" name="location_id" value={locationId} />
+                  <input type="hidden" name="is_active" value={String(court.is_active)} />
+                  <button type="submit" className="text-sm underline">
+                    {court.is_active ? "Deactivate" : "Activate"}
+                  </button>
+                </form>
+              )}
             </div>
 
             {active_changed === court.id && (
@@ -128,87 +140,93 @@ export default async function AdminLocationPage({
               </p>
             )}
 
-            <details className="mt-3" open={court_saved === court.id}>
-              <summary className="w-fit cursor-pointer text-xs underline">Edit court</summary>
-              <form action={updateCourt} className="mt-2 flex flex-col gap-2">
-                <input type="hidden" name="court_id" value={court.id} />
-                <input type="hidden" name="location_id" value={locationId} />
-                <label className="flex flex-col gap-1 text-xs text-gray-600">
-                  Name
-                  <input
-                    name="name"
-                    defaultValue={court.name}
-                    required
-                    className="rounded border px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-gray-600">
-                  Surface type
-                  <input
-                    name="surface_type"
-                    defaultValue={court.surface_type ?? ""}
-                    className="rounded border px-3 py-2 text-sm"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-gray-600">
-                  Booking block size
-                  <select
-                    name="slot_size_minutes"
-                    defaultValue={String(court.slot_size_minutes ?? 60)}
-                    className="rounded border px-3 py-2 text-sm"
+            {canManage && (
+              <details className="mt-3" open={court_saved === court.id}>
+                <summary className="w-fit cursor-pointer text-xs underline">Edit court</summary>
+                <form action={updateCourt} className="mt-2 flex flex-col gap-2">
+                  <input type="hidden" name="court_id" value={court.id} />
+                  <input type="hidden" name="location_id" value={locationId} />
+                  <label className="flex flex-col gap-1 text-xs text-gray-600">
+                    Name
+                    <input
+                      name="name"
+                      defaultValue={court.name}
+                      required
+                      className="rounded border px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-gray-600">
+                    Surface type
+                    <input
+                      name="surface_type"
+                      defaultValue={court.surface_type ?? ""}
+                      className="rounded border px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-gray-600">
+                    Booking block size
+                    <select
+                      name="slot_size_minutes"
+                      defaultValue={String(court.slot_size_minutes ?? 60)}
+                      className="rounded border px-3 py-2 text-sm"
+                    >
+                      <option value="60">Full hour</option>
+                      <option value="30">Half hour</option>
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-gray-600">
+                    Court notes (shown to players)
+                    <textarea
+                      name="notes"
+                      defaultValue={court.notes ?? ""}
+                      rows={2}
+                      className="rounded border px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    className="w-fit rounded bg-black px-3 py-1.5 text-xs text-white"
                   >
-                    <option value="60">Full hour</option>
-                    <option value="30">Half hour</option>
-                  </select>
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-gray-600">
-                  Court notes (shown to players)
-                  <textarea
-                    name="notes"
-                    defaultValue={court.notes ?? ""}
-                    rows={2}
-                    className="rounded border px-3 py-2 text-sm"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="w-fit rounded bg-black px-3 py-1.5 text-xs text-white"
-                >
-                  Save
-                </button>
-                {court_saved === court.id && <p className="text-xs text-green-800">Saved.</p>}
-              </form>
-            </details>
+                    Save
+                  </button>
+                  {court_saved === court.id && <p className="text-xs text-green-800">Saved.</p>}
+                </form>
+              </details>
+            )}
           </li>
         ))}
       </ul>
 
-      <h3 className="mt-8 text-sm font-medium">Add a court</h3>
-      <form action={createCourt} className="mt-3 flex flex-col gap-3">
-        <input type="hidden" name="location_id" value={locationId} />
-        <label className="flex flex-col gap-1 text-sm">
-          Name
-          <input name="name" required className="rounded border px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Surface type
-          <input name="surface_type" className="rounded border px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Court notes (optional, shown to players)
-          <textarea name="notes" rows={2} className="rounded border px-3 py-2" />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Booking block size
-          <select name="slot_size_minutes" defaultValue="60" className="rounded border px-3 py-2">
-            <option value="60">Full hour</option>
-            <option value="30">Half hour</option>
-          </select>
-        </label>
-        <button type="submit" className="mt-1 w-fit rounded bg-black px-4 py-2 text-sm text-white">
-          Add court
-        </button>
-      </form>
+      {canManage && (
+        <>
+          <h3 className="mt-8 text-sm font-medium">Add a court</h3>
+          <form action={createCourt} className="mt-3 flex flex-col gap-3">
+            <input type="hidden" name="location_id" value={locationId} />
+            <label className="flex flex-col gap-1 text-sm">
+              Name
+              <input name="name" required className="rounded border px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Surface type
+              <input name="surface_type" className="rounded border px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Court notes (optional, shown to players)
+              <textarea name="notes" rows={2} className="rounded border px-3 py-2" />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Booking block size
+              <select name="slot_size_minutes" defaultValue="60" className="rounded border px-3 py-2">
+                <option value="60">Full hour</option>
+                <option value="30">Half hour</option>
+              </select>
+            </label>
+            <button type="submit" className="mt-1 w-fit rounded bg-black px-4 py-2 text-sm text-white">
+              Add court
+            </button>
+          </form>
+        </>
+      )}
     </div>
   );
 }

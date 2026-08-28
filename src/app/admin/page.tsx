@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentMembership } from "@/lib/orgMembership";
+import { isOwnerOrAdmin } from "@/lib/orgRoles";
 import { createLocation } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
 import LocationFormFields from "@/components/LocationFormFields";
@@ -15,30 +17,27 @@ export default async function AdminPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("org_id, organization:organizations(name)")
-    .eq("user_id", user?.id ?? "")
-    .limit(1)
-    .maybeSingle();
+  const membership = await getCurrentMembership(supabase, user?.id);
 
   if (!membership) {
     return null; // admin/layout.tsx already handles the no-membership state.
   }
 
-  const org = Array.isArray(membership.organization)
-    ? membership.organization[0]
-    : membership.organization;
-
   const { data: locations } = await supabase
     .from("locations")
     .select("id, name, address, courts(id)")
-    .eq("org_id", membership.org_id)
+    .eq("org_id", membership.orgId)
     .order("name");
 
   return (
     <div>
-      <h2 className="text-lg font-medium">{org?.name} — Locations</h2>
+      <h2 className="text-lg font-medium">{membership.orgName} — Locations</h2>
+
+      {isOwnerOrAdmin(membership.role) && (
+        <Link href="/admin/team" className="mt-2 block w-fit text-sm underline">
+          Team &rarr;
+        </Link>
+      )}
 
       {location_added && <SuccessBanner>Location added.</SuccessBanner>}
 
@@ -63,25 +62,29 @@ export default async function AdminPage({
         ))}
       </ul>
 
-      <h3 className="mt-8 text-sm font-medium">Add a location</h3>
-      <form action={createLocation} className="mt-3 flex flex-col gap-3">
-        <input type="hidden" name="org_id" value={membership.org_id} />
-        <label className="flex flex-col gap-1 text-sm">
-          Name
-          <input name="name" required className="rounded border px-3 py-2" />
-        </label>
-        <LocationFormFields
-          defaultAddress=""
-          defaultPostalCode={null}
-          defaultLatitude={null}
-          defaultLongitude={null}
-          defaultFormattedAddress={null}
-          defaultTimezone="America/Los_Angeles"
-        />
-        <button type="submit" className="mt-1 w-fit rounded bg-black px-4 py-2 text-sm text-white">
-          Add location
-        </button>
-      </form>
+      {isOwnerOrAdmin(membership.role) && (
+        <>
+          <h3 className="mt-8 text-sm font-medium">Add a location</h3>
+          <form action={createLocation} className="mt-3 flex flex-col gap-3">
+            <input type="hidden" name="org_id" value={membership.orgId} />
+            <label className="flex flex-col gap-1 text-sm">
+              Name
+              <input name="name" required className="rounded border px-3 py-2" />
+            </label>
+            <LocationFormFields
+              defaultAddress=""
+              defaultPostalCode={null}
+              defaultLatitude={null}
+              defaultLongitude={null}
+              defaultFormattedAddress={null}
+              defaultTimezone="America/Los_Angeles"
+            />
+            <button type="submit" className="mt-1 w-fit rounded bg-black px-4 py-2 text-sm text-white">
+              Add location
+            </button>
+          </form>
+        </>
+      )}
     </div>
   );
 }

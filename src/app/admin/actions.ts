@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { validateSlotOverride } from "@/lib/slotOverride";
+import { wouldRemoveLastOwner, type OrgRole } from "@/lib/orgRoles";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -286,4 +287,117 @@ export async function updateBookingConfig(formData: FormData) {
 
   revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
   redirect(`/admin/locations/${locationId}/courts/${courtId}?config_saved=${bookingId}`);
+}
+
+export async function addOrgMember(formData: FormData) {
+  const orgId = String(formData.get("org_id"));
+  const email = String(formData.get("email") || "").trim();
+  const roleInput = String(formData.get("role") || "");
+  const role = roleInput === "admin" || roleInput === "staff" ? roleInput : "staff";
+
+  const supabase = await createClient();
+
+  const { data: userId, error: lookupError } = await supabase.rpc("lookup_user_id_by_email", {
+    lookup_email: email,
+  });
+
+  if (lookupError) {
+    throw new Error(lookupError.message);
+  }
+
+  if (!userId) {
+    redirect(
+      `/admin/team?add_error=${encodeURIComponent("No account found for that email — they'll need to sign up first.")}`
+    );
+  }
+
+  const { error: insertError } = await supabase
+    .from("org_members")
+    .insert({ org_id: orgId, user_id: userId, role });
+
+  if (insertError) {
+    if (insertError.code === "23505") {
+      redirect(`/admin/team?add_error=${encodeURIComponent("This person already has access.")}`);
+    }
+    throw new Error(insertError.message);
+  }
+
+  revalidatePath("/admin/team");
+  redirect("/admin/team?member_added=1");
+}
+
+export async function updateOrgMemberRole(formData: FormData) {
+  const orgId = String(formData.get("org_id"));
+  const userId = String(formData.get("user_id"));
+  const roleInput = String(formData.get("role") || "");
+  const role = roleInput === "admin" || roleInput === "staff" ? roleInput : "staff";
+
+  const supabase = await createClient();
+
+  const { data: target } = await supabase
+    .from("org_members")
+    .select("role")
+    .eq("org_id", orgId)
+    .eq("user_id", userId)
+    .single();
+
+  const { count: ownerCount } = await supabase
+    .from("org_members")
+    .select("user_id", { count: "exact", head: true })
+    .eq("org_id", orgId)
+    .eq("role", "owner");
+
+  if (target && wouldRemoveLastOwner(ownerCount ?? 0, target.role as OrgRole)) {
+    redirect(`/admin/team?role_error=${encodeURIComponent("Can't change the club's last owner.")}`);
+  }
+
+  const { error } = await supabase
+    .from("org_members")
+    .update({ role })
+    .eq("org_id", orgId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/team");
+  redirect("/admin/team?role_updated=1");
+}
+
+export async function removeOrgMember(formData: FormData) {
+  const orgId = String(formData.get("org_id"));
+  const userId = String(formData.get("user_id"));
+
+  const supabase = await createClient();
+
+  const { data: target } = await supabase
+    .from("org_members")
+    .select("role")
+    .eq("org_id", orgId)
+    .eq("user_id", userId)
+    .single();
+
+  const { count: ownerCount } = await supabase
+    .from("org_members")
+    .select("user_id", { count: "exact", head: true })
+    .eq("org_id", orgId)
+    .eq("role", "owner");
+
+  if (target && wouldRemoveLastOwner(ownerCount ?? 0, target.role as OrgRole)) {
+    redirect(`/admin/team?role_error=${encodeURIComponent("Can't change the club's last owner.")}`);
+  }
+
+  const { error } = await supabase
+    .from("org_members")
+    .delete()
+    .eq("org_id", orgId)
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin/team");
+  redirect("/admin/team?member_removed=1");
 }
