@@ -25,8 +25,35 @@ export default function TimeBlockPicker({
     }
 
     const onlyBlockSelected = selection.start.start === selection.end.start;
-    if (onlyBlockSelected && slot.start === selection.start.start) {
+    const isStart = slot.start === selection.start.start;
+    const isEnd = slot.start === selection.end.start;
+
+    if (onlyBlockSelected && isStart) {
       setSelection(null); // clicking the only selected block deselects it
+      return;
+    }
+
+    // Clicking either edge of a multi-block selection shrinks it by one
+    // block from that side, rather than doing nothing (the old behavior --
+    // re-clicking an edge fell into the "extend" branch below, which just
+    // recomputed the same range). The selection is already known
+    // contiguous, so the adjacent slot in the full list is the right one.
+    if (isStart) {
+      const idx = slots.findIndex((s) => s.start === slot.start);
+      setSelection({ start: slots[idx + 1], end: selection.end });
+      return;
+    }
+    if (isEnd) {
+      const idx = slots.findIndex((s) => s.start === slot.start);
+      setSelection({ start: selection.start, end: slots[idx - 1] });
+      return;
+    }
+
+    // Clicking a block inside the selection (not an edge) can't shrink the
+    // range without breaking contiguity, so start a fresh single-block
+    // selection there instead.
+    if (slot.start > selection.start.start && slot.start < selection.end.start) {
+      setSelection({ start: slot, end: slot });
       return;
     }
 
