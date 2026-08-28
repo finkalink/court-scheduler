@@ -6,6 +6,20 @@ import { createClient } from "@/lib/supabase/server";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6];
 
+function geocodeFieldsFromFormData(formData: FormData) {
+  const postalCode = String(formData.get("postal_code") || "") || null;
+  const latitude = formData.get("latitude");
+  const longitude = formData.get("longitude");
+  const formattedAddress = String(formData.get("formatted_address") || "") || null;
+
+  return {
+    postal_code: postalCode,
+    latitude: latitude ? Number(latitude) || null : null,
+    longitude: longitude ? Number(longitude) || null : null,
+    formatted_address: formattedAddress,
+  };
+}
+
 export async function createLocation(formData: FormData) {
   const orgId = String(formData.get("org_id"));
   const name = String(formData.get("name"));
@@ -18,6 +32,7 @@ export async function createLocation(formData: FormData) {
     name,
     address,
     timezone,
+    ...geocodeFieldsFromFormData(formData),
   });
 
   if (error) {
@@ -37,7 +52,7 @@ export async function updateLocation(formData: FormData) {
   const supabase = await createClient();
   const { error } = await supabase
     .from("locations")
-    .update({ name, address, timezone })
+    .update({ name, address, timezone, ...geocodeFieldsFromFormData(formData) })
     .eq("id", locationId);
 
   if (error) {

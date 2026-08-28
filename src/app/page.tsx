@@ -1,12 +1,17 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { buildMapsUrl } from "@/lib/maps";
 
 export default async function Home() {
   const supabase = await createClient();
+  const userAgent = (await headers()).get("user-agent");
 
   const { data: locations } = await supabase
     .from("locations")
-    .select("id, name, address, organization:organizations(name), courts!inner(id, is_active)")
+    .select(
+      "id, name, address, latitude, longitude, organization:organizations(name), courts!inner(id, is_active)"
+    )
     .eq("courts.is_active", true);
 
   // Dedupe locations (the courts!inner join returns one row per matching court).
@@ -30,18 +35,28 @@ export default async function Home() {
           const org = Array.isArray(location.organization)
             ? location.organization[0]
             : location.organization;
+          const mapsUrl = buildMapsUrl({
+            latitude: location.latitude ?? null,
+            longitude: location.longitude ?? null,
+            address: location.address ?? null,
+            userAgent,
+          });
           return (
-            <li key={location.id}>
-              <Link
-                href={`/locations/${location.id}`}
-                className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50"
-              >
+            <li key={location.id} className="rounded border border-gray-300 px-4 py-3 hover:bg-gray-50">
+              <Link href={`/locations/${location.id}`} className="block">
                 <p className="font-medium">{location.name}</p>
-                <p className="text-sm text-gray-600">
-                  {org?.name}
-                  {location.address ? ` · ${location.address}` : ""}
-                </p>
+                <p className="text-sm text-gray-600">{org?.name}</p>
               </Link>
+              {location.address && (
+                <a
+                  href={mapsUrl ?? "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 block text-sm text-gray-600 underline decoration-dotted"
+                >
+                  {location.address}
+                </a>
+              )}
             </li>
           );
         })}

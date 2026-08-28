@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createLocation } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
+import AddressLookup from "@/components/AddressLookup";
 
 const TIMEZONES = Intl.supportedValuesOf("timeZone").sort();
 
@@ -71,10 +72,13 @@ export default async function AdminPage({
           Name
           <input name="name" required className="rounded border px-3 py-2" />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Address
-          <input name="address" className="rounded border px-3 py-2" />
-        </label>
+        <AddressLookup
+          defaultAddress=""
+          defaultPostalCode={null}
+          defaultLatitude={null}
+          defaultLongitude={null}
+          defaultFormattedAddress={null}
+        />
         <label className="flex flex-col gap-1 text-sm">
           Timezone
           <select

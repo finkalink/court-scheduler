@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
 import { computeOpenSlots, type AvailabilityRule, type SlotOverride } from "@/lib/availability";
 import { formatCalendarDate } from "@/lib/dateFormat";
+import { buildMapsUrl } from "@/lib/maps";
 import TimeBlockPicker from "./TimeBlockPicker";
 
 export default async function CourtPage({
@@ -17,10 +19,13 @@ export default async function CourtPage({
   const { date: dateParam, error, booked } = await searchParams;
 
   const supabase = await createClient();
+  const userAgent = (await headers()).get("user-agent");
 
   const { data: court } = await supabase
     .from("courts")
-    .select("id, name, notes, slot_size_minutes, location:locations(id, name, timezone)")
+    .select(
+      "id, name, notes, slot_size_minutes, location:locations(id, name, timezone, address, latitude, longitude)"
+    )
     .eq("id", courtId)
     .eq("location_id", locationId)
     .single();
@@ -31,6 +36,12 @@ export default async function CourtPage({
 
   const location = Array.isArray(court.location) ? court.location[0] : court.location;
   const timezone = location?.timezone ?? "UTC";
+  const mapsUrl = buildMapsUrl({
+    latitude: location?.latitude ?? null,
+    longitude: location?.longitude ?? null,
+    address: location?.address ?? null,
+    userAgent,
+  });
   const date = dateParam ?? formatInTimeZone(new Date(), timezone, "yyyy-MM-dd");
 
   const [{ data: rules }, { data: overrides }, { data: booked_slots }] = await Promise.all([
@@ -78,6 +89,17 @@ export default async function CourtPage({
       <h1 className="mt-4 text-xl font-semibold sm:text-2xl">
         {court.name} — {location?.name}
       </h1>
+
+      {location?.address && (
+        <a
+          href={mapsUrl ?? "#"}
+          target="_blank"
+          rel="noreferrer"
+          className="text-sm text-gray-600 underline decoration-dotted"
+        >
+          {location.address}
+        </a>
+      )}
 
       {court.notes && <p className="mt-2 text-sm text-gray-600">{court.notes}</p>}
 

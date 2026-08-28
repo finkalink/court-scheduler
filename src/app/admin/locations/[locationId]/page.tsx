@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createCourt, updateCourtActive, updateCourt, updateLocation } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
+import AddressLookup from "@/components/AddressLookup";
 
 const TIMEZONES = Intl.supportedValuesOf("timeZone").sort();
 
@@ -24,7 +25,7 @@ export default async function AdminLocationPage({
 
   const { data: location } = await supabase
     .from("locations")
-    .select("id, name, address, timezone")
+    .select("id, name, address, timezone, postal_code, latitude, longitude, formatted_address")
     .eq("id", locationId)
     .single();
 
@@ -59,14 +60,13 @@ export default async function AdminLocationPage({
               className="rounded border px-3 py-2"
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm">
-            Address
-            <input
-              name="address"
-              defaultValue={location.address ?? ""}
-              className="rounded border px-3 py-2"
-            />
-          </label>
+          <AddressLookup
+            defaultAddress={location.address ?? ""}
+            defaultPostalCode={location.postal_code ?? null}
+            defaultLatitude={location.latitude ?? null}
+            defaultLongitude={location.longitude ?? null}
+            defaultFormattedAddress={location.formatted_address ?? null}
+          />
           <label className="flex flex-col gap-1 text-sm">
             Timezone
             <select
