@@ -23,12 +23,19 @@ export interface Slot {
   end: string; // ISO instant (UTC)
 }
 
+export interface BlockedSlot {
+  day_of_week: number | null; // set for a recurring block; null for a date-specific one
+  date: string | null; // "YYYY-MM-DD"; set for a date-specific block; null for recurring
+  start_time: string; // "HH:MM:SS"
+}
+
 interface ComputeOpenSlotsParams {
   date: string; // "YYYY-MM-DD", the calendar date in the location's timezone
   timezone: string; // IANA zone, e.g. "America/Los_Angeles"
   rules: AvailabilityRule[];
   overrides: SlotOverride[];
   bookedRanges: BookedRange[];
+  blockedSlots?: BlockedSlot[]; // per-slot blocks, recurring or date-specific
   durationMinutes?: number; // length of a single booking
   stepMinutes?: number; // granularity of offered start times (rolling window)
 }
@@ -102,6 +109,7 @@ export function computeOpenSlots({
   rules,
   overrides,
   bookedRanges,
+  blockedSlots = [],
   durationMinutes = 60,
   stepMinutes = 15,
 }: ComputeOpenSlotsParams): Slot[] {
@@ -116,18 +124,29 @@ export function computeOpenSlots({
     end: new Date(b.end_time).getTime(),
   }));
 
+  const dow = dayOfWeekFor(date);
+  const blockedStarts = new Set(
+    blockedSlots
+      .filter((b) => b.day_of_week === dow || b.date === date)
+      .map((b) => b.start_time.slice(0, 5))
+  );
+  const openMinutes = parseTimeToMinutes(hours.openTime);
+
   const slots: Slot[] = [];
   const stepMs = stepMinutes * 60_000;
   const durationMs = durationMinutes * 60_000;
 
+  let i = 0;
   for (
     let start = openInstant.getTime();
     start + durationMs <= closeInstant.getTime();
-    start += stepMs
+    start += stepMs, i++
   ) {
     const end = start + durationMs;
     const overlapsBooking = bookedMs.some((b) => start < b.end && end > b.start);
-    if (!overlapsBooking) {
+    const wallStart = formatMinutesAsTime(openMinutes + i * stepMinutes).slice(0, 5);
+    const isBlocked = blockedStarts.has(wallStart);
+    if (!overlapsBooking && !isBlocked) {
       slots.push({ start: new Date(start).toISOString(), end: new Date(end).toISOString() });
     }
   }

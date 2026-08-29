@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   resolveDayHours,
   generateSlotStarts,
+  computeOpenSlots,
   type AvailabilityRule,
   type SlotOverride,
+  type BlockedSlot,
 } from "@/lib/availability";
 
 describe("resolveDayHours", () => {
@@ -75,5 +77,112 @@ describe("generateSlotStarts", () => {
 
   it("accepts HH:MM inputs without seconds", () => {
     expect(generateSlotStarts("09:00", "10:00", 30)).toEqual(["09:00:00", "09:30:00"]);
+  });
+});
+
+describe("computeOpenSlots blocking", () => {
+  const rules: AvailabilityRule[] = [
+    { day_of_week: 1, open_time: "09:00:00", close_time: "11:00:00" }, // Monday
+    { day_of_week: 2, open_time: "09:00:00", close_time: "11:00:00" }, // Tuesday
+  ];
+
+  it("excludes a slot blocked recurringly on that day of week", () => {
+    // 2026-08-31 is a Monday
+    const blockedSlots: BlockedSlot[] = [{ day_of_week: 1, date: null, start_time: "10:00:00" }];
+    const slots = computeOpenSlots({
+      date: "2026-08-31",
+      timezone: "UTC",
+      rules,
+      overrides: [],
+      bookedRanges: [],
+      blockedSlots,
+      durationMinutes: 60,
+      stepMinutes: 60,
+    });
+    expect(slots.map((s) => s.start)).toEqual(["2026-08-31T09:00:00.000Z"]);
+  });
+
+  it("does not exclude the same time on a different day of week", () => {
+    // 2026-09-01 is a Tuesday
+    const blockedSlots: BlockedSlot[] = [{ day_of_week: 1, date: null, start_time: "10:00:00" }];
+    const slots = computeOpenSlots({
+      date: "2026-09-01",
+      timezone: "UTC",
+      rules,
+      overrides: [],
+      bookedRanges: [],
+      blockedSlots,
+      durationMinutes: 60,
+      stepMinutes: 60,
+    });
+    expect(slots.map((s) => s.start)).toEqual([
+      "2026-09-01T09:00:00.000Z",
+      "2026-09-01T10:00:00.000Z",
+    ]);
+  });
+
+  it("excludes a slot blocked for one specific date only", () => {
+    const blockedSlots: BlockedSlot[] = [{ day_of_week: null, date: "2026-08-31", start_time: "09:00:00" }];
+    const slots = computeOpenSlots({
+      date: "2026-08-31",
+      timezone: "UTC",
+      rules,
+      overrides: [],
+      bookedRanges: [],
+      blockedSlots,
+      durationMinutes: 60,
+      stepMinutes: 60,
+    });
+    expect(slots.map((s) => s.start)).toEqual(["2026-08-31T10:00:00.000Z"]);
+  });
+
+  it("does not exclude the same time on a different date", () => {
+    const blockedSlots: BlockedSlot[] = [{ day_of_week: null, date: "2026-08-31", start_time: "09:00:00" }];
+    // 2026-09-07 is also a Monday, but a different specific date
+    const slots = computeOpenSlots({
+      date: "2026-09-07",
+      timezone: "UTC",
+      rules,
+      overrides: [],
+      bookedRanges: [],
+      blockedSlots,
+      durationMinutes: 60,
+      stepMinutes: 60,
+    });
+    expect(slots.map((s) => s.start)).toEqual([
+      "2026-09-07T09:00:00.000Z",
+      "2026-09-07T10:00:00.000Z",
+    ]);
+  });
+
+  it("combines correctly with an existing booked range", () => {
+    const blockedSlots: BlockedSlot[] = [{ day_of_week: 1, date: null, start_time: "10:00:00" }];
+    const slots = computeOpenSlots({
+      date: "2026-08-31",
+      timezone: "UTC",
+      rules,
+      overrides: [],
+      bookedRanges: [{ start_time: "2026-08-31T09:00:00.000Z", end_time: "2026-08-31T10:00:00.000Z" }],
+      blockedSlots,
+      durationMinutes: 60,
+      stepMinutes: 60,
+    });
+    expect(slots).toEqual([]);
+  });
+
+  it("defaults to no blocking when blockedSlots is omitted", () => {
+    const slots = computeOpenSlots({
+      date: "2026-08-31",
+      timezone: "UTC",
+      rules,
+      overrides: [],
+      bookedRanges: [],
+      durationMinutes: 60,
+      stepMinutes: 60,
+    });
+    expect(slots.map((s) => s.start)).toEqual([
+      "2026-08-31T09:00:00.000Z",
+      "2026-08-31T10:00:00.000Z",
+    ]);
   });
 });
