@@ -7,10 +7,13 @@ import {
   updateBookingConfig,
   saveSlotOverride,
   deleteSlotOverride,
+  toggleBlockedSlot,
 } from "@/app/admin/actions";
 import { cancelBooking } from "@/app/actions/bookings";
 import { NET_HEIGHT_OPTIONS, COURT_LINES_OPTIONS } from "@/lib/courtConfig";
 import { formatBookingDate, formatCalendarDate, formatTimeOfDay } from "@/lib/dateFormat";
+import { resolveDayHours, type AvailabilityRule, type SlotOverride } from "@/lib/availability";
+import { buildSlotGrid } from "@/lib/blockedSlots";
 import SuccessBanner from "@/components/SuccessBanner";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -27,16 +30,28 @@ export default async function AdminCourtAvailabilityPage({
     override_saved?: string;
     override_deleted?: string;
     override_error?: string;
+    block_mode?: string;
+    block_day?: string;
+    block_date?: string;
   }>;
 }) {
   const { locationId, courtId } = await params;
-  const { saved, config_saved, cancelled, override_saved, override_deleted, override_error } =
-    await searchParams;
+  const {
+    saved,
+    config_saved,
+    cancelled,
+    override_saved,
+    override_deleted,
+    override_error,
+    block_mode: blockModeParam,
+    block_day: blockDayParam,
+    block_date: blockDateParam,
+  } = await searchParams;
   const supabase = await createClient();
 
   const { data: court } = await supabase
     .from("courts")
-    .select("id, name, location:locations(timezone)")
+    .select("id, name, slot_size_minutes, location:locations(timezone)")
     .eq("id", courtId)
     .eq("location_id", locationId)
     .single();
@@ -61,6 +76,47 @@ export default async function AdminCourtAvailabilityPage({
     .eq("court_id", court.id)
     .gte("date", formatInTimeZone(new Date(), timezone, "yyyy-MM-dd"))
     .order("date");
+
+  const blockMode = blockModeParam === "date" ? "date" : "recurring";
+  const todayDateStr = formatInTimeZone(new Date(), timezone, "yyyy-MM-dd");
+  const todayDayOfWeek = new Date(`${todayDateStr}T12:00:00Z`).getUTCDay();
+  const blockDay = blockDayParam ? Number(blockDayParam) : todayDayOfWeek;
+  const blockDate = blockDateParam ?? todayDateStr;
+  const slotSizeMinutes = court.slot_size_minutes ?? 60;
+
+  let blockWindow: { openTime: string; closeTime: string } | null = null;
+  if (blockMode === "recurring") {
+    const rule = rulesByDay.get(blockDay);
+    blockWindow = rule ? { openTime: rule.open_time, closeTime: rule.close_time } : null;
+  } else {
+    blockWindow = resolveDayHours(
+      blockDate,
+      (rules ?? []) as AvailabilityRule[],
+      (overrides ?? []) as SlotOverride[]
+    );
+  }
+
+  const { data: blockedSlotRows } =
+    blockMode === "recurring"
+      ? await supabase
+          .from("blocked_slots")
+          .select("start_time")
+          .eq("court_id", court.id)
+          .eq("day_of_week", blockDay)
+      : await supabase
+          .from("blocked_slots")
+          .select("start_time")
+          .eq("court_id", court.id)
+          .eq("date", blockDate);
+
+  const slotGrid = blockWindow
+    ? buildSlotGrid(
+        blockWindow.openTime,
+        blockWindow.closeTime,
+        slotSizeMinutes,
+        (blockedSlotRows ?? []).map((r) => r.start_time)
+      )
+    : [];
 
   const { data: upcomingBookings } = await supabase
     .from("bookings")
@@ -173,6 +229,92 @@ export default async function AdminCourtAvailabilityPage({
           Add Override
         </button>
       </form>
+
+      <h2 className="mt-10 text-lg font-medium">Blocked Slots</h2>
+      <p className="mt-1 text-sm text-gray-600">
+        Block off specific times within the hours above — a recurring break, or a one-off
+        private event.
+      </p>
+
+      <div className="mt-3 flex gap-4 text-sm">
+        <Link
+          href={`/admin/locations/${locationId}/courts/${court.id}?block_mode=recurring&block_day=${blockDay}`}
+          className={blockMode === "recurring" ? "font-medium underline" : "text-gray-600 underline"}
+        >
+          Recurring
+        </Link>
+        <Link
+          href={`/admin/locations/${locationId}/courts/${court.id}?block_mode=date&block_date=${blockDate}`}
+          className={blockMode === "date" ? "font-medium underline" : "text-gray-600 underline"}
+        >
+          Specific date
+        </Link>
+      </div>
+
+      {blockMode === "recurring" ? (
+        <div className="mt-3 flex flex-wrap gap-2 text-sm">
+          {DAY_NAMES.map((name, day) => (
+            <Link
+              key={day}
+              href={`/admin/locations/${locationId}/courts/${court.id}?block_mode=recurring&block_day=${day}`}
+              className={`rounded border px-2 py-1 ${
+                day === blockDay ? "border-black font-medium" : "border-gray-300 text-gray-600"
+              }`}
+            >
+              {name.slice(0, 3)}
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <form method="get" className="mt-3 flex items-end gap-2">
+          <input type="hidden" name="block_mode" value="date" />
+          <label className="flex flex-col gap-1 text-xs text-gray-600">
+            Date
+            <input
+              type="date"
+              name="block_date"
+              defaultValue={blockDate}
+              className="rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <button type="submit" className="rounded border border-gray-400 px-3 py-2 text-sm">
+            View
+          </button>
+        </form>
+      )}
+
+      {blockWindow ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {slotGrid.map((slot) => (
+            <form key={slot.startTime} action={toggleBlockedSlot}>
+              <input type="hidden" name="court_id" value={court.id} />
+              <input type="hidden" name="location_id" value={locationId} />
+              <input type="hidden" name="mode" value={blockMode} />
+              <input type="hidden" name="start_time" value={slot.startTime} />
+              <input type="hidden" name="currently_blocked" value={String(slot.blocked)} />
+              {blockMode === "recurring" ? (
+                <input type="hidden" name="day_of_week" value={blockDay} />
+              ) : (
+                <input type="hidden" name="date" value={blockDate} />
+              )}
+              <button
+                type="submit"
+                className={`rounded border px-3 py-2 text-sm ${
+                  slot.blocked ? "border-red-400 bg-red-50 text-red-800" : "border-gray-300"
+                }`}
+              >
+                {formatTimeOfDay(slot.startTime)}
+              </button>
+            </form>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-gray-600">
+          {blockMode === "recurring"
+            ? "This day is closed in the weekly schedule."
+            : "This date is closed."}
+        </p>
+      )}
 
       <h2 className="mt-10 text-lg font-medium">Upcoming Bookings</h2>
 
