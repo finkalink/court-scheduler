@@ -175,7 +175,9 @@ export default async function AdminCourtAvailabilityPage({
       {override_saved && <SuccessBanner>Override saved.</SuccessBanner>}
       {override_deleted && <SuccessBanner>Override removed.</SuccessBanner>}
       {override_error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800">{override_error}</p>
+        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {override_error}
+        </p>
       )}
 
       {(!overrides || overrides.length === 0) && (
@@ -300,7 +302,9 @@ export default async function AdminCourtAvailabilityPage({
               <button
                 type="submit"
                 className={`rounded border px-3 py-2 text-sm ${
-                  slot.blocked ? "border-red-400 bg-red-50 text-red-800" : "border-gray-300"
+                  slot.blocked
+                    ? "border-red-400 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300"
+                    : "border-gray-300"
                 }`}
               >
                 {formatTimeOfDay(slot.startTime)}

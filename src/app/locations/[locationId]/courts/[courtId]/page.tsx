@@ -141,7 +141,11 @@ export default async function CourtPage({
 
       {court.notes && <p className="mt-2 text-sm text-gray-600">{court.notes}</p>}
 
-      {error && <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {error && (
+        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {error}
+        </p>
+      )}
 
       <div className="mt-6 flex items-center justify-between">
         <Link href={`/locations/${locationId}/courts/${courtId}?date=${prevDate}`} className="text-sm underline">

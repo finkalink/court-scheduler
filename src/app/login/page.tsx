@@ -11,8 +11,16 @@ export default async function LoginPage({
     <div className="mx-auto mt-16 max-w-sm px-4 sm:px-0">
       <h1 className="text-2xl font-semibold">Sign In</h1>
 
-      {message && <p className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800">{message}</p>}
-      {error && <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {message && (
+        <p className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+          {message}
+        </p>
+      )}
+      {error && (
+        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {error}
+        </p>
+      )}
 
       <form action={signIn} className="mt-6 flex flex-col gap-4">
         <input type="hidden" name="next" value={next ?? ""} />

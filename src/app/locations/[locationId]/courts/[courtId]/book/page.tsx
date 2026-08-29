@@ -56,7 +56,7 @@ export default async function BookCourtPage({
       </p>
 
       {!user && (
-        <p className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800">
+        <p className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-300">
           You&apos;ll be asked to sign in when you confirm.
         </p>
       )}

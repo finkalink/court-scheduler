@@ -57,8 +57,16 @@ export default async function TeamPage({
       {member_added && <SuccessBanner>Admin added.</SuccessBanner>}
       {role_updated && <SuccessBanner>Role updated.</SuccessBanner>}
       {member_removed && <SuccessBanner>Access removed.</SuccessBanner>}
-      {add_error && <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800">{add_error}</p>}
-      {role_error && <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800">{role_error}</p>}
+      {add_error && (
+        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {add_error}
+        </p>
+      )}
+      {role_error && (
+        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {role_error}
+        </p>
+      )}
 
       <ul className="mt-4 flex flex-col gap-3">
         {(memberRows ?? []).map((member) => (

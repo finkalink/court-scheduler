@@ -11,7 +11,11 @@ export default async function SignupPage({
     <div className="mx-auto mt-16 max-w-sm px-4 sm:px-0">
       <h1 className="text-2xl font-semibold">Create an Account</h1>
 
-      {error && <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {error && (
+        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {error}
+        </p>
+      )}
 
       <form action={signUp} className="mt-6 flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
