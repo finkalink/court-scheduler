@@ -428,7 +428,7 @@ export async function toggleBlockedSlot(formData: FormData) {
       const { error } = await supabase
         .from("blocked_slots")
         .insert({ court_id: courtId, day_of_week: dayOfWeek, start_time: startTime });
-      if (error) throw new Error(error.message);
+      if (error && error.code !== "23505") throw new Error(error.message);
     }
 
     revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
@@ -451,7 +451,7 @@ export async function toggleBlockedSlot(formData: FormData) {
       const { error } = await supabase
         .from("blocked_slots")
         .insert({ court_id: courtId, date, start_time: startTime });
-      if (error) throw new Error(error.message);
+      if (error && error.code !== "23505") throw new Error(error.message);
     }
 
     revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);

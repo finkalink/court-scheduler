@@ -51,7 +51,13 @@ export default async function CourtPage({
     userAgent,
   });
   const todayInTz = formatInTimeZone(new Date(), timezone, "yyyy-MM-dd");
-  const date = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayInTz;
+  const isValidCalendarDate = (candidate: string): boolean => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(candidate)) return false;
+    const parsed = new Date(`${candidate}T12:00:00Z`);
+    if (Number.isNaN(parsed.getTime())) return false;
+    return formatInTimeZone(parsed, "UTC", "yyyy-MM-dd") === candidate;
+  };
+  const date = dateParam && isValidCalendarDate(dateParam) ? dateParam : todayInTz;
 
   const dow = dayOfWeekFor(date);
 
