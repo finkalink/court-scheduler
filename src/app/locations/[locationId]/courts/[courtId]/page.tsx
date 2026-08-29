@@ -50,7 +50,8 @@ export default async function CourtPage({
     address: location?.address ?? null,
     userAgent,
   });
-  const date = dateParam ?? formatInTimeZone(new Date(), timezone, "yyyy-MM-dd");
+  const todayInTz = formatInTimeZone(new Date(), timezone, "yyyy-MM-dd");
+  const date = dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : todayInTz;
 
   const dow = dayOfWeekFor(date);
 
