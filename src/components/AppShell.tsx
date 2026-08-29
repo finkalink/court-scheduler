@@ -17,7 +17,11 @@ export default function AppShell({
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
-  const findCourtActive = pathname === "/" || pathname.startsWith("/locations");
+  const findCourtActive =
+    pathname === "/" ||
+    pathname.startsWith("/locations") ||
+    pathname.startsWith("/cities") ||
+    pathname.startsWith("/clubs");
   const bookingsActive = pathname.startsWith("/bookings");
   const adminActive = pathname.startsWith("/admin");
 
