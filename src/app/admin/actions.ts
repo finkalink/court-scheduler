@@ -403,3 +403,59 @@ export async function removeOrgMember(formData: FormData) {
   revalidatePath("/admin/team");
   redirect("/admin/team?member_removed=1");
 }
+
+export async function toggleBlockedSlot(formData: FormData) {
+  const courtId = String(formData.get("court_id"));
+  const locationId = String(formData.get("location_id"));
+  const mode = String(formData.get("mode"));
+  const startTime = String(formData.get("start_time"));
+  const currentlyBlocked = String(formData.get("currently_blocked")) === "true";
+
+  const supabase = await createClient();
+
+  if (mode === "recurring") {
+    const dayOfWeek = Number(formData.get("day_of_week"));
+
+    if (currentlyBlocked) {
+      const { error } = await supabase
+        .from("blocked_slots")
+        .delete()
+        .eq("court_id", courtId)
+        .eq("day_of_week", dayOfWeek)
+        .eq("start_time", startTime);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabase
+        .from("blocked_slots")
+        .insert({ court_id: courtId, day_of_week: dayOfWeek, start_time: startTime });
+      if (error) throw new Error(error.message);
+    }
+
+    revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
+    revalidatePath(`/locations/${locationId}/courts/${courtId}`);
+    redirect(
+      `/admin/locations/${locationId}/courts/${courtId}?block_mode=recurring&block_day=${dayOfWeek}`
+    );
+  } else {
+    const date = String(formData.get("date"));
+
+    if (currentlyBlocked) {
+      const { error } = await supabase
+        .from("blocked_slots")
+        .delete()
+        .eq("court_id", courtId)
+        .eq("date", date)
+        .eq("start_time", startTime);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await supabase
+        .from("blocked_slots")
+        .insert({ court_id: courtId, date, start_time: startTime });
+      if (error) throw new Error(error.message);
+    }
+
+    revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
+    revalidatePath(`/locations/${locationId}/courts/${courtId}`);
+    redirect(`/admin/locations/${locationId}/courts/${courtId}?block_mode=date&block_date=${date}`);
+  }
+}
