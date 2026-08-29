@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { resolveDayHours, type AvailabilityRule, type SlotOverride } from "@/lib/availability";
+import {
+  resolveDayHours,
+  generateSlotStarts,
+  type AvailabilityRule,
+  type SlotOverride,
+} from "@/lib/availability";
 
 describe("resolveDayHours", () => {
   const rules: AvailabilityRule[] = [
@@ -44,5 +49,31 @@ describe("resolveDayHours", () => {
       openTime: "09:00:00",
       closeTime: "21:00:00",
     });
+  });
+});
+
+describe("generateSlotStarts", () => {
+  it("generates evenly-divided slots across the window", () => {
+    expect(generateSlotStarts("09:00:00", "11:00:00", 60)).toEqual(["09:00:00", "10:00:00"]);
+  });
+
+  it("stops before a slot would run past the close time", () => {
+    expect(generateSlotStarts("09:00:00", "10:30:00", 60)).toEqual(["09:00:00"]);
+  });
+
+  it("handles a step that leaves a remainder at the end of the window", () => {
+    expect(generateSlotStarts("09:00:00", "10:15:00", 30)).toEqual(["09:00:00", "09:30:00"]);
+  });
+
+  it("returns an empty array when the window is shorter than one step", () => {
+    expect(generateSlotStarts("09:00:00", "09:20:00", 30)).toEqual([]);
+  });
+
+  it("returns an empty array when open equals close", () => {
+    expect(generateSlotStarts("09:00:00", "09:00:00", 30)).toEqual([]);
+  });
+
+  it("accepts HH:MM inputs without seconds", () => {
+    expect(generateSlotStarts("09:00", "10:00", 30)).toEqual(["09:00:00", "09:30:00"]);
   });
 });

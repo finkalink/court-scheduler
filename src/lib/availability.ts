@@ -33,10 +33,38 @@ interface ComputeOpenSlotsParams {
   stepMinutes?: number; // granularity of offered start times (rolling window)
 }
 
-function dayOfWeekFor(date: string): number {
+export function dayOfWeekFor(date: string): number {
   // Noon UTC avoids any date-boundary ambiguity; the calendar date itself
   // (not an instant) is what determines day-of-week, independent of timezone.
   return new Date(`${date}T12:00:00Z`).getUTCDay();
+}
+
+function parseTimeToMinutes(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function formatMinutesAsTime(totalMinutes: number): string {
+  const hh = String(Math.floor(totalMinutes / 60) % 24).padStart(2, "0");
+  const mm = String(totalMinutes % 60).padStart(2, "0");
+  return `${hh}:${mm}:00`;
+}
+
+// Candidate start times ("HH:MM:SS") within [openTime, closeTime) at the
+// given step -- used both by computeOpenSlots below and by the admin
+// blocked-slots grid builder (src/lib/blockedSlots.ts).
+export function generateSlotStarts(
+  openTime: string,
+  closeTime: string,
+  stepMinutes: number
+): string[] {
+  const openMin = parseTimeToMinutes(openTime);
+  const closeMin = parseTimeToMinutes(closeTime);
+  const starts: string[] = [];
+  for (let m = openMin; m + stepMinutes <= closeMin; m += stepMinutes) {
+    starts.push(formatMinutesAsTime(m));
+  }
+  return starts;
 }
 
 export interface DayHours {
