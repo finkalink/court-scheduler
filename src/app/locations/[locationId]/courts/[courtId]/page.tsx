@@ -6,8 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   computeOpenSlots,
   resolveDayHours,
+  dayOfWeekFor,
   type AvailabilityRule,
   type SlotOverride,
+  type BlockedSlot,
 } from "@/lib/availability";
 import { formatCalendarDate, formatTimeOfDay } from "@/lib/dateFormat";
 import { buildMapsUrl } from "@/lib/maps";
@@ -50,18 +52,26 @@ export default async function CourtPage({
   });
   const date = dateParam ?? formatInTimeZone(new Date(), timezone, "yyyy-MM-dd");
 
-  const [{ data: rules }, { data: overrides }, { data: booked_slots }] = await Promise.all([
-    supabase
-      .from("availability_rules")
-      .select("day_of_week, open_time, close_time")
-      .eq("court_id", court.id),
-    supabase
-      .from("slot_overrides")
-      .select("date, is_closed, custom_open, custom_close")
-      .eq("court_id", court.id)
-      .eq("date", date),
-    supabase.from("booked_slots").select("start_time, end_time").eq("court_id", court.id),
-  ]);
+  const dow = dayOfWeekFor(date);
+
+  const [{ data: rules }, { data: overrides }, { data: booked_slots }, { data: blocked_slots }] =
+    await Promise.all([
+      supabase
+        .from("availability_rules")
+        .select("day_of_week, open_time, close_time")
+        .eq("court_id", court.id),
+      supabase
+        .from("slot_overrides")
+        .select("date, is_closed, custom_open, custom_close")
+        .eq("court_id", court.id)
+        .eq("date", date),
+      supabase.from("booked_slots").select("start_time, end_time").eq("court_id", court.id),
+      supabase
+        .from("blocked_slots")
+        .select("day_of_week, date, start_time")
+        .eq("court_id", court.id)
+        .or(`day_of_week.eq.${dow},date.eq.${date}`),
+    ]);
 
   const slotSizeMinutes = court.slot_size_minutes ?? 60;
 
@@ -71,6 +81,7 @@ export default async function CourtPage({
     rules: (rules ?? []) as AvailabilityRule[],
     overrides: (overrides ?? []) as SlotOverride[],
     bookedRanges: booked_slots ?? [],
+    blockedSlots: (blocked_slots ?? []) as BlockedSlot[],
     durationMinutes: slotSizeMinutes,
     stepMinutes: slotSizeMinutes,
   });
