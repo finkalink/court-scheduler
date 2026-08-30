@@ -9,7 +9,7 @@ export default async function SignupPage({
 
   return (
     <div className="mx-auto mt-16 max-w-sm px-4 sm:px-0">
-      <h1 className="text-2xl font-semibold">Create an Account</h1>
+      <h1 className="text-xl font-semibold sm:text-2xl">Create an Account</h1>
 
       {error && (
         <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">

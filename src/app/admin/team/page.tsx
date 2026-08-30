@@ -52,7 +52,7 @@ export default async function TeamPage({
         &larr; {membership.orgName}
       </Link>
 
-      <h2 className="mt-4 text-lg font-medium">Team — {membership.orgName}</h2>
+      <h1 className="mt-4 text-lg font-medium">Team — {membership.orgName}</h1>
 
       {member_added && <SuccessBanner>Admin added.</SuccessBanner>}
       {role_updated && <SuccessBanner>Role updated.</SuccessBanner>}

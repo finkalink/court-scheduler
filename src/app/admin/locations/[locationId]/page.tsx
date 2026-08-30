@@ -52,7 +52,7 @@ export default async function AdminLocationPage({
         &larr; Locations
       </Link>
 
-      <h2 className="mt-4 text-lg font-medium">{location.name} — Courts</h2>
+      <h1 className="mt-4 text-lg font-medium">{location.name} — Courts</h1>
 
       <Link href={`/admin/locations/${locationId}/hours`} className="mt-2 block w-fit text-sm underline">
         General Hours &rarr;

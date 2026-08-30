@@ -132,7 +132,7 @@ export default async function AdminCourtAvailabilityPage({
         &larr; Courts
       </Link>
 
-      <h2 className="mt-4 text-lg font-medium">Weekly Availability — {court.name}</h2>
+      <h1 className="mt-4 text-lg font-medium">Weekly Availability — {court.name}</h1>
       <p className="mt-1 text-sm text-gray-600">
         Leave both times blank for a day the court is closed. Saving replaces the full week.
       </p>
@@ -260,7 +260,9 @@ export default async function AdminCourtAvailabilityPage({
               key={day}
               href={`/admin/locations/${locationId}/courts/${court.id}?block_mode=recurring&block_day=${day}`}
               className={`rounded border px-2 py-1 ${
-                day === blockDay ? "border-black font-medium" : "border-gray-300 text-gray-600"
+                day === blockDay
+                  ? "border-black font-medium dark:border-white"
+                  : "border-gray-300 text-gray-600"
               }`}
             >
               {name.slice(0, 3)}

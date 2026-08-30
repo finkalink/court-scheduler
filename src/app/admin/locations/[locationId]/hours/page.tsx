@@ -28,7 +28,7 @@ export default async function LocationHoursPage({
         &larr; {location.name}
       </Link>
 
-      <h2 className="mt-4 text-lg font-medium">General Hours — {location.name}</h2>
+      <h1 className="mt-4 text-lg font-medium">General Hours — {location.name}</h1>
       <p className="mt-1 text-sm text-gray-600">
         Set the hours you want to use as this location&apos;s default, then apply them to every
         court. You&apos;ll see which courts are affected before anything is saved. Leave both

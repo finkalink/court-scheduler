@@ -31,7 +31,7 @@ export default async function AdminPage({
 
   return (
     <div>
-      <h2 className="text-lg font-medium">{membership.orgName} — Locations</h2>
+      <h1 className="text-lg font-medium">{membership.orgName} — Locations</h1>
 
       {isOwnerOrAdmin(membership.role) && (
         <Link href="/admin/team" className="mt-2 block w-fit text-sm underline">

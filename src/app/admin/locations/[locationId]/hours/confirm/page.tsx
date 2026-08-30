@@ -55,7 +55,7 @@ export default async function LocationHoursConfirmPage({
         &larr; Edit hours
       </Link>
 
-      <h2 className="mt-4 text-lg font-medium">Confirm — {location.name}</h2>
+      <h1 className="mt-4 text-lg font-medium">Confirm — {location.name}</h1>
 
       <ul className="mt-4 flex flex-col gap-1 text-sm">
         {hours.map((h) => (
