@@ -22,7 +22,8 @@ export default function AppShell({
     pathname.startsWith("/locations") ||
     pathname.startsWith("/cities") ||
     pathname.startsWith("/clubs");
-  const eventsActive = pathname.startsWith("/events");
+  const myEventsActive = pathname.startsWith("/events/registrations");
+  const eventsActive = pathname.startsWith("/events") && !myEventsActive;
   const bookingsActive = pathname.startsWith("/bookings");
   const adminActive = pathname.startsWith("/admin");
 
@@ -88,6 +89,15 @@ export default function AppShell({
               onClick={() => setOpen(false)}
             >
               My Bookings
+            </Link>
+          )}
+          {userEmail && (
+            <Link
+              href="/events/registrations"
+              className={linkClass(myEventsActive)}
+              onClick={() => setOpen(false)}
+            >
+              My Events
             </Link>
           )}
           {isOrgMember && (
