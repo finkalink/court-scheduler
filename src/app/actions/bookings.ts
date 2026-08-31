@@ -61,10 +61,28 @@ export async function cancelBooking(formData: FormData) {
   const redirectTo = String(formData.get("redirect_to") || "/bookings");
 
   const supabase = await createClient();
+
+  // Event-held court time is a bookings row too (source = 'event'), but it
+  // isn't a player reservation -- cancelling it here would just silently
+  // free up court time an event is using. Reject it explicitly rather than
+  // let the update below no-op without explanation.
+  const { data: existing } = await supabase
+    .from("bookings")
+    .select("source")
+    .eq("id", bookingId)
+    .single();
+
+  if (existing?.source === "event") {
+    redirect(
+      `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}error=${encodeURIComponent("This time is held by an event and can't be cancelled here.")}`
+    );
+  }
+
   const { error } = await supabase
     .from("bookings")
     .update({ status: "cancelled" })
-    .eq("id", bookingId);
+    .eq("id", bookingId)
+    .eq("source", "player");
 
   if (error) {
     throw new Error(error.message);

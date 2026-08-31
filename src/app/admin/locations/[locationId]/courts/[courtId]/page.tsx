@@ -27,6 +27,7 @@ export default async function AdminCourtAvailabilityPage({
     saved?: string;
     config_saved?: string;
     cancelled?: string;
+    error?: string;
     override_saved?: string;
     override_deleted?: string;
     override_error?: string;
@@ -40,6 +41,7 @@ export default async function AdminCourtAvailabilityPage({
     saved,
     config_saved,
     cancelled,
+    error,
     override_saved,
     override_deleted,
     override_error,
@@ -120,7 +122,9 @@ export default async function AdminCourtAvailabilityPage({
 
   const { data: upcomingBookings } = await supabase
     .from("bookings")
-    .select("id, start_time, end_time, requested_net_height, requested_court_lines")
+    .select(
+      "id, start_time, end_time, requested_net_height, requested_court_lines, source, event_session_id"
+    )
     .eq("court_id", court.id)
     .eq("status", "confirmed")
     .gte("start_time", new Date().toISOString())
@@ -325,6 +329,11 @@ export default async function AdminCourtAvailabilityPage({
       <h2 className="mt-10 text-lg font-medium">Upcoming Bookings</h2>
 
       {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
+      {error && (
+        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {error}
+        </p>
+      )}
 
       {(!upcomingBookings || upcomingBookings.length === 0) && (
         <p className="mt-1 text-sm text-gray-600">No upcoming bookings.</p>
@@ -334,6 +343,20 @@ export default async function AdminCourtAvailabilityPage({
         {(upcomingBookings ?? []).map((booking) => {
           const dateLabel = formatBookingDate(booking.start_time, timezone);
           const timeLabel = `${formatInTimeZone(new Date(booking.start_time), timezone, "h:mm a")} – ${formatInTimeZone(new Date(booking.end_time), timezone, "h:mm a")}`;
+
+          if (booking.source === "event") {
+            return (
+              <li key={booking.id} className="rounded border border-gray-300 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-medium">
+                    {dateLabel} · {timeLabel}
+                  </p>
+                  <span className="text-xs text-gray-600">Reserved by event</span>
+                </div>
+              </li>
+            );
+          }
+
           return (
             <li key={booking.id} className="rounded border border-gray-300 px-4 py-3">
               <div className="flex items-center justify-between">

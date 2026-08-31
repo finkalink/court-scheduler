@@ -11,9 +11,9 @@ import SuccessBanner from "@/components/SuccessBanner";
 export default async function MyBookingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cancelled?: string; tab?: string }>;
+  searchParams: Promise<{ cancelled?: string; tab?: string; error?: string }>;
 }) {
-  const { cancelled, tab } = await searchParams;
+  const { cancelled, tab, error } = await searchParams;
   const activeTab = tab === "past" ? "past" : "upcoming";
   const supabase = await createClient();
   const {
@@ -41,6 +41,11 @@ export default async function MyBookingsPage({
       <h1 className="text-xl font-semibold sm:text-2xl">My Bookings</h1>
 
       {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
+      {error && (
+        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {error}
+        </p>
+      )}
 
       <div className="mt-4 flex gap-4 border-b border-gray-300 dark:border-neutral-800">
         <Link
