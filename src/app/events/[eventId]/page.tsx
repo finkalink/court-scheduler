@@ -11,10 +11,10 @@ export default async function EventDetailPage({
   searchParams,
 }: {
   params: Promise<{ eventId: string }>;
-  searchParams: Promise<{ registered?: string; register_error?: string }>;
+  searchParams: Promise<{ register_error?: string }>;
 }) {
   const { eventId } = await params;
-  const { registered, register_error: registerError } = await searchParams;
+  const { register_error: registerError } = await searchParams;
   const supabase = await createClient();
 
   const { data: event } = await supabase
@@ -109,7 +109,16 @@ export default async function EventDetailPage({
 
       {event.status !== "cancelled" && (
         <>
-          {alreadyRegistered ? (
+          {!user ? (
+            <p className="mt-4 text-sm">
+              <a
+                href={`/login?next=${encodeURIComponent(`/events/${eventId}`)}`}
+                className="underline"
+              >
+                Sign in to register
+              </a>
+            </p>
+          ) : alreadyRegistered ? (
             <p className="mt-4 rounded bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
               {myCaptainTeam
                 ? `Your team, ${myCaptainTeam.name}, is registered.`
@@ -122,11 +131,6 @@ export default async function EventDetailPage({
               {registerError && (
                 <p className="mb-3 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
                   {registerError}
-                </p>
-              )}
-              {registered && (
-                <p className="mb-3 rounded bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
-                  {isFull ? "You're on the waitlist." : "You're registered."}
                 </p>
               )}
               {event.registration_mode === "team" && event.team_formation === "self_formed" ? (
