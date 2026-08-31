@@ -223,6 +223,36 @@ export default async function AdminEventPage({
         })}
       </ul>
 
+      <form action={addEventSession} className="mt-4 flex flex-wrap items-end gap-3">
+        <input type="hidden" name="event_id" value={event.id} />
+        <input type="hidden" name="location_id" value={locationId} />
+        <label className="flex flex-col gap-1 text-xs text-gray-600">
+          Court
+          <select name="court_id" required className="rounded border px-3 py-2 text-sm dark:bg-neutral-900">
+            {(courts ?? []).map((court) => (
+              <option key={court.id} value={court.id}>
+                {court.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-600">
+          Label (optional)
+          <input name="label" placeholder="Round 1" className="rounded border px-3 py-2 text-sm" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-600">
+          Start
+          <input type="datetime-local" name="start_time" required className="rounded border px-3 py-2 text-sm" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-gray-600">
+          End
+          <input type="datetime-local" name="end_time" required className="rounded border px-3 py-2 text-sm" />
+        </label>
+        <button type="submit" className="rounded bg-black px-4 py-2 text-sm text-white">
+          Add Session
+        </button>
+      </form>
+
       {event.registration_mode === "team" && event.team_formation === "admin_assembled" && (
         <>
           <h2 className="mt-10 text-lg font-medium">Assemble Teams</h2>
@@ -262,36 +292,6 @@ export default async function AdminEventPage({
           )}
         </>
       )}
-
-      <form action={addEventSession} className="mt-4 flex flex-wrap items-end gap-3">
-        <input type="hidden" name="event_id" value={event.id} />
-        <input type="hidden" name="location_id" value={locationId} />
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
-          Court
-          <select name="court_id" required className="rounded border px-3 py-2 text-sm dark:bg-neutral-900">
-            {(courts ?? []).map((court) => (
-              <option key={court.id} value={court.id}>
-                {court.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
-          Label (optional)
-          <input name="label" placeholder="Round 1" className="rounded border px-3 py-2 text-sm" />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
-          Start
-          <input type="datetime-local" name="start_time" required className="rounded border px-3 py-2 text-sm" />
-        </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
-          End
-          <input type="datetime-local" name="end_time" required className="rounded border px-3 py-2 text-sm" />
-        </label>
-        <button type="submit" className="rounded bg-black px-4 py-2 text-sm text-white">
-          Add Session
-        </button>
-      </form>
     </div>
   );
 }

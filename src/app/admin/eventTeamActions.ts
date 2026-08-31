@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { determineRegistrationStatus } from "@/lib/eventRegistration";
 
 export async function assembleEventTeam(formData: FormData) {
   const eventId = String(formData.get("event_id"));
@@ -18,6 +19,11 @@ export async function assembleEventTeam(formData: FormData) {
     );
   }
 
+  const { data: event } = await supabase.from("events").select("capacity").eq("id", eventId).single();
+  if (!event) {
+    throw new Error("Event not found.");
+  }
+
   const { data: emailRows, error: emailError } = await supabase.rpc(
     "list_event_registrant_emails",
     { check_event_id: eventId }
@@ -31,7 +37,7 @@ export async function assembleEventTeam(formData: FormData) {
 
   const { data: registrations, error: regError } = await supabase
     .from("event_registrations")
-    .select("id, user_id")
+    .select("id, user_id, status")
     .in("id", registrationIds);
   if (regError) {
     throw new Error(regError.message);
@@ -65,14 +71,30 @@ export async function assembleEventTeam(formData: FormData) {
   if (deleteError) {
     throw new Error(deleteError.message);
   }
+
+  const { data: counts, error: countError } = await supabase
+    .from("event_registration_counts")
+    .select("status, count")
+    .eq("event_id", eventId);
+  if (countError) {
+    throw new Error(countError.message);
+  }
+  const currentRegisteredCount = (counts ?? []).find((c) => c.status === "registered")?.count ?? 0;
+  const registeredAmongSelected = (registrations ?? []).filter((r) => r.status === "registered").length;
+  const countAfterRemoval = Math.max(0, currentRegisteredCount - registeredAmongSelected);
+  const newStatus = determineRegistrationStatus(countAfterRemoval, event.capacity);
+
   const { error: insertError } = await supabase
     .from("event_registrations")
-    .insert({ event_id: eventId, team_id: team.id, status: "registered" });
+    .insert({ event_id: eventId, team_id: team.id, status: newStatus });
   if (insertError) {
     throw new Error(insertError.message);
   }
 
+  await supabase.rpc("promote_next_waitlisted", { p_event_id: eventId });
+
   revalidatePath(`/admin/locations/${locationId}/events/${eventId}`);
   revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events/registrations");
   redirect(`/admin/locations/${locationId}/events/${eventId}?team_assembled=1`);
 }
