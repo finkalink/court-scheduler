@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
 import { updateEvent, addEventSession, removeEventSession } from "@/app/admin/eventActions";
+import { assembleEventTeam } from "@/app/admin/eventTeamActions";
 import SuccessBanner from "@/components/SuccessBanner";
 import { formatBookingDate } from "@/lib/dateFormat";
 import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
@@ -18,11 +19,20 @@ export default async function AdminEventPage({
     session_added?: string;
     session_removed?: string;
     session_error?: string;
+    team_assembled?: string;
+    assemble_error?: string;
   }>;
 }) {
   const { locationId, eventId } = await params;
-  const { event_added, event_saved, session_added, session_removed, session_error } =
-    await searchParams;
+  const {
+    event_added,
+    event_saved,
+    session_added,
+    session_removed,
+    session_error,
+    team_assembled,
+    assemble_error,
+  } = await searchParams;
   const supabase = await createClient();
 
   const { data: location } = await supabase
@@ -45,6 +55,24 @@ export default async function AdminEventPage({
   if (!event) {
     notFound();
   }
+
+  const { data: ungroupedRegistrants } =
+    event.registration_mode === "team" && event.team_formation === "admin_assembled"
+      ? await supabase
+          .from("event_registrations")
+          .select("id, status, user_id")
+          .eq("event_id", eventId)
+          .is("team_id", null)
+          .neq("status", "cancelled")
+      : { data: null };
+
+  const { data: registrantEmails } =
+    event.registration_mode === "team" && event.team_formation === "admin_assembled"
+      ? await supabase.rpc("list_event_registrant_emails", { check_event_id: eventId })
+      : { data: null };
+  const emailByUserId = new Map(
+    (registrantEmails ?? []).map((r: { user_id: string; email: string }) => [r.user_id, r.email])
+  );
 
   const { data: courts } = await supabase
     .from("courts")
@@ -194,6 +222,46 @@ export default async function AdminEventPage({
           );
         })}
       </ul>
+
+      {event.registration_mode === "team" && event.team_formation === "admin_assembled" && (
+        <>
+          <h2 className="mt-10 text-lg font-medium">Assemble Teams</h2>
+          {team_assembled && <SuccessBanner>Team created.</SuccessBanner>}
+          {assemble_error && (
+            <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+              {assemble_error}
+            </p>
+          )}
+          {(!ungroupedRegistrants || ungroupedRegistrants.length === 0) && (
+            <p className="mt-1 text-sm text-gray-600">No ungrouped registrants right now.</p>
+          )}
+          {ungroupedRegistrants && ungroupedRegistrants.length > 0 && (
+            <form action={assembleEventTeam} className="mt-4 flex flex-col gap-3">
+              <input type="hidden" name="event_id" value={event.id} />
+              <input type="hidden" name="location_id" value={locationId} />
+              <label className="flex flex-col gap-1 text-sm">
+                Team name
+                <input name="team_name" required className="max-w-sm rounded border px-3 py-2" />
+              </label>
+              <div className="flex flex-col gap-1">
+                {ungroupedRegistrants.map((reg) => (
+                  <label key={reg.id} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="registration_id" value={reg.id} />
+                    {reg.user_id ? emailByUserId.get(reg.user_id) ?? reg.user_id : "Unknown"}
+                    {reg.status === "waitlisted" ? " (waitlisted)" : ""}
+                  </label>
+                ))}
+              </div>
+              <button
+                type="submit"
+                className="w-fit rounded bg-black px-4 py-2 text-sm text-white"
+              >
+                Create Team
+              </button>
+            </form>
+          )}
+        </>
+      )}
 
       <form action={addEventSession} className="mt-4 flex flex-wrap items-end gap-3">
         <input type="hidden" name="event_id" value={event.id} />
