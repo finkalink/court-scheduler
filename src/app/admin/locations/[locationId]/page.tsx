@@ -58,6 +58,10 @@ export default async function AdminLocationPage({
         General Hours &rarr;
       </Link>
 
+      <Link href={`/admin/locations/${locationId}/events`} className="mt-2 block w-fit text-sm underline">
+        Events &rarr;
+      </Link>
+
       {hours_pushed && <SuccessBanner>Hours applied to all courts.</SuccessBanner>}
 
       {canManage && (location.latitude == null || location.longitude == null || location.city == null) && (
