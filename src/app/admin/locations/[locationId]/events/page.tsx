@@ -2,18 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createEvent } from "@/app/admin/eventActions";
-import SuccessBanner from "@/components/SuccessBanner";
 import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 
 export default async function AdminEventsPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ locationId: string }>;
-  searchParams: Promise<{ event_added?: string }>;
 }) {
   const { locationId } = await params;
-  const { event_added } = await searchParams;
   const supabase = await createClient();
 
   const { data: location } = await supabase
@@ -39,8 +35,6 @@ export default async function AdminEventsPage({
       </Link>
 
       <h1 className="mt-4 text-lg font-medium">{location.name} — Events</h1>
-
-      {event_added && <SuccessBanner>Event created — add sessions below.</SuccessBanner>}
 
       {(!events || events.length === 0) && (
         <p className="mt-4 text-sm text-gray-600">No events yet.</p>

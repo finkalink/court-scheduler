@@ -46,7 +46,8 @@ export default async function LocationPage({
     .from("events")
     .select("id, title, event_type, event_sessions(start_time)")
     .eq("location_id", locationId)
-    .neq("status", "draft");
+    .neq("status", "draft")
+    .neq("status", "cancelled");
 
   const upcomingEvents = sortBySoonestSession(
     (locationEvents ?? []).map((e) => ({

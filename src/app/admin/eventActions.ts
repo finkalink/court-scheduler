@@ -73,12 +73,39 @@ export async function addEventSession(formData: FormData) {
 
   const supabase = await createClient();
 
-  const { data: location } = await supabase
-    .from("locations")
-    .select("timezone")
-    .eq("id", locationId)
+  // Resolve the event's own location (and its timezone) from the event_id
+  // itself, rather than trusting the submitted location_id form field --
+  // keeps this action correct even if it's ever reached from a page that
+  // doesn't already guarantee the two match.
+  const { data: event } = await supabase
+    .from("events")
+    .select("location_id, location:locations(timezone)")
+    .eq("id", eventId)
     .single();
-  const timezone = location?.timezone ?? "UTC";
+
+  if (!event) {
+    redirect(
+      `/admin/locations/${locationId}/events/${eventId}?session_error=${encodeURIComponent("Event not found.")}`
+    );
+  }
+
+  const eventLocation = Array.isArray(event.location) ? event.location[0] : event.location;
+  const timezone = eventLocation?.timezone ?? "UTC";
+
+  // A court from a different location should never be assignable to this
+  // event's sessions -- reject it up front instead of silently accepting it.
+  const { data: court } = await supabase
+    .from("courts")
+    .select("id")
+    .eq("id", courtId)
+    .eq("location_id", event.location_id)
+    .single();
+
+  if (!court) {
+    redirect(
+      `/admin/locations/${locationId}/events/${eventId}?session_error=${encodeURIComponent("That court doesn't belong to this event's location.")}`
+    );
+  }
 
   const startTime = fromZonedTime(String(formData.get("start_time")), timezone).toISOString();
   const endTime = fromZonedTime(String(formData.get("end_time")), timezone).toISOString();
@@ -116,6 +143,10 @@ export async function addEventSession(formData: FormData) {
 
   revalidatePath(`/admin/locations/${locationId}/events/${eventId}`);
   revalidatePath(`/locations/${locationId}`);
+  revalidatePath(`/locations/${locationId}/courts/${courtId}`);
+  revalidatePath(`/admin/locations/${locationId}/courts/${courtId}`);
+  revalidatePath(`/events`);
+  revalidatePath(`/events/${eventId}`);
   redirect(`/admin/locations/${locationId}/events/${eventId}?session_added=1`);
 }
 
@@ -125,9 +156,18 @@ export async function removeEventSession(formData: FormData) {
   const locationId = String(formData.get("location_id"));
 
   const supabase = await createClient();
-  // Deleting the session cascades to its paired bookings row
-  // (bookings.event_session_id references event_sessions on delete cascade),
-  // freeing the court time in one step.
+
+  // Need the session's court before it's gone, so the court booking pages
+  // (player-facing and admin) can be revalidated too -- deleting the
+  // session cascades to its paired bookings row (bookings.event_session_id
+  // references event_sessions on delete cascade), freeing the court time
+  // in one step.
+  const { data: session } = await supabase
+    .from("event_sessions")
+    .select("court_id")
+    .eq("id", sessionId)
+    .single();
+
   const { error } = await supabase.from("event_sessions").delete().eq("id", sessionId);
 
   if (error) {
@@ -136,5 +176,11 @@ export async function removeEventSession(formData: FormData) {
 
   revalidatePath(`/admin/locations/${locationId}/events/${eventId}`);
   revalidatePath(`/locations/${locationId}`);
+  if (session?.court_id) {
+    revalidatePath(`/locations/${locationId}/courts/${session.court_id}`);
+    revalidatePath(`/admin/locations/${locationId}/courts/${session.court_id}`);
+  }
+  revalidatePath(`/events`);
+  revalidatePath(`/events/${eventId}`);
   redirect(`/admin/locations/${locationId}/events/${eventId}?session_removed=1`);
 }

@@ -13,6 +13,7 @@ export default async function AdminEventPage({
 }: {
   params: Promise<{ locationId: string; eventId: string }>;
   searchParams: Promise<{
+    event_added?: string;
     event_saved?: string;
     session_added?: string;
     session_removed?: string;
@@ -20,7 +21,8 @@ export default async function AdminEventPage({
   }>;
 }) {
   const { locationId, eventId } = await params;
-  const { event_saved, session_added, session_removed, session_error } = await searchParams;
+  const { event_added, event_saved, session_added, session_removed, session_error } =
+    await searchParams;
   const supabase = await createClient();
 
   const { data: location } = await supabase
@@ -37,6 +39,7 @@ export default async function AdminEventPage({
     .from("events")
     .select("id, title, description, event_type, registration_mode, team_formation, capacity, status")
     .eq("id", eventId)
+    .eq("location_id", locationId)
     .single();
 
   if (!event) {
@@ -67,6 +70,7 @@ export default async function AdminEventPage({
         {EVENT_TYPE_LABELS[event.event_type]} · {event.status}
       </p>
 
+      {event_added && <SuccessBanner>Event created — add sessions below.</SuccessBanner>}
       {event_saved && <SuccessBanner>Event saved.</SuccessBanner>}
       {session_added && <SuccessBanner>Session added.</SuccessBanner>}
       {session_removed && <SuccessBanner>Session removed.</SuccessBanner>}

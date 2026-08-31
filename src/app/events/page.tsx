@@ -9,7 +9,8 @@ export default async function EventsPage() {
   const { data: events } = await supabase
     .from("events")
     .select("id, title, event_type, location:locations(city), event_sessions(start_time)")
-    .neq("status", "draft");
+    .neq("status", "draft")
+    .neq("status", "cancelled");
 
   const eventsForGrouping = (events ?? []).map((e) => {
     const location = Array.isArray(e.location) ? e.location[0] : e.location;

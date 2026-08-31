@@ -41,7 +41,8 @@ export default async function CityPage({
   const { data: allEvents } = await supabase
     .from("events")
     .select("id, title, event_type, location:locations(city), event_sessions(start_time)")
-    .neq("status", "draft");
+    .neq("status", "draft")
+    .neq("status", "cancelled");
 
   const eventsInCity = (allEvents ?? [])
     .map((e) => {
