@@ -48,14 +48,23 @@ export async function assembleEventTeam(formData: FormData) {
 
   for (const reg of registrations ?? []) {
     const displayName = (reg.user_id && emailByUserId.get(reg.user_id)) || "Player";
-    await supabase
+    const { error: memberError } = await supabase
       .from("event_team_members")
       .insert({ team_id: team.id, user_id: reg.user_id, display_name: displayName });
+    if (memberError) {
+      throw new Error(memberError.message);
+    }
   }
 
   // The individual registrations are consumed into the new team-level
   // registration -- delete the per-player rows, insert one row for the team.
-  await supabase.from("event_registrations").delete().in("id", registrationIds);
+  const { error: deleteError } = await supabase
+    .from("event_registrations")
+    .delete()
+    .in("id", registrationIds);
+  if (deleteError) {
+    throw new Error(deleteError.message);
+  }
   const { error: insertError } = await supabase
     .from("event_registrations")
     .insert({ event_id: eventId, team_id: team.id, status: "registered" });
