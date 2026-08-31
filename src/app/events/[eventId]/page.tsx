@@ -34,8 +34,8 @@ export default async function EventDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  let myIndividualRegistration: { id: string; status: string } | null = null;
-  let myCaptainTeam: { id: string; name: string } | null = null;
+  let myRegistration: { id: string; status: string } | null = null;
+  let myTeamName: string | null = null;
   let registeredCount = 0;
 
   if (user) {
@@ -46,15 +46,33 @@ export default async function EventDetailPage({
       .eq("user_id", user.id)
       .neq("status", "cancelled")
       .maybeSingle();
-    myIndividualRegistration = individualReg;
 
-    const { data: captainTeam } = await supabase
-      .from("event_teams")
-      .select("id, name")
-      .eq("event_id", eventId)
-      .eq("captain_user_id", user.id)
-      .maybeSingle();
-    myCaptainTeam = captainTeam;
+    if (individualReg) {
+      myRegistration = individualReg;
+    } else {
+      const { data: memberships } = await supabase
+        .from("event_team_members")
+        .select("team:event_teams!inner(id, name, event_id)")
+        .eq("user_id", user.id);
+
+      const myTeamForEvent = (memberships ?? [])
+        .map((m) => (Array.isArray(m.team) ? m.team[0] : m.team))
+        .find((t) => t?.event_id === eventId);
+
+      if (myTeamForEvent) {
+        const { data: teamReg } = await supabase
+          .from("event_registrations")
+          .select("id, status")
+          .eq("event_id", eventId)
+          .eq("team_id", myTeamForEvent.id)
+          .neq("status", "cancelled")
+          .maybeSingle();
+        if (teamReg) {
+          myRegistration = teamReg;
+          myTeamName = myTeamForEvent.name;
+        }
+      }
+    }
 
     const { data: counts } = await supabase
       .from("event_registration_counts")
@@ -64,7 +82,7 @@ export default async function EventDetailPage({
   }
 
   const isFull = event.capacity != null && registeredCount >= event.capacity;
-  const alreadyRegistered = Boolean(myIndividualRegistration || myCaptainTeam);
+  const alreadyRegistered = Boolean(myRegistration);
 
   const location = Array.isArray(event.location) ? event.location[0] : event.location;
   const org = location
@@ -120,9 +138,9 @@ export default async function EventDetailPage({
             </p>
           ) : alreadyRegistered ? (
             <p className="mt-4 rounded bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
-              {myCaptainTeam
-                ? `Your team, ${myCaptainTeam.name}, is registered.`
-                : myIndividualRegistration?.status === "waitlisted"
+              {myTeamName
+                ? `Your team, ${myTeamName}, is ${myRegistration?.status === "waitlisted" ? "on the waitlist" : "registered"}.`
+                : myRegistration?.status === "waitlisted"
                   ? "You're on the waitlist."
                   : "You're registered."}
             </p>

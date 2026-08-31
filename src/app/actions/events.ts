@@ -26,12 +26,16 @@ export async function registerForEvent(formData: FormData) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("capacity, registration_mode, team_formation")
+    .select("capacity, registration_mode, team_formation, status")
     .eq("id", eventId)
     .single();
 
   if (!event) {
     throw new Error("Event not found.");
+  }
+
+  if (event.status !== "published" && event.status !== "registration_open") {
+    redirect(`/events/${eventId}?register_error=${encodeURIComponent("Registration isn't open for this event.")}`);
   }
 
   let teamId: string | null = null;
@@ -86,17 +90,18 @@ export async function registerForEvent(formData: FormData) {
     }
   }
 
-  const { count: registeredCount, error: countError } = await supabase
-    .from("event_registrations")
-    .select("id", { count: "exact", head: true })
-    .eq("event_id", eventId)
-    .eq("status", "registered");
+  const { data: counts, error: countError } = await supabase
+    .from("event_registration_counts")
+    .select("status, count")
+    .eq("event_id", eventId);
 
   if (countError) {
     throw new Error(countError.message);
   }
 
-  const status = determineRegistrationStatus(registeredCount ?? 0, event.capacity);
+  const registeredCount = (counts ?? []).find((c) => c.status === "registered")?.count ?? 0;
+
+  const status = determineRegistrationStatus(registeredCount, event.capacity);
 
   const { error } = await supabase.from("event_registrations").insert({
     event_id: eventId,
@@ -115,7 +120,7 @@ export async function registerForEvent(formData: FormData) {
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/events/registrations");
-  redirect(`/events/${eventId}?registered=1`);
+  redirect(`/events/${eventId}`);
 }
 
 // Shared by the "My Events" page. RLS ("event_registrations update own or
