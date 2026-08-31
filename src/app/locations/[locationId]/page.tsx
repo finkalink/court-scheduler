@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { buildMapsUrl } from "@/lib/maps";
+import { sortBySoonestSession } from "@/lib/eventGrouping";
+import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 
 export default async function LocationPage({
   params,
@@ -40,6 +42,22 @@ export default async function LocationPage({
     .eq("is_active", true)
     .order("name");
 
+  const { data: locationEvents } = await supabase
+    .from("events")
+    .select("id, title, event_type, event_sessions(start_time)")
+    .eq("location_id", locationId)
+    .neq("status", "draft");
+
+  const upcomingEvents = sortBySoonestSession(
+    (locationEvents ?? []).map((e) => ({
+      id: e.id,
+      title: e.title,
+      eventType: e.event_type,
+      sessions: e.event_sessions,
+    })),
+    new Date()
+  );
+
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <Link href={`/clubs/${org?.id ?? ""}`} className="text-sm underline">
@@ -59,11 +77,32 @@ export default async function LocationPage({
         </a>
       )}
 
-      {(!courts || courts.length === 0) && (
-        <p className="mt-6 text-sm text-gray-600">No courts available at this location yet.</p>
+      {upcomingEvents.length > 0 && (
+        <>
+          <h2 className="mt-6 text-sm font-medium">Upcoming Events</h2>
+          <ul className="mt-2 flex flex-col gap-3">
+            {upcomingEvents.map((event) => (
+              <li key={event.id}>
+                <Link
+                  href={`/events/${event.id}`}
+                  className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                >
+                  <p className="font-medium">{event.title}</p>
+                  <p className="text-sm text-gray-600">{EVENT_TYPE_LABELS[event.eventType]}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
-      <ul className="mt-6 flex flex-col gap-3">
+      <h2 className="mt-8 text-sm font-medium">Courts</h2>
+
+      {(!courts || courts.length === 0) && (
+        <p className="mt-2 text-sm text-gray-600">No courts available at this location yet.</p>
+      )}
+
+      <ul className="mt-2 flex flex-col gap-3">
         {(courts ?? []).map((court) => (
           <li key={court.id}>
             <Link

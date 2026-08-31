@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { clubsInCity } from "@/lib/cityGrouping";
+import { sortBySoonestSession } from "@/lib/eventGrouping";
+import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 
 export default async function CityPage({
   params,
@@ -36,6 +38,26 @@ export default async function CityPage({
     notFound();
   }
 
+  const { data: allEvents } = await supabase
+    .from("events")
+    .select("id, title, event_type, location:locations(city), event_sessions(start_time)")
+    .neq("status", "draft");
+
+  const eventsInCity = (allEvents ?? [])
+    .map((e) => {
+      const eventLocation = Array.isArray(e.location) ? e.location[0] : e.location;
+      return {
+        id: e.id,
+        title: e.title,
+        eventType: e.event_type,
+        city: eventLocation?.city ?? null,
+        sessions: e.event_sessions,
+      };
+    })
+    .filter((e) => e.city === city);
+
+  const upcomingEvents = sortBySoonestSession(eventsInCity, new Date());
+
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <Link href="/" className="text-sm underline">
@@ -44,7 +66,28 @@ export default async function CityPage({
 
       <h1 className="mt-4 text-xl font-semibold sm:text-2xl">{city}</h1>
 
-      <ul className="mt-6 flex flex-col gap-3">
+      {upcomingEvents.length > 0 && (
+        <>
+          <h2 className="mt-6 text-sm font-medium">Events in {city}</h2>
+          <ul className="mt-2 flex flex-col gap-3">
+            {upcomingEvents.map((event) => (
+              <li key={event.id}>
+                <Link
+                  href={`/events/${event.id}`}
+                  className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                >
+                  <p className="font-medium">{event.title}</p>
+                  <p className="text-sm text-gray-600">{EVENT_TYPE_LABELS[event.eventType]}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <h2 className="mt-8 text-sm font-medium">Clubs</h2>
+
+      <ul className="mt-2 flex flex-col gap-3">
         {clubs.map((club) => (
           <li key={club.orgId}>
             <Link
