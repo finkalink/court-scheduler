@@ -10,9 +10,9 @@ import SuccessBanner from "@/components/SuccessBanner";
 export default async function MyEventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cancelled?: string }>;
+  searchParams: Promise<{ cancelled?: string; cancel_error?: string }>;
 }) {
-  const { cancelled } = await searchParams;
+  const { cancelled, cancel_error: cancelError } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -49,7 +49,7 @@ export default async function MyEventsPage({
       ? await supabase
           .from("event_registrations")
           .select(
-            "id, status, team:event_teams(id, name), event:events(id, title, event_type, location:locations(timezone), event_sessions(start_time))"
+            "id, status, team:event_teams(id, name, captain_user_id), event:events(id, title, event_type, location:locations(timezone), event_sessions(start_time))"
           )
           .in("team_id", myTeamIds)
           .neq("status", "cancelled")
@@ -57,7 +57,10 @@ export default async function MyEventsPage({
       : { data: [] };
 
   const rows = [
-    ...(individualRegs ?? []).map((r) => ({ ...r, team: null as { id: string; name: string } | null })),
+    ...(individualRegs ?? []).map((r) => ({
+      ...r,
+      team: null as { id: string; name: string; captain_user_id: string | null } | null,
+    })),
     ...(teamRegs ?? []).map((r) => ({
       ...r,
       team: Array.isArray(r.team) ? r.team[0] : r.team,
@@ -69,6 +72,12 @@ export default async function MyEventsPage({
       <h1 className="text-xl font-semibold sm:text-2xl">My Events</h1>
 
       {cancelled && <SuccessBanner>Registration cancelled.</SuccessBanner>}
+
+      {cancelError && (
+        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {cancelError}
+        </p>
+      )}
 
       {rows.length === 0 && (
         <p className="mt-6 text-sm text-gray-600">You haven&apos;t registered for any events yet.</p>
@@ -115,13 +124,15 @@ export default async function MyEventsPage({
                 >
                   {row.status === "waitlisted" ? "Waitlisted" : "Registered"}
                 </span>
-                <form action={cancelEventRegistration}>
-                  <input type="hidden" name="registration_id" value={row.id} />
-                  <input type="hidden" name="event_id" value={event.id} />
-                  <button type="submit" className="text-xs text-red-700 underline dark:text-red-400">
-                    Cancel
-                  </button>
-                </form>
+                {(!row.team || row.team.captain_user_id === user.id) && (
+                  <form action={cancelEventRegistration}>
+                    <input type="hidden" name="registration_id" value={row.id} />
+                    <input type="hidden" name="event_id" value={event.id} />
+                    <button type="submit" className="text-xs text-red-700 underline dark:text-red-400">
+                      Cancel
+                    </button>
+                  </form>
+                )}
               </div>
             </li>
           );

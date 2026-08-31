@@ -126,13 +126,26 @@ export async function cancelEventRegistration(formData: FormData) {
   const eventId = String(formData.get("event_id"));
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("event_registrations")
     .update({ status: "cancelled" })
-    .eq("id", registrationId);
+    .eq("id", registrationId)
+    .select("id");
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  // RLS ("event_registrations update own or captain or member") silently
+  // matches zero rows -- no error -- when the caller isn't allowed to
+  // update this particular registration (e.g. a non-captain teammate on a
+  // self-formed team, or any member of an admin-assembled team, which has
+  // no captain_user_id at all). Without this check the caller would see a
+  // false "cancelled" success while nothing changed in the database.
+  if (!updated || updated.length === 0) {
+    redirect(
+      `/events/registrations?cancel_error=${encodeURIComponent("You can't cancel this registration.")}`
+    );
   }
 
   // A freed 'registered' spot should immediately pull the next waitlisted
