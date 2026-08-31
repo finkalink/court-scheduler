@@ -22,6 +22,7 @@ export default function AppShell({
     pathname.startsWith("/locations") ||
     pathname.startsWith("/cities") ||
     pathname.startsWith("/clubs");
+  const eventsActive = pathname.startsWith("/events");
   const bookingsActive = pathname.startsWith("/bookings");
   const adminActive = pathname.startsWith("/admin");
 
@@ -76,6 +77,9 @@ export default function AppShell({
         <nav className="flex flex-1 flex-col gap-1 px-2">
           <Link href="/" className={linkClass(findCourtActive)} onClick={() => setOpen(false)}>
             Find a Court
+          </Link>
+          <Link href="/events" className={linkClass(eventsActive)} onClick={() => setOpen(false)}>
+            Events
           </Link>
           {userEmail && (
             <Link
