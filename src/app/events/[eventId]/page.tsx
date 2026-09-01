@@ -97,6 +97,15 @@ export default async function EventDetailPage({
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
 
+  const { data: teams } =
+    event.registration_mode === "team"
+      ? await supabase
+          .from("event_teams")
+          .select("id, name, members:event_team_members(id, display_name, user_id)")
+          .eq("event_id", eventId)
+          .order("name")
+      : { data: null };
+
   const { data: matches } = await supabase
     .from("event_matches")
     .select("*")
@@ -245,6 +254,30 @@ export default async function EventDetailPage({
               )}
             </div>
           )}
+        </>
+      )}
+
+      {event.registration_mode === "team" && teams && teams.length > 0 && (
+        <>
+          <h2 className="mt-6 text-lg font-medium">Rosters</h2>
+          <ul className="mt-3 flex flex-col gap-3">
+            {teams.map((team) => (
+              <li
+                key={team.id}
+                className="rounded border border-gray-300 px-4 py-3 dark:border-neutral-800"
+              >
+                <p className="text-sm font-medium">{team.name}</p>
+                <ul className="mt-1 flex flex-col gap-0.5">
+                  {team.members.map((m) => (
+                    <li key={m.id} className="text-sm text-gray-600 dark:text-neutral-400">
+                      {m.display_name}
+                      {!m.user_id && <span className="ml-1 text-xs italic">(pending)</span>}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
         </>
       )}
 
