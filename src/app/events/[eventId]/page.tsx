@@ -138,13 +138,34 @@ export default async function EventDetailPage({
 
   const { data: allRegistrations } = await supabase
     .from("event_registrations")
-    .select("id, display_name, team:event_teams(name)")
+    .select("id, user_id, display_name, team:event_teams(name)")
     .eq("event_id", eventId);
   const nameByRegistrationId = new Map(
     (allRegistrations ?? []).map((r) => {
       const team = Array.isArray(r.team) ? r.team[0] : r.team;
       return [r.id, team?.name ?? r.display_name ?? "Player"];
     })
+  );
+
+  const rosterUserIds = (teams ?? [])
+    .flatMap((t) => t.members.map((m) => m.user_id))
+    .filter((id): id is string => Boolean(id));
+  const registrationUserIds = (allRegistrations ?? [])
+    .map((r) => r.user_id)
+    .filter((id): id is string => Boolean(id));
+  const candidateUserIds = Array.from(new Set([...rosterUserIds, ...registrationUserIds]));
+
+  const { data: publicProfiles } =
+    candidateUserIds.length > 0
+      ? await supabase.from("users").select("id").in("id", candidateUserIds).eq("share_stats_publicly", true)
+      : { data: [] };
+  const sharingUserIds = new Set((publicProfiles ?? []).map((p) => p.id));
+
+  const hrefByRegistrationId = new Map(
+    (allRegistrations ?? []).map((r) => [
+      r.id,
+      r.user_id && sharingUserIds.has(r.user_id) ? `/players/${r.user_id}` : null,
+    ])
   );
 
   const { data: matchSessions } = await supabase
@@ -308,7 +329,13 @@ export default async function EventDetailPage({
                 <ul className="mt-1 flex flex-col gap-0.5">
                   {team.members.map((m) => (
                     <li key={m.id} className="text-sm text-gray-600 dark:text-neutral-400">
-                      {m.display_name}
+                      {m.user_id && sharingUserIds.has(m.user_id) ? (
+                        <Link href={`/players/${m.user_id}`} className="underline decoration-dotted">
+                          {m.display_name}
+                        </Link>
+                      ) : (
+                        m.display_name
+                      )}
                       {!m.user_id && <span className="ml-1 text-xs italic">(pending)</span>}
                     </li>
                   ))}
@@ -383,6 +410,8 @@ export default async function EventDetailPage({
                                 roundLabel={`Round ${roundNumber}`}
                                 sideAName={nameByRegistrationId.get(m.team_a_registration_id ?? "") ?? "TBD"}
                                 sideBName={nameByRegistrationId.get(m.team_b_registration_id ?? "") ?? "TBD"}
+                                sideAHref={hrefByRegistrationId.get(m.team_a_registration_id ?? "") ?? null}
+                                sideBHref={hrefByRegistrationId.get(m.team_b_registration_id ?? "") ?? null}
                                 winnerName={m.winner_registration_id ? nameByRegistrationId.get(m.winner_registration_id) ?? null : null}
                                 sets={(matchSets ?? []).filter((s) => s.match_id === m.id)}
                                 isForfeit={m.is_forfeit}
@@ -409,7 +438,18 @@ export default async function EventDetailPage({
                     <tbody>
                       {standings.map((row) => (
                         <tr key={row.registrationId}>
-                          <td>{nameByRegistrationId.get(row.registrationId) ?? "Unknown"}</td>
+                          <td>
+                            {hrefByRegistrationId.get(row.registrationId) ? (
+                              <Link
+                                href={hrefByRegistrationId.get(row.registrationId)!}
+                                className="underline decoration-dotted"
+                              >
+                                {nameByRegistrationId.get(row.registrationId) ?? "Unknown"}
+                              </Link>
+                            ) : (
+                              nameByRegistrationId.get(row.registrationId) ?? "Unknown"
+                            )}
+                          </td>
                           <td>{row.wins}</td>
                           <td>{row.losses}</td>
                           <td>{row.pointDiff}</td>
@@ -436,8 +476,27 @@ export default async function EventDetailPage({
                         >
                           <p>
                             Round {m.round_number} &middot;{" "}
-                            <span className={winnerName === sideAName ? "font-medium" : ""}>{sideAName}</span> vs{" "}
-                            <span className={winnerName === sideBName ? "font-medium" : ""}>{sideBName}</span>
+                            {hrefByRegistrationId.get(m.team_a_registration_id ?? "") ? (
+                              <Link
+                                href={hrefByRegistrationId.get(m.team_a_registration_id ?? "")!}
+                                className={winnerName === sideAName ? "font-medium underline decoration-dotted" : "underline decoration-dotted"}
+                              >
+                                {sideAName}
+                              </Link>
+                            ) : (
+                              <span className={winnerName === sideAName ? "font-medium" : ""}>{sideAName}</span>
+                            )}{" "}
+                            vs{" "}
+                            {hrefByRegistrationId.get(m.team_b_registration_id ?? "") ? (
+                              <Link
+                                href={hrefByRegistrationId.get(m.team_b_registration_id ?? "")!}
+                                className={winnerName === sideBName ? "font-medium underline decoration-dotted" : "underline decoration-dotted"}
+                              >
+                                {sideBName}
+                              </Link>
+                            ) : (
+                              <span className={winnerName === sideBName ? "font-medium" : ""}>{sideBName}</span>
+                            )}
                             {m.is_forfeit && " (forfeit)"}
                           </p>
                           {session && (
