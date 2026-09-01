@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupLocationsByCity, clubsInCity } from "@/lib/cityGrouping";
+import { groupLocationsByCity, clubsInCity, resolveHomeCity, isKnownCity } from "@/lib/cityGrouping";
 
 describe("groupLocationsByCity", () => {
   it("returns empty groups for no locations", () => {
@@ -74,5 +74,55 @@ describe("clubsInCity", () => {
   it("excludes locations with no city", () => {
     const locations = [{ id: "1", city: null, orgId: "org-a", orgName: "Ace Volleyball Club" }];
     expect(clubsInCity(locations, "New York")).toEqual([]);
+  });
+});
+
+describe("resolveHomeCity", () => {
+  const availableCities = ["Los Angeles", "New York"];
+
+  it("prefers a valid override over a valid default", () => {
+    expect(
+      resolveHomeCity({ overrideCity: "Los Angeles", defaultCity: "New York", availableCities })
+    ).toBe("Los Angeles");
+  });
+
+  it("falls back to the default when there's no override", () => {
+    expect(resolveHomeCity({ overrideCity: null, defaultCity: "New York", availableCities })).toBe(
+      "New York"
+    );
+  });
+
+  it("falls back to the default when the override is stale", () => {
+    expect(
+      resolveHomeCity({ overrideCity: "Chicago", defaultCity: "New York", availableCities })
+    ).toBe("New York");
+  });
+
+  it("returns null when neither override nor default is set", () => {
+    expect(resolveHomeCity({ overrideCity: null, defaultCity: null, availableCities })).toBeNull();
+  });
+
+  it("returns null when the default is stale and there's no override", () => {
+    expect(resolveHomeCity({ overrideCity: null, defaultCity: "Chicago", availableCities })).toBeNull();
+  });
+
+  it("returns null when both override and default are stale", () => {
+    expect(
+      resolveHomeCity({ overrideCity: "Chicago", defaultCity: "Boston", availableCities })
+    ).toBeNull();
+  });
+});
+
+describe("isKnownCity", () => {
+  it("returns true for a city in the list", () => {
+    expect(isKnownCity("New York", ["New York", "Los Angeles"])).toBe(true);
+  });
+
+  it("returns false for a city not in the list", () => {
+    expect(isKnownCity("Chicago", ["New York", "Los Angeles"])).toBe(false);
+  });
+
+  it("returns false for an empty string", () => {
+    expect(isKnownCity("", ["New York"])).toBe(false);
   });
 });

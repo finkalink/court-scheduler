@@ -63,3 +63,32 @@ export function clubsInCity<T extends { city: string | null; orgId: string; orgN
 
   return Array.from(countByClub.values()).sort((a, b) => a.orgName.localeCompare(b.orgName));
 }
+
+export interface ResolveHomeCityArgs {
+  overrideCity: string | null;
+  defaultCity: string | null;
+  availableCities: string[];
+}
+
+// Precedence for what "/" shows: an active session override wins, then the
+// player's stored default, then null (meaning "render the full city list").
+// A stored value that no longer appears in availableCities (its city's last
+// club closed) is treated the same as unset, not an error.
+export function resolveHomeCity({
+  overrideCity,
+  defaultCity,
+  availableCities,
+}: ResolveHomeCityArgs): string | null {
+  if (overrideCity && availableCities.includes(overrideCity)) return overrideCity;
+  if (defaultCity && availableCities.includes(defaultCity)) return defaultCity;
+  return null;
+}
+
+// Shared validator for every write path that accepts a city from a form
+// (setDefaultCity, setCityOverride, updateProfile's default_city field) --
+// rejects a raw POST supplying a value never offered in that path's own
+// <select>, including one that was valid when the page rendered but whose
+// last club has since closed.
+export function isKnownCity(city: string, availableCities: string[]): boolean {
+  return availableCities.includes(city);
+}
