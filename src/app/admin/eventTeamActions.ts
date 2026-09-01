@@ -37,7 +37,7 @@ export async function assembleEventTeam(formData: FormData) {
 
   const { data: registrations, error: regError } = await supabase
     .from("event_registrations")
-    .select("id, user_id, status")
+    .select("id, user_id")
     .in("id", registrationIds);
   if (regError) {
     throw new Error(regError.message);
@@ -80,9 +80,12 @@ export async function assembleEventTeam(formData: FormData) {
     throw new Error(countError.message);
   }
   const currentRegisteredCount = (counts ?? []).find((c) => c.status === "registered")?.count ?? 0;
-  const registeredAmongSelected = (registrations ?? []).filter((r) => r.status === "registered").length;
-  const countAfterRemoval = Math.max(0, currentRegisteredCount - registeredAmongSelected);
-  const newStatus = determineRegistrationStatus(countAfterRemoval, event.capacity);
+  // This count is read after the individual registrations above were
+  // already deleted, so it already excludes them -- no further
+  // subtraction needed here (an earlier version double-subtracted their
+  // count, undercounting and wrongly marking a team 'registered' when it
+  // should have been 'waitlisted').
+  const newStatus = determineRegistrationStatus(currentRegisteredCount, event.capacity);
 
   const { error: insertError } = await supabase
     .from("event_registrations")
