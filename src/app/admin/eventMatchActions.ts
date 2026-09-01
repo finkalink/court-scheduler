@@ -13,6 +13,7 @@ import {
 } from "@/lib/bracketGeneration";
 import { propagateAdvancement, type EventMatch } from "@/lib/matchAdvancement";
 import { deriveMatchWinner } from "@/lib/matchResult";
+import { pairMatchesToSessions } from "@/lib/matchScheduling";
 
 function bracketPath(locationId: string, eventId: string) {
   return `/admin/locations/${locationId}/events/${eventId}/bracket`;
@@ -270,5 +271,104 @@ export async function editMatch(formData: FormData) {
   revalidatePath(`/events/${eventId}`);
   redirect(
     `${bracketPath(locationId, eventId)}?match_edited=1${reviewNeeded.length > 0 ? `&review_needed=${reviewNeeded.join(",")}` : ""}`
+  );
+}
+
+export async function autoAssignSessions(formData: FormData) {
+  const eventId = String(formData.get("event_id"));
+  const locationId = String(formData.get("location_id"));
+
+  const supabase = await createClient();
+
+  const { data: matches } = await supabase
+    .from("event_matches")
+    .select("id, round_number, slot_in_round")
+    .eq("event_id", eventId)
+    .eq("status", "pending")
+    .is("session_id", null);
+
+  const { data: usedSessionRows } = await supabase
+    .from("event_matches")
+    .select("session_id")
+    .eq("event_id", eventId)
+    .not("session_id", "is", null);
+  const usedSessionIds = new Set((usedSessionRows ?? []).map((r) => r.session_id));
+
+  const { data: sessions } = await supabase
+    .from("event_sessions")
+    .select("id, start_time")
+    .eq("event_id", eventId)
+    .order("start_time");
+  const availableSessions = (sessions ?? []).filter((s) => !usedSessionIds.has(s.id));
+
+  const pairs = pairMatchesToSessions(matches ?? [], availableSessions);
+
+  for (const pair of pairs) {
+    await supabase
+      .from("event_matches")
+      .update({ session_id: pair.sessionId, status: "scheduled" })
+      .eq("id", pair.matchId);
+  }
+
+  revalidatePath(bracketPath(locationId, eventId));
+  revalidatePath(`/events/${eventId}`);
+  redirect(`${bracketPath(locationId, eventId)}?sessions_assigned=${pairs.length}&sessions_total=${(matches ?? []).length}`);
+}
+
+export async function withdrawRegistration(formData: FormData) {
+  const registrationId = String(formData.get("registration_id"));
+  const eventId = String(formData.get("event_id"));
+  const locationId = String(formData.get("location_id"));
+  const resolution = String(formData.get("resolution") || ""); // 'forfeit' | 'substitute'
+  const substituteId = String(formData.get("substitute_registration_id") || "") || null;
+
+  const supabase = await createClient();
+
+  await supabase.from("event_registrations").update({ status: "cancelled" }).eq("id", registrationId);
+
+  const { data: pendingMatch } = await supabase
+    .from("event_matches")
+    .select("*")
+    .eq("event_id", eventId)
+    .neq("status", "completed")
+    .or(`team_a_registration_id.eq.${registrationId},team_b_registration_id.eq.${registrationId}`)
+    .maybeSingle();
+
+  let reviewNeeded: string[] = [];
+
+  if (pendingMatch) {
+    const isTeamA = pendingMatch.team_a_registration_id === registrationId;
+
+    if (resolution === "substitute" && substituteId) {
+      await supabase
+        .from("event_matches")
+        .update(isTeamA ? { team_a_registration_id: substituteId } : { team_b_registration_id: substituteId })
+        .eq("id", pendingMatch.id);
+    } else {
+      const opponentId = isTeamA ? pendingMatch.team_b_registration_id : pendingMatch.team_a_registration_id;
+      if (opponentId) {
+        await supabase
+          .from("event_matches")
+          .update({
+            winner_registration_id: opponentId,
+            is_forfeit: true,
+            status: "completed",
+            admin_note: "Opponent withdrew.",
+          })
+          .eq("id", pendingMatch.id);
+
+        reviewNeeded = await applyAdvancement(
+          supabase,
+          { ...pendingMatch, winner_registration_id: opponentId, status: "completed" } as EventMatch,
+          eventId
+        );
+      }
+    }
+  }
+
+  revalidatePath(bracketPath(locationId, eventId));
+  revalidatePath(`/events/${eventId}`);
+  redirect(
+    `${bracketPath(locationId, eventId)}?withdrawn=1${reviewNeeded.length > 0 ? `&review_needed=${reviewNeeded.join(",")}` : ""}`
   );
 }
