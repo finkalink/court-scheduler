@@ -135,6 +135,18 @@ Two small, direct wins now that `users.name` is real:
   `event_registrations.display_name` / `event_team_members.display_name`
   stay exactly as they are, just better defaulted.
 
+## Future work (not in scope)
+
+**Public-facing profiles.** A player-controlled, opt-in page showing
+stats — win/loss record, games played, etc. — computed from their
+`event_registrations`/`event_matches` history (per the brackets plan,
+`docs/superpowers/plans/2026-08-31-special-events-brackets.md`), visible
+to other players only if the profile owner chooses to share it. This
+spec's private `name`/`gender`/`skill_level` fields are the identity
+foundation that feature would sit on top of, but the sharing/visibility
+design, the stats computation itself, and the opt-in UI are all separate,
+unscoped work — flagged here as a natural next step, not designed.
+
 ## Testing plan
 
 - `isProfileComplete` — unit-tested test-first: all fields present, each
