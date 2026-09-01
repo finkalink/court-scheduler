@@ -2,9 +2,54 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
+import { formatRequestedConfig } from "@/lib/courtConfig";
+import { formatBookingDate } from "@/lib/dateFormat";
+import { buildBookingCancellationEmail, buildBookingConfirmationEmail, sendEmail } from "@/lib/email";
 
 const EXCLUSION_VIOLATION = "23P01";
+
+function getAppUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return "http://localhost:3000";
+}
+
+type BookingCourtInfo = {
+  name: string;
+  location: {
+    name: string;
+    timezone: string;
+    organization: { name: string } | { name: string }[] | null;
+  } | { name: string; timezone: string; organization: { name: string } | { name: string }[] | null }[] | null;
+};
+
+function bookingEmailDetails(
+  bookingId: string,
+  startTime: string,
+  endTime: string,
+  court: BookingCourtInfo | BookingCourtInfo[] | null,
+  requestedNetHeight: string | null,
+  requestedCourtLines: string | null
+) {
+  const courtInfo = Array.isArray(court) ? court[0] : court;
+  const location = Array.isArray(courtInfo?.location) ? courtInfo?.location[0] : courtInfo?.location;
+  const organization = Array.isArray(location?.organization)
+    ? location?.organization[0]
+    : location?.organization;
+  const timezone = location?.timezone ?? "UTC";
+
+  return {
+    bookingId,
+    dateLabel: formatBookingDate(startTime, timezone),
+    timeLabel: `${formatInTimeZone(new Date(startTime), timezone, "h:mm a")} – ${formatInTimeZone(new Date(endTime), timezone, "h:mm a")}`,
+    courtName: courtInfo?.name ?? "the court",
+    organizationName: organization?.name ?? null,
+    requestedConfig: formatRequestedConfig(requestedNetHeight, requestedCourtLines),
+    appUrl: getAppUrl(),
+  };
+}
 
 export async function createBooking(formData: FormData) {
   const courtId = String(formData.get("court_id"));
@@ -37,7 +82,7 @@ export async function createBooking(formData: FormData) {
       requested_net_height: requestedNetHeight,
       requested_court_lines: requestedCourtLines,
     })
-    .select("id")
+    .select("id, court:courts(name, location:locations(name, timezone, organization:organizations(name)))")
     .single();
 
   if (error) {
@@ -46,6 +91,18 @@ export async function createBooking(formData: FormData) {
         ? "That slot was just taken. Pick another one."
         : error.message;
     redirect(`${courtPath}?date=${date}&error=${encodeURIComponent(message)}`);
+  }
+
+  if (user.email) {
+    const details = bookingEmailDetails(
+      booking.id,
+      startTime,
+      endTime,
+      booking.court,
+      requestedNetHeight,
+      requestedCourtLines
+    );
+    await sendEmail(user.email, buildBookingConfirmationEmail(details));
   }
 
   redirect(`/bookings/${booking.id}?booked=1`);
@@ -68,7 +125,9 @@ export async function cancelBooking(formData: FormData) {
   // let the update below no-op without explanation.
   const { data: existing } = await supabase
     .from("bookings")
-    .select("source")
+    .select(
+      "source, start_time, end_time, requested_net_height, requested_court_lines, court:courts(name, location:locations(name, timezone, organization:organizations(name)))"
+    )
     .eq("id", bookingId)
     .single();
 
@@ -86,6 +145,24 @@ export async function cancelBooking(formData: FormData) {
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (existing) {
+    const { data: notify } = await supabase.rpc("get_booking_notification_email", {
+      target_booking_id: bookingId,
+    });
+    const ownerEmail = notify?.[0]?.email;
+    if (ownerEmail) {
+      const details = bookingEmailDetails(
+        bookingId,
+        existing.start_time,
+        existing.end_time,
+        existing.court,
+        existing.requested_net_height,
+        existing.requested_court_lines
+      );
+      await sendEmail(ownerEmail, buildBookingCancellationEmail(details));
+    }
   }
 
   revalidatePath("/bookings");
