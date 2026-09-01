@@ -8,6 +8,7 @@ import {
   generatePoolPlayMatches,
   type SeedSlot,
 } from "@/lib/bracketGeneration";
+import { propagateAdvancement, type EventMatch } from "@/lib/matchAdvancement";
 
 describe("nextPowerOf2", () => {
   it("rounds up to the next power of 2", () => {
@@ -103,6 +104,32 @@ describe("generateDoubleElimBracket", () => {
     );
     const losers = matches.filter((m) => m.bracket === "losers");
     expect(losers).toHaveLength(6);
+  });
+
+  it("drops the LOSER (not the winner) of a winners-round-1 match into the losers bracket", () => {
+    // Regression test: pairSelf's very first call (pairing WR1's match ids
+    // directly, before any LR matches exist) must use 'loser' advancement,
+    // not 'winner' -- confirmed by actually completing a WR1 match and
+    // propagating, rather than just inspecting the generated links.
+    const matches = generateDoubleElimBracket(seeds(["a", "b", "c", "d"]), "e1");
+    const wr1NonByeMatch = matches.find(
+      (m) => m.bracket === "winners" && m.round_number === 1 && !m.is_bye
+    )!;
+    const completed: EventMatch = {
+      ...wr1NonByeMatch,
+      winner_registration_id: wr1NonByeMatch.team_a_registration_id,
+      status: "completed",
+    };
+    const { updatedMatches } = propagateAdvancement(completed, matches);
+
+    const lr1Match = matches.find((m) => m.bracket === "losers" && m.round_number === 1)!;
+    const updatedLr1 = updatedMatches.find((m) => m.id === lr1Match.id)!;
+    const filledSlot =
+      updatedLr1.team_a_advances_from_match_id === wr1NonByeMatch.id
+        ? updatedLr1.team_a_registration_id
+        : updatedLr1.team_b_registration_id;
+
+    expect(filledSlot).toBe(wr1NonByeMatch.team_b_registration_id); // the loser, not team_a (the winner)
   });
 });
 

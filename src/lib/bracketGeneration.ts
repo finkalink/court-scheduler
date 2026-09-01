@@ -1,4 +1,4 @@
-import { propagateAdvancement, type EventMatch } from "@/lib/matchAdvancement";
+import { propagateAdvancement, type AdvancementType, type EventMatch } from "@/lib/matchAdvancement";
 
 export interface SeedSlot {
   registrationId: string | null; // null = bye
@@ -137,7 +137,13 @@ export function generateDoubleElimBracket(seeds: SeedSlot[], eventId: string): E
   const { matches, roundsMatchIds } = buildWinnersRounds(seeds, eventId);
   const winnersRounds = roundsMatchIds.length;
 
-  function pairSelf(ids: string[], lrRound: number): string[] {
+  // Pairs `ids` against each other into a new losers-bracket round. The
+  // advancement type depends on what `ids` represents: when pairing WR1's
+  // *match* ids directly (the very first losers round, before any LR
+  // matches exist yet), each match's LOSER is what drops in ("loser").
+  // When pairing already-existing LR match ids together in an internal
+  // consolidation round, each match's WINNER is what advances ("winner").
+  function pairSelf(ids: string[], lrRound: number, advancementType: AdvancementType): string[] {
     const nextIds: string[] = [];
     for (let i = 0; i < ids.length / 2; i++) {
       const id = crypto.randomUUID();
@@ -151,8 +157,8 @@ export function generateDoubleElimBracket(seeds: SeedSlot[], eventId: string): E
         team_b_registration_id: null,
         team_a_advances_from_match_id: ids[i * 2],
         team_b_advances_from_match_id: ids[i * 2 + 1],
-        advancement_type_a: "winner",
-        advancement_type_b: "winner",
+        advancement_type_a: advancementType,
+        advancement_type_b: advancementType,
         winner_registration_id: null,
         is_bye: false,
         is_forfeit: false,
@@ -195,13 +201,13 @@ export function generateDoubleElimBracket(seeds: SeedSlot[], eventId: string): E
     const drop = roundsMatchIds[k - 1]; // winners round k's match ids -- each match's loser drops in
     if (survivors === null) {
       lrRound += 1;
-      survivors = pairSelf(drop, lrRound);
+      survivors = pairSelf(drop, lrRound, "loser");
     } else {
       lrRound += 1;
       const afterDropIn = pairAcross(survivors, drop, lrRound);
       if (afterDropIn.length > 1) {
         lrRound += 1;
-        survivors = pairSelf(afterDropIn, lrRound);
+        survivors = pairSelf(afterDropIn, lrRound, "winner");
       } else {
         survivors = afterDropIn;
       }
