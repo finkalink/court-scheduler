@@ -12,6 +12,7 @@ export async function updateProfile(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const gender = String(formData.get("gender") || "").trim();
   const skillLevel = String(formData.get("skill_level") || "").trim();
+  const shareStatsPublicly = formData.get("share_stats_publicly") === "on";
   const rawNext = String(formData.get("next") || "");
   const next = isSafeRedirectPath(rawNext) ? rawNext : "";
 
@@ -37,6 +38,7 @@ export async function updateProfile(formData: FormData) {
       name: name || null,
       gender: gender || null,
       skill_level: skillLevel || null,
+      share_stats_publicly: shareStatsPublicly,
     })
     .eq("id", user.id)
     .select("id");

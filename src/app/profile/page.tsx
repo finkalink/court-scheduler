@@ -31,7 +31,7 @@ export default async function ProfilePage({
 
   const { data: profile } = await supabase
     .from("users")
-    .select("name, gender, skill_level")
+    .select("name, gender, skill_level, share_stats_publicly")
     .eq("id", user.id)
     .single();
 
@@ -79,6 +79,21 @@ export default async function ProfilePage({
         <label className="flex flex-col gap-1 text-sm">
           Level of play
           <SkillLevelPicker defaultValue={profile?.skill_level ?? null} />
+        </label>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="share_stats_publicly"
+            defaultChecked={profile?.share_stats_publicly ?? false}
+            className="mt-0.5"
+          />
+          <span>
+            Share my stats publicly
+            <span className="block text-xs text-gray-600 dark:text-neutral-400">
+              Shows your name, skill level, and win/loss record on a public
+              page anyone with the link can view. Off by default.
+            </span>
+          </span>
         </label>
         <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
           Save
