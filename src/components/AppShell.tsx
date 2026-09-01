@@ -26,6 +26,7 @@ export default function AppShell({
   const eventsActive = pathname.startsWith("/events") && !myEventsActive;
   const bookingsActive = pathname.startsWith("/bookings");
   const adminActive = pathname.startsWith("/admin");
+  const profileActive = pathname.startsWith("/profile");
 
   const linkClass = (active: boolean) =>
     `block rounded px-3 py-2 text-sm ${
@@ -98,6 +99,15 @@ export default function AppShell({
               onClick={() => setOpen(false)}
             >
               My Events
+            </Link>
+          )}
+          {userEmail && (
+            <Link
+              href="/profile"
+              className={linkClass(profileActive)}
+              onClick={() => setOpen(false)}
+            >
+              Profile
             </Link>
           )}
           {isOrgMember && (
