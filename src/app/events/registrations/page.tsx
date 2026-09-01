@@ -36,7 +36,7 @@ export default async function MyEventsPage({
   // the team's roster with an account.
   const { data: myTeams } = await supabase
     .from("event_team_members")
-    .select("team:event_teams(id, name, event_id, captain_user_id)")
+    .select("team:event_teams(id, name, event_id)")
     .eq("user_id", user.id);
 
   const myTeamIds = (myTeams ?? [])
@@ -49,7 +49,7 @@ export default async function MyEventsPage({
       ? await supabase
           .from("event_registrations")
           .select(
-            "id, status, team:event_teams(id, name, captain_user_id), event:events(id, title, event_type, location:locations(timezone), event_sessions(start_time))"
+            "id, status, team:event_teams(id, name), event:events(id, title, event_type, location:locations(timezone), event_sessions(start_time))"
           )
           .in("team_id", myTeamIds)
           .neq("status", "cancelled")
@@ -59,7 +59,7 @@ export default async function MyEventsPage({
   const rows = [
     ...(individualRegs ?? []).map((r) => ({
       ...r,
-      team: null as { id: string; name: string; captain_user_id: string | null } | null,
+      team: null as { id: string; name: string } | null,
     })),
     ...(teamRegs ?? []).map((r) => ({
       ...r,
@@ -124,15 +124,19 @@ export default async function MyEventsPage({
                 >
                   {row.status === "waitlisted" ? "Waitlisted" : "Registered"}
                 </span>
-                {(!row.team || row.team.captain_user_id === user.id) && (
-                  <form action={cancelEventRegistration}>
-                    <input type="hidden" name="registration_id" value={row.id} />
-                    <input type="hidden" name="event_id" value={event.id} />
-                    <button type="submit" className="text-xs text-red-700 underline dark:text-red-400">
-                      Cancel
-                    </button>
-                  </form>
-                )}
+                {/* Every row here already belongs to the viewer -- individualRegs is
+                    scoped to their own user_id, teamRegs to teams they're a member
+                    of via event_team_members -- so Cancel is always actionable.
+                    RLS ("event_registrations update own or captain or member")
+                    permits any team member, not just a captain, since an
+                    admin-assembled team has no captain at all. */}
+                <form action={cancelEventRegistration}>
+                  <input type="hidden" name="registration_id" value={row.id} />
+                  <input type="hidden" name="event_id" value={event.id} />
+                  <button type="submit" className="text-xs text-red-700 underline dark:text-red-400">
+                    Cancel
+                  </button>
+                </form>
               </div>
             </li>
           );
