@@ -97,6 +97,11 @@ export default async function AdminEventPage({
       <p className="text-sm text-gray-600">
         {EVENT_TYPE_LABELS[event.event_type]} · {event.status}
       </p>
+      <p className="mt-2">
+        <Link href={`/admin/locations/${locationId}/events/${eventId}/bracket`} className="text-sm underline">
+          Manage Bracket &rarr;
+        </Link>
+      </p>
 
       {event_added && <SuccessBanner>Event created — add sessions below.</SuccessBanner>}
       {event_saved && <SuccessBanner>Event saved.</SuccessBanner>}

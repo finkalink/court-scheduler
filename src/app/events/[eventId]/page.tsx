@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatBookingDate } from "@/lib/dateFormat";
 import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 import { registerForEvent } from "@/app/actions/events";
+import { computeStandings } from "@/lib/standings";
+import MatchCard from "@/components/MatchCard";
 
 export default async function EventDetailPage({
   params,
@@ -95,6 +97,38 @@ export default async function EventDetailPage({
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
 
+  const { data: matches } = await supabase
+    .from("event_matches")
+    .select("*")
+    .eq("event_id", eventId)
+    .order("bracket")
+    .order("round_number")
+    .order("slot_in_round");
+
+  const matchIds = (matches ?? []).map((m) => m.id);
+  const { data: matchSets } =
+    matchIds.length > 0
+      ? await supabase.from("event_match_sets").select("*").in("match_id", matchIds)
+      : { data: [] };
+
+  const { data: allRegistrations } = await supabase
+    .from("event_registrations")
+    .select("id, display_name, team:event_teams(name)")
+    .eq("event_id", eventId);
+  const nameByRegistrationId = new Map(
+    (allRegistrations ?? []).map((r) => {
+      const team = Array.isArray(r.team) ? r.team[0] : r.team;
+      return [r.id, team?.name ?? r.display_name ?? "Player"];
+    })
+  );
+
+  const { data: matchSessions } = await supabase
+    .from("event_sessions")
+    .select("id, start_time, label, court:courts(name)")
+    .eq("event_id", eventId);
+
+  const bracketsPresent = Array.from(new Set((matches ?? []).map((m) => m.bracket)));
+
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <Link href="/events" className="text-sm underline">
@@ -175,8 +209,12 @@ export default async function EventDetailPage({
                   </button>
                 </form>
               ) : (
-                <form action={registerForEvent}>
+                <form action={registerForEvent} className="flex flex-col gap-3">
                   <input type="hidden" name="event_id" value={event.id} />
+                  <label className="flex flex-col gap-1 text-sm">
+                    Display name (shown in results)
+                    <input name="display_name" required className="rounded border px-3 py-2" />
+                  </label>
                   <button
                     type="submit"
                     className="w-fit rounded bg-black px-4 py-2 text-sm text-white"
@@ -218,6 +256,122 @@ export default async function EventDetailPage({
           );
         })}
       </ul>
+
+      {bracketsPresent.length > 0 && (
+        <>
+          <h2 className="mt-6 text-lg font-medium">Bracket</h2>
+          {bracketsPresent.map((bracket) => {
+            const bracketMatches = (matches ?? []).filter((m) => m.bracket === bracket);
+            const isEliminationTree = bracket === "winners" || bracket === "losers" || bracket === "playoff";
+            const registrationIdsInBracket = Array.from(
+              new Set(
+                bracketMatches
+                  .flatMap((m) => [m.team_a_registration_id, m.team_b_registration_id])
+                  .filter((id): id is string => Boolean(id))
+              )
+            );
+            const standings = !isEliminationTree
+              ? computeStandings(bracketMatches, matchSets ?? [], registrationIdsInBracket)
+              : null;
+            const rounds = Array.from(new Set(bracketMatches.map((m) => m.round_number))).sort((a, b) => a - b);
+
+            return (
+              <div key={bracket} className="mt-4">
+                <h3 className="text-sm font-medium capitalize">{bracket.replace(/_/g, " ")}</h3>
+
+                {isEliminationTree && (
+                  <div className="mt-2 flex gap-3 overflow-x-auto pb-2">
+                    {rounds.map((roundNumber) => (
+                      <div key={roundNumber} className="flex shrink-0 flex-col gap-2">
+                        <p className="sticky top-0 bg-white text-xs font-medium dark:bg-neutral-950">
+                          Round {roundNumber}
+                        </p>
+                        {bracketMatches
+                          .filter((m) => m.round_number === roundNumber)
+                          .map((m) => {
+                            const session = (matchSessions ?? []).find((s) => s.id === m.session_id);
+                            const court = session ? (Array.isArray(session.court) ? session.court[0] : session.court) : null;
+                            return (
+                              <MatchCard
+                                key={m.id}
+                                roundLabel={`Round ${roundNumber}`}
+                                sideAName={nameByRegistrationId.get(m.team_a_registration_id ?? "") ?? "TBD"}
+                                sideBName={nameByRegistrationId.get(m.team_b_registration_id ?? "") ?? "TBD"}
+                                winnerName={m.winner_registration_id ? nameByRegistrationId.get(m.winner_registration_id) ?? null : null}
+                                sets={(matchSets ?? []).filter((s) => s.match_id === m.id)}
+                                isForfeit={m.is_forfeit}
+                                adminNote={m.admin_note}
+                                sessionSummary={session ? `${session.label ? session.label + " -- " : ""}${court?.name ?? ""}` : null}
+                              />
+                            );
+                          })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {standings && (
+                  <table className="mt-2 w-full max-w-md text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-gray-600 dark:text-neutral-400">
+                        <th>Team</th>
+                        <th>W</th>
+                        <th>L</th>
+                        <th>+/-</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {standings.map((row) => (
+                        <tr key={row.registrationId}>
+                          <td>{nameByRegistrationId.get(row.registrationId) ?? "Unknown"}</td>
+                          <td>{row.wins}</td>
+                          <td>{row.losses}</td>
+                          <td>{row.pointDiff}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                {!isEliminationTree && (
+                  <ul className="mt-3 flex flex-col gap-2">
+                    {bracketMatches.map((m) => {
+                      const session = (matchSessions ?? []).find((s) => s.id === m.session_id);
+                      const court = session ? (Array.isArray(session.court) ? session.court[0] : session.court) : null;
+                      const sideAName = nameByRegistrationId.get(m.team_a_registration_id ?? "") ?? "TBD";
+                      const sideBName = nameByRegistrationId.get(m.team_b_registration_id ?? "") ?? "TBD";
+                      const winnerName = m.winner_registration_id
+                        ? nameByRegistrationId.get(m.winner_registration_id) ?? null
+                        : null;
+                      return (
+                        <li
+                          key={m.id}
+                          className="rounded border border-gray-300 px-3 py-2 text-sm dark:border-neutral-800"
+                        >
+                          <p>
+                            Round {m.round_number} &middot;{" "}
+                            <span className={winnerName === sideAName ? "font-medium" : ""}>{sideAName}</span> vs{" "}
+                            <span className={winnerName === sideBName ? "font-medium" : ""}>{sideBName}</span>
+                            {m.is_forfeit && " (forfeit)"}
+                          </p>
+                          {session && (
+                            <p className="text-xs text-gray-600 dark:text-neutral-400">
+                              {session.label ? `${session.label} -- ` : ""}
+                              {formatBookingDate(session.start_time, timezone)} ·{" "}
+                              {formatInTimeZone(new Date(session.start_time), timezone, "h:mm a")}
+                              {court?.name ? ` · ${court.name}` : ""}
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </>
+      )}
     </div>
   );
 }

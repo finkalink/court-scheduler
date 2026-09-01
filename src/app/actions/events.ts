@@ -14,6 +14,7 @@ export async function registerForEvent(formData: FormData) {
     .getAll("teammate_name")
     .map((n) => String(n).trim())
     .filter(Boolean);
+  const displayName = String(formData.get("display_name") || "").trim();
 
   const supabase = await createClient();
   const {
@@ -36,6 +37,10 @@ export async function registerForEvent(formData: FormData) {
 
   if (event.status !== "published" && event.status !== "registration_open") {
     redirect(`/events/${eventId}?register_error=${encodeURIComponent("Registration isn't open for this event.")}`);
+  }
+
+  if (event.registration_mode === "individual" && !displayName) {
+    redirect(`/events/${eventId}?register_error=${encodeURIComponent("Enter a display name.")}`);
   }
 
   let teamId: string | null = null;
@@ -108,6 +113,7 @@ export async function registerForEvent(formData: FormData) {
     team_id: teamId,
     user_id: teamId ? null : user.id,
     status,
+    display_name: teamId ? null : displayName || null,
   });
 
   if (error) {
