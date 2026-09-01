@@ -2,13 +2,14 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { groupEventsByCity } from "@/lib/eventGrouping";
 import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
+import { formatEventDateRange } from "@/lib/dateFormat";
 
 export default async function EventsPage() {
   const supabase = await createClient();
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, title, event_type, location:locations(city), event_sessions(start_time)")
+    .select("id, title, event_type, location:locations(city, timezone), event_sessions(start_time)")
     .neq("status", "draft")
     .neq("status", "cancelled");
 
@@ -20,6 +21,7 @@ export default async function EventsPage() {
       eventType: e.event_type,
       city: location?.city ?? null,
       sessions: e.event_sessions,
+      dateRange: formatEventDateRange(e.event_sessions, location?.timezone ?? "UTC"),
     };
   });
 
@@ -45,6 +47,9 @@ export default async function EventsPage() {
                     className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
                   >
                     <p className="font-medium">{event.title}</p>
+                    {event.dateRange && (
+                      <p className="text-sm text-gray-600 dark:text-neutral-400">{event.dateRange}</p>
+                    )}
                     <p className="text-sm text-gray-600">{EVENT_TYPE_LABELS[event.eventType]}</p>
                   </Link>
                 </li>
@@ -65,6 +70,9 @@ export default async function EventsPage() {
                   className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
                 >
                   <p className="font-medium">{event.title}</p>
+                  {event.dateRange && (
+                    <p className="text-sm text-gray-600 dark:text-neutral-400">{event.dateRange}</p>
+                  )}
                   <p className="text-sm text-gray-600">{EVENT_TYPE_LABELS[event.eventType]}</p>
                 </Link>
               </li>
