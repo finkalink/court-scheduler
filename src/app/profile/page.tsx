@@ -3,13 +3,14 @@ import { createClient } from "@/lib/supabase/server";
 import { updateProfile } from "@/app/actions/profile";
 import SkillLevelPicker from "@/components/SkillLevelPicker";
 import SuccessBanner from "@/components/SuccessBanner";
+import { isProfileComplete } from "@/lib/userProfile";
+import { isSafeRedirectPath } from "@/lib/redirects";
 
-// A safe redirect target must be a same-origin relative path: starts with a
-// single "/" and not "//" or "/\" (both of which browsers can treat as
-// protocol-relative, i.e. off-site).
-function isSafeRedirectPath(path: string): boolean {
-  return /^\/(?!\/|\\)/.test(path);
-}
+const FIELD_LABELS: { key: "name" | "gender" | "skill_level"; label: string }[] = [
+  { key: "name", label: "Name" },
+  { key: "gender", label: "Gender" },
+  { key: "skill_level", label: "Level of play" },
+];
 
 export default async function ProfilePage({
   searchParams,
@@ -34,6 +35,11 @@ export default async function ProfilePage({
     .eq("id", user.id)
     .single();
 
+  const missingFields = profile
+    ? FIELD_LABELS.filter((f) => !profile[f.key]).map((f) => f.label)
+    : FIELD_LABELS.map((f) => f.label);
+  const profileIncomplete = !profile || !isProfileComplete(profile);
+
   return (
     <div className="mx-auto mt-6 max-w-sm px-4 sm:mt-10 sm:px-0">
       <h1 className="text-xl font-semibold sm:text-2xl">Profile</h1>
@@ -43,6 +49,11 @@ export default async function ProfilePage({
       {error && (
         <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
           {error}
+        </p>
+      )}
+      {profileIncomplete && (
+        <p className="mt-4 rounded bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300">
+          Still missing: {missingFields.join(", ")}
         </p>
       )}
 

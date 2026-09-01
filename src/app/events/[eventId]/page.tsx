@@ -7,16 +7,18 @@ import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 import { registerForEvent } from "@/app/actions/events";
 import { computeStandings } from "@/lib/standings";
 import MatchCard from "@/components/MatchCard";
+import SuccessBanner from "@/components/SuccessBanner";
+import { isProfileComplete } from "@/lib/userProfile";
 
 export default async function EventDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ eventId: string }>;
-  searchParams: Promise<{ register_error?: string }>;
+  searchParams: Promise<{ register_error?: string; message?: string }>;
 }) {
   const { eventId } = await params;
-  const { register_error: registerError } = await searchParams;
+  const { register_error: registerError, message } = await searchParams;
   const supabase = await createClient();
 
   const { data: event } = await supabase
@@ -40,6 +42,7 @@ export default async function EventDetailPage({
   let myTeamName: string | null = null;
   let registeredCount = 0;
   let profileName: string | null = null;
+  let profileIncomplete = false;
 
   if (user) {
     const { data: individualReg } = await supabase
@@ -83,8 +86,17 @@ export default async function EventDetailPage({
       .eq("event_id", eventId);
     registeredCount = (counts ?? []).find((c) => c.status === "registered")?.count ?? 0;
 
-    const { data: profile } = await supabase.from("users").select("name").eq("id", user.id).single();
+    const { data: profile } = await supabase
+      .from("users")
+      .select("name, gender, skill_level")
+      .eq("id", user.id)
+      .single();
     profileName = profile?.name ?? null;
+    // Must match the exemption in registerForEvent (src/app/actions/events.ts)
+    // exactly -- open_play events don't require a complete profile to
+    // register, so the form must render for them regardless.
+    profileIncomplete =
+      event.event_type !== "open_play" && (!profile || !isProfileComplete(profile));
   }
 
   const isFull = event.capacity != null && registeredCount >= event.capacity;
@@ -162,6 +174,8 @@ export default async function EventDetailPage({
         )}
       </p>
 
+      {message && <SuccessBanner>{message}</SuccessBanner>}
+
       {event.description && <p className="mt-3 text-sm">{event.description}</p>}
       {event.capacity && (
         <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400">Capacity: {event.capacity}</p>
@@ -190,6 +204,16 @@ export default async function EventDetailPage({
                 : myRegistration?.status === "waitlisted"
                   ? "You're on the waitlist."
                   : "You're registered."}
+            </p>
+          ) : profileIncomplete ? (
+            <p className="mt-4 text-sm">
+              Complete your profile to register for this event.{" "}
+              <a
+                href={`/profile?next=${encodeURIComponent(`/events/${eventId}`)}`}
+                className="underline"
+              >
+                Complete your profile
+              </a>
             </p>
           ) : (
             <div className="mt-4">

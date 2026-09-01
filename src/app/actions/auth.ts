@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isSafeRedirectPath } from "@/lib/redirects";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email"));
@@ -22,7 +23,7 @@ export async function signIn(formData: FormData) {
   // no-op when nothing's pending.
   await supabase.rpc("claim_pending_team_invites");
 
-  if (next) {
+  if (next && isSafeRedirectPath(next)) {
     redirect(next);
   }
 

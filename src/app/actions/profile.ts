@@ -3,13 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isSafeRedirectPath } from "@/lib/redirects";
 
-// A safe redirect target must be a same-origin relative path: starts with a
-// single "/" and not "//" or "/\" (both of which browsers can treat as
-// protocol-relative, i.e. off-site).
-function isSafeRedirectPath(path: string): boolean {
-  return /^\/(?!\/|\\)/.test(path);
-}
+const VALID_GENDERS = new Set(["male", "female", "prefer_not_to_say"]);
+const VALID_SKILL_LEVELS = new Set(["Recreational", "B", "BB", "A", "AA", "Open"]);
 
 export async function updateProfile(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
@@ -27,23 +24,43 @@ export async function updateProfile(formData: FormData) {
     redirect("/login?next=/profile");
   }
 
-  const { error } = await supabase
+  // Client-side <select>s already constrain these, but nothing stops a raw
+  // POST from supplying an out-of-set value -- reject before ever touching
+  // the database rather than relying on the DB check constraint to fail.
+  if ((gender && !VALID_GENDERS.has(gender)) || (skillLevel && !VALID_SKILL_LEVELS.has(skillLevel))) {
+    redirect(`/profile?error=${encodeURIComponent("Invalid profile value.")}`);
+  }
+
+  const { data: updated, error } = await supabase
     .from("users")
     .update({
       name: name || null,
       gender: gender || null,
       skill_level: skillLevel || null,
     })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .select("id");
 
   if (error) {
-    redirect(`/profile?error=${encodeURIComponent(error.message)}`);
+    redirect(`/profile?error=${encodeURIComponent("Couldn't save your profile. Try again.")}`);
+  }
+
+  // Mirrors the zero-row check in cancelEventRegistration
+  // (src/app/actions/events.ts) -- an update matching no row (e.g. no
+  // users row exists for this account, which shouldn't happen given the
+  // signup trigger but isn't guaranteed) returns no error, so it must be
+  // checked separately to avoid a false "saved" redirect.
+  if (!updated || updated.length === 0) {
+    redirect(
+      `/profile?error=${encodeURIComponent("Couldn't find your account. Try signing in again.")}`
+    );
   }
 
   revalidatePath("/profile");
 
   if (next) {
-    redirect(`${next}?message=${encodeURIComponent("Profile saved.")}`);
+    const separator = next.includes("?") ? "&" : "?";
+    redirect(`${next}${separator}message=${encodeURIComponent("Profile saved.")}`);
   }
 
   redirect("/profile?saved=1");
