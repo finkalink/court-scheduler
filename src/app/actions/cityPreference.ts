@@ -25,7 +25,19 @@ export async function setDefaultCity(formData: FormData) {
     redirect(`/choose-city?error=${encodeURIComponent("Pick a valid city.")}`);
   }
 
-  await supabase.from("users").update({ default_city: city }).eq("id", user.id);
+  const { data: updated, error } = await supabase
+    .from("users")
+    .update({ default_city: city })
+    .eq("id", user.id)
+    .select("id");
+
+  if (error) {
+    redirect(`/choose-city?error=${encodeURIComponent("Couldn't save your city. Try again.")}`);
+  }
+
+  if (!updated || updated.length === 0) {
+    redirect(`/choose-city?error=${encodeURIComponent("Couldn't save your city. Try again.")}`);
+  }
 
   redirect(`/cities/${encodeURIComponent(city)}`);
 }
@@ -42,7 +54,19 @@ export async function skipCityPrompt() {
     redirect("/login?next=/choose-city");
   }
 
-  await supabase.from("users").update({ city_prompt_dismissed: true }).eq("id", user.id);
+  const { data: updated, error } = await supabase
+    .from("users")
+    .update({ city_prompt_dismissed: true })
+    .eq("id", user.id)
+    .select("id");
+
+  if (error) {
+    redirect(`/choose-city?error=${encodeURIComponent("Couldn't save. Try again.")}`);
+  }
+
+  if (!updated || updated.length === 0) {
+    redirect(`/choose-city?error=${encodeURIComponent("Couldn't save. Try again.")}`);
+  }
 
   redirect("/");
 }
