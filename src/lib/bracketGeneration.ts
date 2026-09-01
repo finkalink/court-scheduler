@@ -250,3 +250,74 @@ export function generateDoubleElimBracket(seeds: SeedSlot[], eventId: string): E
 
   return applyByePropagation(matches);
 }
+
+const BYE_PLACEHOLDER = "__bye__";
+
+// Standard round-robin "circle method": one item is fixed, the rest
+// rotate one position each round; each round pairs position i with
+// position (n-1-i). Produces n-1 rounds where no item repeats within a
+// round.
+function circlePairings(items: string[]): string[][][] {
+  const n = items.length;
+  const fixed = items[0];
+  let rest = items.slice(1);
+  const rounds: string[][][] = [];
+
+  for (let r = 0; r < n - 1; r++) {
+    const arranged = [fixed, ...rest];
+    const pairs: string[][] = [];
+    for (let i = 0; i < n / 2; i++) {
+      pairs.push([arranged[i], arranged[n - 1 - i]]);
+    }
+    rounds.push(pairs);
+    rest = [rest[rest.length - 1], ...rest.slice(0, rest.length - 1)];
+  }
+
+  return rounds;
+}
+
+export function generateRoundRobinMatches(
+  registrationIds: string[],
+  eventId: string,
+  bracket: string = "round_robin"
+): EventMatch[] {
+  const items = registrationIds.length % 2 === 0 ? registrationIds : [...registrationIds, BYE_PLACEHOLDER];
+  const rounds = circlePairings(items);
+  const matches: EventMatch[] = [];
+
+  rounds.forEach((pairs, roundIndex) => {
+    let slot = 1;
+    for (const [a, b] of pairs) {
+      if (a === BYE_PLACEHOLDER || b === BYE_PLACEHOLDER) continue; // a bye week, not a match
+      matches.push({
+        id: crypto.randomUUID(),
+        event_id: eventId,
+        bracket,
+        round_number: roundIndex + 1,
+        slot_in_round: slot,
+        team_a_registration_id: a,
+        team_b_registration_id: b,
+        team_a_advances_from_match_id: null,
+        team_b_advances_from_match_id: null,
+        advancement_type_a: null,
+        advancement_type_b: null,
+        winner_registration_id: null,
+        is_bye: false,
+        is_forfeit: false,
+        status: "pending",
+      });
+      slot += 1;
+    }
+  });
+
+  return matches;
+}
+
+export function generatePoolPlayMatches(
+  pools: Record<string, string[]>,
+  eventId: string
+): EventMatch[] {
+  return Object.entries(pools).flatMap(([poolLabel, registrationIds]) =>
+    generateRoundRobinMatches(registrationIds, eventId, poolLabel)
+  );
+}

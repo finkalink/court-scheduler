@@ -4,6 +4,8 @@ import {
   seedOrder,
   generateSingleElimBracket,
   generateDoubleElimBracket,
+  generateRoundRobinMatches,
+  generatePoolPlayMatches,
   type SeedSlot,
 } from "@/lib/bracketGeneration";
 
@@ -101,5 +103,54 @@ describe("generateDoubleElimBracket", () => {
     );
     const losers = matches.filter((m) => m.bracket === "losers");
     expect(losers).toHaveLength(6);
+  });
+});
+
+describe("generateRoundRobinMatches", () => {
+  it("generates every pair exactly once for 4 teams", () => {
+    const matches = generateRoundRobinMatches(["a", "b", "c", "d"], "e1");
+    expect(matches).toHaveLength(6); // C(4,2)
+
+    const pairs = new Set(
+      matches.map((m) => [m.team_a_registration_id, m.team_b_registration_id].sort().join("|"))
+    );
+    expect(pairs.size).toBe(6);
+  });
+
+  it("groups matches into rounds where no team repeats", () => {
+    const matches = generateRoundRobinMatches(["a", "b", "c", "d"], "e1");
+    const byRound = new Map<number, string[]>();
+    for (const m of matches) {
+      const list = byRound.get(m.round_number) ?? [];
+      list.push(m.team_a_registration_id!, m.team_b_registration_id!);
+      byRound.set(m.round_number, list);
+    }
+    for (const ids of byRound.values()) {
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it("handles an odd number of teams with a bye week (no crash, correct match count)", () => {
+    const matches = generateRoundRobinMatches(["a", "b", "c"], "e1");
+    expect(matches).toHaveLength(3); // C(3,2)
+  });
+
+  it("labels matches with a custom bracket name", () => {
+    const matches = generateRoundRobinMatches(["a", "b"], "e1", "pool_a");
+    expect(matches[0].bracket).toBe("pool_a");
+  });
+});
+
+describe("generatePoolPlayMatches", () => {
+  it("generates independent round robins per pool", () => {
+    const matches = generatePoolPlayMatches({ pool_a: ["a", "b"], pool_b: ["c", "d", "e"] }, "e1");
+    const poolA = matches.filter((m) => m.bracket === "pool_a");
+    const poolB = matches.filter((m) => m.bracket === "pool_b");
+    expect(poolA).toHaveLength(1);
+    expect(poolB).toHaveLength(3); // C(3,2)
+    for (const m of poolA) {
+      expect(["a", "b"]).toContain(m.team_a_registration_id);
+      expect(["a", "b"]).toContain(m.team_b_registration_id);
+    }
   });
 });
