@@ -10,10 +10,7 @@ const UNIQUE_VIOLATION = "23505";
 export async function registerForEvent(formData: FormData) {
   const eventId = String(formData.get("event_id"));
   const teamName = String(formData.get("team_name") || "").trim();
-  const teammateNames = formData
-    .getAll("teammate_name")
-    .map((n) => String(n).trim())
-    .filter(Boolean);
+  const captainDisplayName = String(formData.get("captain_display_name") || "").trim();
   const displayName = String(formData.get("display_name") || "").trim();
 
   const supabase = await createClient();
@@ -53,6 +50,27 @@ export async function registerForEvent(formData: FormData) {
     if (!teamName) {
       redirect(`/events/${eventId}?register_error=${encodeURIComponent("Team name is required.")}`);
     }
+    if (!captainDisplayName) {
+      redirect(`/events/${eventId}?register_error=${encodeURIComponent("Enter your display name.")}`);
+    }
+
+    // Every teammate slot needs a name AND an email now -- every roster
+    // spot must resolve to a real account, either immediately (an
+    // existing account) or eventually (a pending invite claimed at
+    // sign-in). Only one of the two filled in is a form mistake, not a
+    // valid partial entry.
+    const teammates: { name: string; email: string }[] = [];
+    for (let i = 1; i <= 5; i++) {
+      const name = String(formData.get(`teammate_name_${i}`) || "").trim();
+      const email = String(formData.get(`teammate_email_${i}`) || "").trim();
+      if (!name && !email) continue;
+      if (!name || !email) {
+        redirect(
+          `/events/${eventId}?register_error=${encodeURIComponent(`Teammate ${i} needs both a name and an email.`)}`
+        );
+      }
+      teammates.push({ name, email });
+    }
 
     const { data: team, error: teamError } = await supabase
       .from("event_teams")
@@ -68,30 +86,43 @@ export async function registerForEvent(formData: FormData) {
 
     const { error: captainError } = await supabase
       .from("event_team_members")
-      .insert({ team_id: teamId, user_id: user.id, display_name: user.email ?? "Captain" });
+      .insert({ team_id: teamId, user_id: user.id, display_name: captainDisplayName });
 
-    let rosterError = captainError;
-    if (!rosterError) {
-      for (const name of teammateNames) {
-        const { error: teammateError } = await supabase
-          .from("event_team_members")
-          .insert({ team_id: teamId, display_name: name });
+    let rosterErrorMessage: string | null = captainError ? "Couldn't add your roster. Try again." : null;
+
+    if (!rosterErrorMessage) {
+      for (const teammate of teammates) {
+        const { data: matchedUserId, error: lookupError } = await supabase.rpc(
+          "find_registered_user_by_email",
+          { check_email: teammate.email }
+        );
+        if (lookupError) {
+          throw new Error(lookupError.message);
+        }
+
+        const { error: teammateError } = await supabase.from("event_team_members").insert(
+          matchedUserId
+            ? { team_id: teamId, user_id: matchedUserId, display_name: teammate.name }
+            : { team_id: teamId, invited_email: teammate.email, display_name: teammate.name }
+        );
+
         if (teammateError) {
-          rosterError = teammateError;
+          rosterErrorMessage =
+            teammateError.code === UNIQUE_VIOLATION
+              ? `${teammate.email} already has a pending invite elsewhere.`
+              : "Couldn't add your roster. Try again.";
           break;
         }
       }
     }
 
-    if (rosterError) {
+    if (rosterErrorMessage) {
       // Roll back the orphaned team row -- same pattern as
       // addEventSession's session/booking rollback in
       // src/app/admin/eventActions.ts: a team without its full roster is
       // meaningless, so don't leave it behind.
       await supabase.from("event_teams").delete().eq("id", teamId);
-      redirect(
-        `/events/${eventId}?register_error=${encodeURIComponent("Couldn't add your roster. Try again.")}`
-      );
+      redirect(`/events/${eventId}?register_error=${encodeURIComponent(rosterErrorMessage)}`);
     }
   }
 

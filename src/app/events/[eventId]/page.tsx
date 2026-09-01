@@ -192,14 +192,29 @@ export default async function EventDetailPage({
                     Team name
                     <input name="team_name" required className="rounded border px-3 py-2" />
                   </label>
-                  <p className="text-xs text-gray-600 dark:text-neutral-400">Teammates (optional)</p>
+                  <label className="flex flex-col gap-1 text-sm">
+                    Your display name (shown on the roster)
+                    <input name="captain_display_name" required className="rounded border px-3 py-2" />
+                  </label>
+                  <p className="text-xs text-gray-600 dark:text-neutral-400">
+                    Teammates (optional) -- each needs a name and their email. If they
+                    aren&apos;t registered yet, they&apos;ll show as &quot;Pending&quot;
+                    until they sign up with that exact email.
+                  </p>
                   {[1, 2, 3, 4, 5].map((n) => (
-                    <input
-                      key={n}
-                      name="teammate_name"
-                      placeholder={`Teammate ${n}`}
-                      className="rounded border px-3 py-2 text-sm"
-                    />
+                    <div key={n} className="flex gap-2">
+                      <input
+                        name={`teammate_name_${n}`}
+                        placeholder={`Teammate ${n} name`}
+                        className="w-1/2 rounded border px-3 py-2 text-sm"
+                      />
+                      <input
+                        name={`teammate_email_${n}`}
+                        type="email"
+                        placeholder={`Teammate ${n} email`}
+                        className="w-1/2 rounded border px-3 py-2 text-sm"
+                      />
+                    </div>
                   ))}
                   <button
                     type="submit"
