@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 interface MatchCardProps {
   roundLabel: string;
   sideAName: string;
   sideBName: string;
+  sideAHref?: string | null;
+  sideBHref?: string | null;
   winnerName: string | null;
   sets: { set_number: number; team_a_points: number; team_b_points: number }[];
   isForfeit: boolean;
@@ -17,6 +20,8 @@ export default function MatchCard({
   roundLabel,
   sideAName,
   sideBName,
+  sideAHref = null,
+  sideBHref = null,
   winnerName,
   sets,
   isForfeit,
@@ -26,14 +31,37 @@ export default function MatchCard({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => setExpanded((e) => !e)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setExpanded((x) => !x);
+        }
+      }}
       className="w-56 shrink-0 rounded border border-gray-300 px-3 py-2 text-left text-sm dark:border-neutral-800"
     >
       <p className="text-xs text-gray-600 dark:text-neutral-400">{roundLabel}</p>
-      <p className={winnerName === sideAName ? "font-medium" : ""}>{sideAName}</p>
-      <p className={winnerName === sideBName ? "font-medium" : ""}>{sideBName}</p>
+      <p className={winnerName === sideAName ? "font-medium" : ""}>
+        {sideAHref ? (
+          <Link href={sideAHref} onClick={(e) => e.stopPropagation()} className="underline decoration-dotted">
+            {sideAName}
+          </Link>
+        ) : (
+          sideAName
+        )}
+      </p>
+      <p className={winnerName === sideBName ? "font-medium" : ""}>
+        {sideBHref ? (
+          <Link href={sideBHref} onClick={(e) => e.stopPropagation()} className="underline decoration-dotted">
+            {sideBName}
+          </Link>
+        ) : (
+          sideBName
+        )}
+      </p>
       {isForfeit && <p className="text-xs text-gray-600 dark:text-neutral-400">Forfeit</p>}
       {sessionSummary && <p className="text-xs text-gray-600 dark:text-neutral-400">{sessionSummary}</p>}
       {expanded && (
@@ -47,6 +75,6 @@ export default function MatchCard({
           {adminNote && <p className="mt-1 italic">{adminNote}</p>}
         </div>
       )}
-    </button>
+    </div>
   );
 }
