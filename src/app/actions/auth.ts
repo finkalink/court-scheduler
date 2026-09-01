@@ -15,6 +15,13 @@ export async function signIn(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`);
   }
 
+  // Links any pending team-roster invites addressed to this exact email
+  // to the now-authenticated account (supabase/migrations/0021_team_roster_invites.sql).
+  // Can't happen at signUp instead -- no session exists yet at that
+  // point in this app's email-confirmation-required flow. Harmless
+  // no-op when nothing's pending.
+  await supabase.rpc("claim_pending_team_invites");
+
   if (next) {
     redirect(next);
   }
