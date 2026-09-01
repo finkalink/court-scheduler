@@ -120,11 +120,16 @@ export async function regenerateBracket(formData: FormData) {
 
   const supabase = await createClient();
 
+  // A bye auto-completes itself at generation time -- that's not an
+  // admin-entered result, so it shouldn't block regeneration (otherwise
+  // any bracket with a bye could never be regenerated at all, even before
+  // a single real match has been played).
   const { count: completedCount } = await supabase
     .from("event_matches")
     .select("id", { count: "exact", head: true })
     .eq("event_id", eventId)
-    .eq("status", "completed");
+    .eq("status", "completed")
+    .eq("is_bye", false);
 
   if ((completedCount ?? 0) > 0) {
     redirect(

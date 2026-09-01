@@ -90,7 +90,10 @@ export default async function AdminBracketPage({
   const bracketsPresent = Array.from(new Set((matches ?? []).map((m) => m.bracket)));
   const unscheduledCount = (matches ?? []).filter((m) => m.status === "pending" && !m.session_id).length;
   const unusedSessionCount = (sessions ?? []).filter((s) => !(matches ?? []).some((m) => m.session_id === s.id)).length;
-  const anyCompleted = (matches ?? []).some((m) => m.status === "completed");
+  // A bye auto-completes itself at generation time -- that's not an
+  // admin-entered result, so it doesn't count against regeneration
+  // eligibility (mirrors the same exclusion in regenerateBracket).
+  const anyCompleted = (matches ?? []).some((m) => m.status === "completed" && !m.is_bye);
 
   return (
     <div>
