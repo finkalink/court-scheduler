@@ -332,6 +332,41 @@ export default async function EventDetailPage({
                     </tbody>
                   </table>
                 )}
+
+                {!isEliminationTree && (
+                  <ul className="mt-3 flex flex-col gap-2">
+                    {bracketMatches.map((m) => {
+                      const session = (matchSessions ?? []).find((s) => s.id === m.session_id);
+                      const court = session ? (Array.isArray(session.court) ? session.court[0] : session.court) : null;
+                      const sideAName = nameByRegistrationId.get(m.team_a_registration_id ?? "") ?? "TBD";
+                      const sideBName = nameByRegistrationId.get(m.team_b_registration_id ?? "") ?? "TBD";
+                      const winnerName = m.winner_registration_id
+                        ? nameByRegistrationId.get(m.winner_registration_id) ?? null
+                        : null;
+                      return (
+                        <li
+                          key={m.id}
+                          className="rounded border border-gray-300 px-3 py-2 text-sm dark:border-neutral-800"
+                        >
+                          <p>
+                            Round {m.round_number} &middot;{" "}
+                            <span className={winnerName === sideAName ? "font-medium" : ""}>{sideAName}</span> vs{" "}
+                            <span className={winnerName === sideBName ? "font-medium" : ""}>{sideBName}</span>
+                            {m.is_forfeit && " (forfeit)"}
+                          </p>
+                          {session && (
+                            <p className="text-xs text-gray-600 dark:text-neutral-400">
+                              {session.label ? `${session.label} -- ` : ""}
+                              {formatBookingDate(session.start_time, timezone)} ·{" "}
+                              {formatInTimeZone(new Date(session.start_time), timezone, "h:mm a")}
+                              {court?.name ? ` · ${court.name}` : ""}
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             );
           })}
