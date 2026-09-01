@@ -81,27 +81,35 @@ don't already know the letter-rating convention:
   intentionally coarser and a player who specifically knows they're `AA`
   presumably knows the letter system.
 
-## Signup & Profile page
+## Profile page (not at signup)
 
 Signup (`src/app/signup/page.tsx` / `signUp` in
-`src/app/actions/auth.ts`) gains three optional fields — name, gender,
-skill level (same picker as above) — all skippable, since requiring them
-would add friction to account creation itself. Any fields provided are
-written to the new `users` row in the same action, right after
-`supabase.auth.signUp()` succeeds (the `handle_new_user` trigger has
-already created that row with `id`/`email` by that point — same timing
-reasoning already established by the team-roster-invite work's
-`claim_pending_team_invites`).
+`src/app/actions/auth.ts`) stays exactly as it is today — just
+email/password. It cannot safely collect the optional profile fields in
+the same request: `supabase.auth.signUp()` doesn't establish an
+authenticated session in this app (email confirmation is required before
+login works, the same fact already established by the team-roster-invite
+work), so a write attributed to the new account right there would run
+under an unauthenticated client. RLS's `users update own` (`id =
+auth.uid()`) would silently match zero rows rather than error — quietly
+dropping whatever the player typed, with nothing visibly wrong. Unlike
+the team-roster-invite case, there's no later authenticated moment to
+defer *this specific* write to that doesn't require inventing a new,
+unauthenticated, cross-user write path (staging values by email before
+the account exists) — a new class of write this app doesn't have
+anywhere else. Not worth it: the registration gate (below) already
+prompts a player to fill in their profile at the moment it actually
+matters, so nothing forces profile completion to happen at signup time
+specifically.
 
 New `/profile` page, linked from `AppShell`'s nav alongside "My
 Bookings"/"My Events" — a form pre-filled with the signed-in player's
 current `name`/`gender`/`skill_level`, saved via a new `updateProfile`
 server action (`src/app/actions/profile.ts`) that updates their own
-`users` row. This is the only place to complete or change a profile after
-signup. A blank name field is stored as `null`, not an empty string — so
-`isProfileComplete` only ever needs to check for `null`/missing, never an
-empty-string edge case, on either the signup or profile-update write
-path.
+`users` row. This is the only place to set or change a profile, at any
+point after a real sign-in. A blank name field is stored as `null`, not
+an empty string — so `isProfileComplete` only ever needs to check for
+`null`/missing, never an empty-string edge case.
 
 ## Registration gate
 
@@ -160,9 +168,8 @@ unscoped work — flagged here as a natural next step, not designed.
 
 - Apply the migration; confirm the two new check constraints reject an
   invalid value and accept every listed tier/gender option.
-- Sign up a new account leaving all three profile fields blank; confirm
-  the account is created successfully and `/profile` shows them all
-  empty afterward.
+- Sign up a new account (still just email/password); confirm `/profile`
+  shows all three fields empty afterward, once signed in.
 - From `/profile`, set name/gender/skill level (try both the letter and
   plain-language skill pickers, including a plain-language selection that
   should auto-map — e.g. Advanced → `A` in the database) and save;
