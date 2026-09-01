@@ -4,11 +4,19 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+// A safe redirect target must be a same-origin relative path: starts with a
+// single "/" and not "//" or "/\" (both of which browsers can treat as
+// protocol-relative, i.e. off-site).
+function isSafeRedirectPath(path: string): boolean {
+  return /^\/(?!\/|\\)/.test(path);
+}
+
 export async function updateProfile(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const gender = String(formData.get("gender") || "").trim();
   const skillLevel = String(formData.get("skill_level") || "").trim();
-  const next = String(formData.get("next") || "");
+  const rawNext = String(formData.get("next") || "");
+  const next = isSafeRedirectPath(rawNext) ? rawNext : "";
 
   const supabase = await createClient();
   const {

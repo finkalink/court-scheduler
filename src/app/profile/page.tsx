@@ -4,12 +4,20 @@ import { updateProfile } from "@/app/actions/profile";
 import SkillLevelPicker from "@/components/SkillLevelPicker";
 import SuccessBanner from "@/components/SuccessBanner";
 
+// A safe redirect target must be a same-origin relative path: starts with a
+// single "/" and not "//" or "/\" (both of which browsers can treat as
+// protocol-relative, i.e. off-site).
+function isSafeRedirectPath(path: string): boolean {
+  return /^\/(?!\/|\\)/.test(path);
+}
+
 export default async function ProfilePage({
   searchParams,
 }: {
   searchParams: Promise<{ next?: string; message?: string; saved?: string; error?: string }>;
 }) {
-  const { next, message, saved, error } = await searchParams;
+  const { next: rawNext, message, saved, error } = await searchParams;
+  const next = rawNext && isSafeRedirectPath(rawNext) ? rawNext : undefined;
   const supabase = await createClient();
   const {
     data: { user },
