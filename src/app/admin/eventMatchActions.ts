@@ -11,7 +11,8 @@ import {
   nextPowerOf2,
   type SeedSlot,
 } from "@/lib/bracketGeneration";
-import type { EventMatch } from "@/lib/matchAdvancement";
+import { propagateAdvancement, type EventMatch } from "@/lib/matchAdvancement";
+import { deriveMatchWinner } from "@/lib/matchResult";
 
 function bracketPath(locationId: string, eventId: string) {
   return `/admin/locations/${locationId}/events/${eventId}/bracket`;
@@ -137,4 +138,137 @@ export async function regenerateBracket(formData: FormData) {
 
   revalidatePath(bracketPath(locationId, eventId));
   redirect(`${bracketPath(locationId, eventId)}?bracket_reset=1`);
+}
+
+// Applies a completed match's advancement one hop downstream, writing
+// only the two slot columns each affected match actually needs. Returns
+// the ids of any downstream matches that were already `completed` and so
+// were left untouched instead of overwritten -- the caller surfaces these
+// to the admin as a "review this match" banner rather than silently
+// cascading further (see the design spec's "Correction cascade" decision).
+async function applyAdvancement(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  completedMatch: EventMatch,
+  eventId: string
+): Promise<string[]> {
+  const { data: allMatches } = await supabase.from("event_matches").select("*").eq("event_id", eventId);
+  const { updatedMatches, secondHopWarnings } = propagateAdvancement(completedMatch, (allMatches ?? []) as EventMatch[]);
+  for (const m of updatedMatches) {
+    await supabase
+      .from("event_matches")
+      .update({ team_a_registration_id: m.team_a_registration_id, team_b_registration_id: m.team_b_registration_id })
+      .eq("id", m.id);
+  }
+  return secondHopWarnings.map((m) => m.id);
+}
+
+export async function recordMatchResult(formData: FormData) {
+  const matchId = String(formData.get("match_id"));
+  const eventId = String(formData.get("event_id"));
+  const locationId = String(formData.get("location_id"));
+  const forfeit = formData.get("forfeit") === "on";
+  const forfeitWinner = String(formData.get("forfeit_winner") || "") || null;
+
+  const supabase = await createClient();
+
+  const { data: match } = await supabase.from("event_matches").select("*").eq("id", matchId).single();
+  if (!match) {
+    throw new Error("Match not found.");
+  }
+
+  let winnerId: string | null = null;
+
+  if (forfeit) {
+    if (!forfeitWinner) {
+      redirect(`${bracketPath(locationId, eventId)}?result_error=${encodeURIComponent("Pick who wins the forfeit.")}`);
+    }
+    winnerId = forfeitWinner;
+  } else {
+    const setRows: { match_id: string; set_number: number; team_a_points: number; team_b_points: number }[] = [];
+    for (let i = 1; i <= 5; i++) {
+      const a = formData.get(`set_${i}_a`);
+      const b = formData.get(`set_${i}_b`);
+      if (a === null || b === null || a === "" || b === "") continue;
+      setRows.push({ match_id: matchId, set_number: i, team_a_points: Number(a), team_b_points: Number(b) });
+    }
+    if (setRows.length === 0) {
+      redirect(
+        `${bracketPath(locationId, eventId)}?result_error=${encodeURIComponent("Enter at least one set's score, or mark a forfeit.")}`
+      );
+    }
+
+    winnerId = deriveMatchWinner(setRows, match.team_a_registration_id, match.team_b_registration_id);
+    if (!winnerId) {
+      redirect(`${bracketPath(locationId, eventId)}?result_error=${encodeURIComponent("Sets are tied -- can't determine a winner.")}`);
+    }
+
+    await supabase.from("event_match_sets").delete().eq("match_id", matchId);
+    const { error: setsError } = await supabase.from("event_match_sets").insert(setRows);
+    if (setsError) {
+      throw new Error(setsError.message);
+    }
+  }
+
+  const { error } = await supabase
+    .from("event_matches")
+    .update({ winner_registration_id: winnerId, is_forfeit: forfeit, status: "completed" })
+    .eq("id", matchId);
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const reviewNeeded = await applyAdvancement(
+    supabase,
+    { ...match, winner_registration_id: winnerId, status: "completed" } as EventMatch,
+    eventId
+  );
+
+  revalidatePath(bracketPath(locationId, eventId));
+  revalidatePath(`/events/${eventId}`);
+  redirect(
+    `${bracketPath(locationId, eventId)}?result_saved=1${reviewNeeded.length > 0 ? `&review_needed=${reviewNeeded.join(",")}` : ""}`
+  );
+}
+
+export async function editMatch(formData: FormData) {
+  const matchId = String(formData.get("match_id"));
+  const eventId = String(formData.get("event_id"));
+  const locationId = String(formData.get("location_id"));
+  const teamA = String(formData.get("team_a_registration_id") || "") || null;
+  const teamB = String(formData.get("team_b_registration_id") || "") || null;
+  const winnerId = String(formData.get("winner_registration_id") || "") || null;
+  const sessionId = String(formData.get("session_id") || "") || null;
+  const adminNote = String(formData.get("admin_note") || "").trim() || null;
+
+  const supabase = await createClient();
+  const status: EventMatch["status"] = winnerId ? "completed" : sessionId ? "scheduled" : "pending";
+
+  const { error } = await supabase
+    .from("event_matches")
+    .update({
+      team_a_registration_id: teamA,
+      team_b_registration_id: teamB,
+      winner_registration_id: winnerId,
+      session_id: sessionId,
+      admin_note: adminNote,
+      status,
+    })
+    .eq("id", matchId);
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  let reviewNeeded: string[] = [];
+  if (winnerId) {
+    const { data: match } = await supabase.from("event_matches").select("*").eq("id", matchId).single();
+    if (match) {
+      reviewNeeded = await applyAdvancement(supabase, match as EventMatch, eventId);
+    }
+  }
+
+  revalidatePath(bracketPath(locationId, eventId));
+  revalidatePath(`/events/${eventId}`);
+  redirect(
+    `${bracketPath(locationId, eventId)}?match_edited=1${reviewNeeded.length > 0 ? `&review_needed=${reviewNeeded.join(",")}` : ""}`
+  );
 }
