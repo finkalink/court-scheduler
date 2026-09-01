@@ -51,8 +51,17 @@ export default async function AdminBracketPage({
     .neq("status", "cancelled")
     .order("registered_at");
 
+  // Separate, unfiltered query for name lookups -- a withdrawn (cancelled)
+  // registrant should still show correctly on their historical matches
+  // (e.g. a bye or a completed round), even though they're excluded from
+  // the active `registrations` list used for generation/withdraw UI.
+  const { data: allRegistrationsForNames } = await supabase
+    .from("event_registrations")
+    .select("id, display_name, team:event_teams(name)")
+    .eq("event_id", eventId);
+
   const nameByRegistrationId = new Map(
-    (registrations ?? []).map((r) => {
+    (allRegistrationsForNames ?? []).map((r) => {
       const team = Array.isArray(r.team) ? r.team[0] : r.team;
       return [r.id, team?.name ?? r.display_name ?? "Player"];
     })
@@ -338,7 +347,17 @@ export default async function AdminBracketPage({
 
                         <details className="mt-2">
                           <summary className="w-fit cursor-pointer text-xs underline">Edit Match</summary>
-                          <form action={editMatch} className="mt-2 flex max-w-sm flex-col gap-2">
+                          {/* Server Action redirects are client-side transitions, not full page
+                              reloads -- React only applies an uncontrolled <select>'s defaultValue
+                              on its first mount, so without this key, editing a match whose fields
+                              changed since that first mount (a new result, an advancement fill-in,
+                              a session assignment) would render stale/blank selections. Keying on
+                              the mutable fields forces a fresh remount whenever they change. */}
+                          <form
+                            key={`${match.team_a_registration_id}-${match.team_b_registration_id}-${match.winner_registration_id}-${match.session_id}-${match.admin_note}-${match.status}`}
+                            action={editMatch}
+                            className="mt-2 flex max-w-sm flex-col gap-2"
+                          >
                             <input type="hidden" name="match_id" value={match.id} />
                             <input type="hidden" name="event_id" value={eventId} />
                             <input type="hidden" name="location_id" value={locationId} />
