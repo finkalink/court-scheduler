@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
+export const metadata = { title: "Player Profile" };
+
 export default async function PublicPlayerPage({
   params,
 }: {

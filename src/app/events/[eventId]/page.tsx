@@ -10,6 +10,24 @@ import MatchCard from "@/components/MatchCard";
 import SuccessBanner from "@/components/SuccessBanner";
 import { isProfileComplete } from "@/lib/userProfile";
 
+function PlayerNameLink({
+  href,
+  className = "",
+  children,
+}: {
+  href: string | null;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return href ? (
+    <Link href={href} className={`underline decoration-dotted ${className}`}>
+      {children}
+    </Link>
+  ) : (
+    <span className={className}>{children}</span>
+  );
+}
+
 export default async function EventDetailPage({
   params,
   searchParams,
@@ -155,11 +173,16 @@ export default async function EventDetailPage({
     .filter((id): id is string => Boolean(id));
   const candidateUserIds = Array.from(new Set([...rosterUserIds, ...registrationUserIds]));
 
-  const { data: publicProfiles } =
+  const { data: publicProfiles, error: publicProfilesError } =
     candidateUserIds.length > 0
-      ? await supabase.from("users").select("id").in("id", candidateUserIds).eq("share_stats_publicly", true)
-      : { data: [] };
-  const sharingUserIds = new Set((publicProfiles ?? []).map((p) => p.id));
+      ? await supabase.rpc("filter_public_profile_user_ids", { p_user_ids: candidateUserIds })
+      : { data: [], error: null };
+  if (publicProfilesError) {
+    console.error("filter_public_profile_user_ids failed:", publicProfilesError);
+  }
+  const sharingUserIds = new Set(
+    (publicProfiles ?? []).map((p: { id: string }) => p.id)
+  );
 
   const hrefByRegistrationId = new Map(
     (allRegistrations ?? []).map((r) => [
@@ -329,13 +352,11 @@ export default async function EventDetailPage({
                 <ul className="mt-1 flex flex-col gap-0.5">
                   {team.members.map((m) => (
                     <li key={m.id} className="text-sm text-gray-600 dark:text-neutral-400">
-                      {m.user_id && sharingUserIds.has(m.user_id) ? (
-                        <Link href={`/players/${m.user_id}`} className="underline decoration-dotted">
-                          {m.display_name}
-                        </Link>
-                      ) : (
-                        m.display_name
-                      )}
+                      <PlayerNameLink
+                        href={m.user_id && sharingUserIds.has(m.user_id) ? `/players/${m.user_id}` : null}
+                      >
+                        {m.display_name}
+                      </PlayerNameLink>
                       {!m.user_id && <span className="ml-1 text-xs italic">(pending)</span>}
                     </li>
                   ))}
@@ -439,16 +460,9 @@ export default async function EventDetailPage({
                       {standings.map((row) => (
                         <tr key={row.registrationId}>
                           <td>
-                            {hrefByRegistrationId.get(row.registrationId) ? (
-                              <Link
-                                href={hrefByRegistrationId.get(row.registrationId)!}
-                                className="underline decoration-dotted"
-                              >
-                                {nameByRegistrationId.get(row.registrationId) ?? "Unknown"}
-                              </Link>
-                            ) : (
-                              nameByRegistrationId.get(row.registrationId) ?? "Unknown"
-                            )}
+                            <PlayerNameLink href={hrefByRegistrationId.get(row.registrationId) ?? null}>
+                              {nameByRegistrationId.get(row.registrationId) ?? "Unknown"}
+                            </PlayerNameLink>
                           </td>
                           <td>{row.wins}</td>
                           <td>{row.losses}</td>
@@ -476,27 +490,19 @@ export default async function EventDetailPage({
                         >
                           <p>
                             Round {m.round_number} &middot;{" "}
-                            {hrefByRegistrationId.get(m.team_a_registration_id ?? "") ? (
-                              <Link
-                                href={hrefByRegistrationId.get(m.team_a_registration_id ?? "")!}
-                                className={winnerName === sideAName ? "font-medium underline decoration-dotted" : "underline decoration-dotted"}
-                              >
-                                {sideAName}
-                              </Link>
-                            ) : (
-                              <span className={winnerName === sideAName ? "font-medium" : ""}>{sideAName}</span>
-                            )}{" "}
+                            <PlayerNameLink
+                              href={hrefByRegistrationId.get(m.team_a_registration_id ?? "") ?? null}
+                              className={winnerName === sideAName ? "font-medium" : ""}
+                            >
+                              {sideAName}
+                            </PlayerNameLink>{" "}
                             vs{" "}
-                            {hrefByRegistrationId.get(m.team_b_registration_id ?? "") ? (
-                              <Link
-                                href={hrefByRegistrationId.get(m.team_b_registration_id ?? "")!}
-                                className={winnerName === sideBName ? "font-medium underline decoration-dotted" : "underline decoration-dotted"}
-                              >
-                                {sideBName}
-                              </Link>
-                            ) : (
-                              <span className={winnerName === sideBName ? "font-medium" : ""}>{sideBName}</span>
-                            )}
+                            <PlayerNameLink
+                              href={hrefByRegistrationId.get(m.team_b_registration_id ?? "") ?? null}
+                              className={winnerName === sideBName ? "font-medium" : ""}
+                            >
+                              {sideBName}
+                            </PlayerNameLink>
                             {m.is_forfeit && " (forfeit)"}
                           </p>
                           {session && (

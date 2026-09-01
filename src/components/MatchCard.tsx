@@ -36,6 +36,7 @@ export default function MatchCard({
       tabIndex={0}
       onClick={() => setExpanded((e) => !e)}
       onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           setExpanded((x) => !x);
