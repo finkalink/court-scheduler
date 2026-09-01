@@ -91,6 +91,32 @@ as $$
 $$;
 
 grant execute on function public.find_registered_user_by_email(text) to authenticated;
+
+-- Links any pending invite addressed to the CALLER's own verified email
+-- to the caller's own account -- see "Auto-link at first sign-in" below
+-- for why this can't run at signup and must take no client-supplied
+-- identity (auth.uid()/auth.users only, never trusting a parameter).
+create function public.claim_pending_team_invites()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_email text;
+begin
+  select email into v_email from auth.users where id = auth.uid();
+  if v_email is null then
+    return;
+  end if;
+
+  update event_team_members
+  set user_id = auth.uid(), invited_email = null
+  where invited_email = v_email and user_id is null;
+end;
+$$;
+
+grant execute on function public.claim_pending_team_invites() to authenticated;
 ```
 
 `event_team_members`'s existing RLS is unchanged (public-select,
@@ -135,16 +161,26 @@ the registration form too, fixing the existing `display_name: user.email`
 default, which today leaks the captain's own email onto the (already
 public) roster.
 
-## Auto-link at signup
+## Auto-link at first sign-in
 
-In `signUp` (`src/app/actions/auth.ts`), immediately after the new
-Supabase Auth user is created: look up `event_team_members` rows where
-`invited_email` equals the just-registered email and `user_id is null`,
-set `user_id` to the new account, and clear `invited_email`. Runs
-unconditionally on every signup (not just ones that arrived via an
-invite link, since there is no invite link) — correct either way, since
-signing up with that exact address is what the pending spot was
-addressed to.
+Not at `signUp` — this app requires email confirmation before a session
+exists (`signUp`'s own redirect: "Check your email to confirm your
+account, then sign in"), so immediately after `supabase.auth.signUp()`
+there is no authenticated session yet to safely attribute a claim to.
+The correct, safe point is the user's first successful **sign-in**
+(`signIn` in `src/app/actions/auth.ts`), once they're genuinely
+authenticated as that email.
+
+A new narrow `security definer` RPC, `claim_pending_team_invites()`,
+takes no parameters — it reads the caller's own id and verified email
+from `auth.uid()`/`auth.users` internally (never a client-supplied
+value, so a roster spot can only ever be linked to the account that
+actually owns that inbox) and links any `event_team_members` row whose
+`invited_email` matches. Called unconditionally on every successful
+`signIn`, not just for people who arrived via an invite — harmless
+no-op when there's nothing pending, and correct either way, since
+signing in as that exact address is what the pending spot was addressed
+to.
 
 ## Roster visibility
 
@@ -176,8 +212,9 @@ on this page, scoped to the event's teams.
 - Self-formed registration: add one teammate whose email matches an
   existing account (confirm immediate link) and one whose email doesn't
   (confirm pending state), in the same team.
-- Sign up a new account using a pending invite's exact email; confirm
-  the roster spot auto-links and the "Pending" label disappears.
+- Sign up a new account using a pending invite's exact email, confirm
+  and sign in; confirm the roster spot auto-links and the "Pending"
+  label disappears only once signed in (not merely after signing up).
 - Confirm the captain's own roster row now requires and shows a typed
   display name, not their email.
 - Confirm the new "Roster" section on the event detail page shows every
