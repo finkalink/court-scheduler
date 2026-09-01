@@ -175,8 +175,12 @@ export default async function EventDetailPage({
                   </button>
                 </form>
               ) : (
-                <form action={registerForEvent}>
+                <form action={registerForEvent} className="flex flex-col gap-3">
                   <input type="hidden" name="event_id" value={event.id} />
+                  <label className="flex flex-col gap-1 text-sm">
+                    Display name (shown in results)
+                    <input name="display_name" required className="rounded border px-3 py-2" />
+                  </label>
                   <button
                     type="submit"
                     className="w-fit rounded bg-black px-4 py-2 text-sm text-white"
