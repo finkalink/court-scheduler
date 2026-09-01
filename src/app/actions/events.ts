@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { determineRegistrationStatus } from "@/lib/eventRegistration";
+import { isProfileComplete } from "@/lib/userProfile";
 
 const UNIQUE_VIOLATION = "23505";
 
@@ -24,7 +25,7 @@ export async function registerForEvent(formData: FormData) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("capacity, registration_mode, team_formation, status")
+    .select("event_type, capacity, registration_mode, team_formation, status")
     .eq("id", eventId)
     .single();
 
@@ -34,6 +35,20 @@ export async function registerForEvent(formData: FormData) {
 
   if (event.status !== "published" && event.status !== "registration_open") {
     redirect(`/events/${eventId}?register_error=${encodeURIComponent("Registration isn't open for this event.")}`);
+  }
+
+  if (event.event_type !== "open_play") {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("name, gender, skill_level")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile || !isProfileComplete(profile)) {
+      redirect(
+        `/profile?next=${encodeURIComponent(`/events/${eventId}`)}&message=${encodeURIComponent("Complete your profile to register for this event.")}`
+      );
+    }
   }
 
   if (event.registration_mode === "individual" && !displayName) {
