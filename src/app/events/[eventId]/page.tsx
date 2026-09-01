@@ -39,6 +39,7 @@ export default async function EventDetailPage({
   let myRegistration: { id: string; status: string } | null = null;
   let myTeamName: string | null = null;
   let registeredCount = 0;
+  let profileName: string | null = null;
 
   if (user) {
     const { data: individualReg } = await supabase
@@ -81,6 +82,9 @@ export default async function EventDetailPage({
       .select("status, count")
       .eq("event_id", eventId);
     registeredCount = (counts ?? []).find((c) => c.status === "registered")?.count ?? 0;
+
+    const { data: profile } = await supabase.from("users").select("name").eq("id", user.id).single();
+    profileName = profile?.name ?? null;
   }
 
   const isFull = event.capacity != null && registeredCount >= event.capacity;
@@ -203,7 +207,12 @@ export default async function EventDetailPage({
                   </label>
                   <label className="flex flex-col gap-1 text-sm">
                     Your display name (shown on the roster)
-                    <input name="captain_display_name" required className="rounded border px-3 py-2" />
+                    <input
+                      name="captain_display_name"
+                      defaultValue={profileName ?? ""}
+                      required
+                      className="rounded border px-3 py-2"
+                    />
                   </label>
                   <p className="text-xs text-gray-600 dark:text-neutral-400">
                     Teammates (optional) -- each needs a name and their email. If they
@@ -237,7 +246,12 @@ export default async function EventDetailPage({
                   <input type="hidden" name="event_id" value={event.id} />
                   <label className="flex flex-col gap-1 text-sm">
                     Display name (shown in results)
-                    <input name="display_name" required className="rounded border px-3 py-2" />
+                    <input
+                      name="display_name"
+                      defaultValue={profileName ?? ""}
+                      required
+                      className="rounded border px-3 py-2"
+                    />
                   </label>
                   <button
                     type="submit"
