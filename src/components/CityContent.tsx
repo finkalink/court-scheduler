@@ -8,11 +8,18 @@ import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 export default async function CityContent({ city }: { city: string }) {
   const supabase = await createClient();
 
-  const { data: locations } = await supabase
-    .from("locations")
-    .select("id, city, organization:organizations(id, name), courts!inner(id, is_active)")
-    .eq("city", city)
-    .eq("courts.is_active", true);
+  const [{ data: locations }, { data: allEvents }] = await Promise.all([
+    supabase
+      .from("locations")
+      .select("id, city, organization:organizations(id, name), courts!inner(id, is_active)")
+      .eq("city", city)
+      .eq("courts.is_active", true),
+    supabase
+      .from("events")
+      .select("id, title, event_type, location:locations(city), event_sessions(start_time)")
+      .neq("status", "draft")
+      .neq("status", "cancelled"),
+  ]);
 
   const seen = new Set<string>();
   const uniqueLocations = (locations ?? [])
@@ -31,12 +38,6 @@ export default async function CityContent({ city }: { city: string }) {
   if (clubs.length === 0) {
     notFound();
   }
-
-  const { data: allEvents } = await supabase
-    .from("events")
-    .select("id, title, event_type, location:locations(city), event_sessions(start_time)")
-    .neq("status", "draft")
-    .neq("status", "cancelled");
 
   const eventsInCity = (allEvents ?? [])
     .map((e) => {

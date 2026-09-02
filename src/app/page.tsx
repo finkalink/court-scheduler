@@ -12,9 +12,12 @@ export default async function Home() {
   const cookieStore = await cookies();
   const overrideCity = cookieStore.get(CITY_OVERRIDE_COOKIE)?.value ?? null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [
+    {
+      data: { user },
+    },
+    availableCities,
+  ] = await Promise.all([supabase.auth.getUser(), listActiveCities(supabase)]);
 
   let defaultCity: string | null = null;
   if (user) {
@@ -25,8 +28,6 @@ export default async function Home() {
       .maybeSingle();
     defaultCity = profile?.default_city ?? null;
   }
-
-  const availableCities = await listActiveCities(supabase);
   const resolvedCity = resolveHomeCity({ overrideCity, defaultCity, availableCities });
 
   if (!resolvedCity) {
