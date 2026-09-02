@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/redirects";
+import { listActiveCities } from "@/lib/cities";
+import { isKnownCity } from "@/lib/cityGrouping";
 
 const VALID_GENDERS = new Set(["male", "female", "prefer_not_to_say"]);
 const VALID_SKILL_LEVELS = new Set(["Recreational", "B", "BB", "A", "AA", "Open"]);
@@ -13,6 +15,7 @@ export async function updateProfile(formData: FormData) {
   const gender = String(formData.get("gender") || "").trim();
   const skillLevel = String(formData.get("skill_level") || "").trim();
   const shareStatsPublicly = formData.get("share_stats_publicly") === "on";
+  const defaultCity = String(formData.get("default_city") || "").trim();
   const rawNext = String(formData.get("next") || "");
   const next = isSafeRedirectPath(rawNext) ? rawNext : "";
 
@@ -32,6 +35,17 @@ export async function updateProfile(formData: FormData) {
     redirect(`/profile?error=${encodeURIComponent("Invalid profile value.")}`);
   }
 
+  // default_city has no fixed enum -- it must match one of the cities
+  // currently offered by this same page's own <select> (isKnownCity,
+  // src/lib/cityGrouping.ts), checked live rather than against a stale
+  // client-supplied list.
+  if (defaultCity) {
+    const availableCities = await listActiveCities(supabase);
+    if (!isKnownCity(defaultCity, availableCities)) {
+      redirect(`/profile?error=${encodeURIComponent("Invalid profile value.")}`);
+    }
+  }
+
   const { data: updated, error } = await supabase
     .from("users")
     .update({
@@ -39,6 +53,7 @@ export async function updateProfile(formData: FormData) {
       gender: gender || null,
       skill_level: skillLevel || null,
       share_stats_publicly: shareStatsPublicly,
+      default_city: defaultCity || null,
     })
     .eq("id", user.id)
     .select("id");
@@ -59,6 +74,7 @@ export async function updateProfile(formData: FormData) {
   }
 
   revalidatePath("/profile");
+  revalidatePath("/");
 
   if (next) {
     const separator = next.includes("?") ? "&" : "?";

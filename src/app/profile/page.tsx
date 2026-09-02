@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateProfile } from "@/app/actions/profile";
+import { listActiveCities } from "@/lib/cities";
 import SkillLevelPicker from "@/components/SkillLevelPicker";
 import SuccessBanner from "@/components/SuccessBanner";
 import { isProfileComplete } from "@/lib/userProfile";
@@ -31,9 +32,11 @@ export default async function ProfilePage({
 
   const { data: profile } = await supabase
     .from("users")
-    .select("name, gender, skill_level, share_stats_publicly")
+    .select("name, gender, skill_level, share_stats_publicly, default_city")
     .eq("id", user.id)
     .single();
+
+  const availableCities = await listActiveCities(supabase);
 
   const missingFields = profile
     ? FIELD_LABELS.filter((f) => !profile[f.key]).map((f) => f.label)
@@ -79,6 +82,24 @@ export default async function ProfilePage({
         <label className="flex flex-col gap-1 text-sm">
           Level of play
           <SkillLevelPicker defaultValue={profile?.skill_level ?? null} />
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Default city
+          <select
+            name="default_city"
+            defaultValue={profile?.default_city ?? ""}
+            className="rounded border px-3 py-2 dark:bg-neutral-900"
+          >
+            <option value="">-- none --</option>
+            {availableCities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-gray-600 dark:text-neutral-400">
+            Shown by default when you visit Find a Court.
+          </span>
         </label>
         <label className="flex items-start gap-2 text-sm">
           <input
