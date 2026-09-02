@@ -38,6 +38,10 @@ export async function signIn(formData: FormData) {
     redirect("/admin");
   }
 
+  // This check must stay here, after both redirects above -- moving it
+  // before the `next` check would hijack every deep-link login into
+  // /choose-city instead, and moving it before the membership check would
+  // start showing the city prompt to org admins, who should never see it.
   const { data: profile } = await supabase
     .from("users")
     .select("default_city, city_prompt_dismissed")

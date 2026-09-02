@@ -39,6 +39,12 @@ export async function setDefaultCity(formData: FormData) {
     redirect(`/choose-city?error=${encodeURIComponent("Couldn't save your city. Try again.")}`);
   }
 
+  // Explicitly choosing a default city is the clearest possible signal that
+  // any active session override is no longer wanted -- clear it so "/"
+  // reflects the choice just made instead of a stale "browse a different
+  // city for now" cookie from before it.
+  (await cookies()).delete(CITY_OVERRIDE_COOKIE);
+
   redirect(`/cities/${encodeURIComponent(city)}`);
 }
 

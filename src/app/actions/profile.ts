@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/redirects";
-import { listActiveCities } from "@/lib/cities";
+import { listActiveCities, CITY_OVERRIDE_COOKIE } from "@/lib/cities";
 import { isKnownCity } from "@/lib/cityGrouping";
 
 const VALID_GENDERS = new Set(["male", "female", "prefer_not_to_say"]);
@@ -72,6 +73,12 @@ export async function updateProfile(formData: FormData) {
       `/profile?error=${encodeURIComponent("Couldn't find your account. Try signing in again.")}`
     );
   }
+
+  // Explicitly changing a stored default city is the clearest possible
+  // signal that any active session override is no longer wanted -- clear it
+  // so "/" reflects the newly-saved default instead of a stale "browse a
+  // different city for now" cookie from before this save.
+  (await cookies()).delete(CITY_OVERRIDE_COOKIE);
 
   revalidatePath("/profile");
   revalidatePath("/");
