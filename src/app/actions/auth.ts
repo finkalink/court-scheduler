@@ -34,7 +34,21 @@ export async function signIn(formData: FormData) {
     .limit(1)
     .maybeSingle();
 
-  redirect(membership ? "/admin" : "/");
+  if (membership) {
+    redirect("/admin");
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("default_city, city_prompt_dismissed")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
+  if (profile && !profile.default_city && !profile.city_prompt_dismissed) {
+    redirect("/choose-city");
+  }
+
+  redirect("/");
 }
 
 export async function signUp(formData: FormData) {
