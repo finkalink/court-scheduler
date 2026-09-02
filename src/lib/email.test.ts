@@ -9,6 +9,8 @@ const baseDetails = {
   organizationName: "Ace Volleyball Club",
   requestedConfig: "Net: Women's · Lines: 4s",
   appUrl: "https://court-scheduler-gold.vercel.app",
+  startTime: "2026-08-26T13:00:00.000Z",
+  endTime: "2026-08-26T14:00:00.000Z",
 };
 
 describe("buildBookingConfirmationEmail", () => {
@@ -38,6 +40,16 @@ describe("buildBookingConfirmationEmail", () => {
     const email = buildBookingConfirmationEmail({ ...baseDetails, organizationName: null });
     expect(email.text).not.toContain("undefined");
     expect(email.text).not.toContain("null");
+  });
+
+  it("includes add-to-calendar links for Google, Outlook, and .ics", () => {
+    const email = buildBookingConfirmationEmail(baseDetails);
+    expect(email.text).toContain("https://calendar.google.com/calendar/render");
+    expect(email.text).toContain("https://outlook.live.com/calendar/0/deeplink/compose");
+    expect(email.text).toContain("https://court-scheduler-gold.vercel.app/api/bookings/abc-123/ics");
+    expect(email.html).toContain("https://calendar.google.com/calendar/render");
+    expect(email.html).toContain("https://outlook.live.com/calendar/0/deeplink/compose");
+    expect(email.html).toContain("https://court-scheduler-gold.vercel.app/api/bookings/abc-123/ics");
   });
 });
 

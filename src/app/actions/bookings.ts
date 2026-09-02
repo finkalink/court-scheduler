@@ -7,14 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 import { formatRequestedConfig } from "@/lib/courtConfig";
 import { formatBookingDate } from "@/lib/dateFormat";
 import { buildBookingCancellationEmail, buildBookingConfirmationEmail, sendEmail } from "@/lib/email";
+import { getAppUrl } from "@/lib/appUrl";
 
 const EXCLUSION_VIOLATION = "23P01";
-
-function getAppUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "http://localhost:3000";
-}
 
 type BookingCourtInfo = {
   name: string;
@@ -48,6 +43,8 @@ function bookingEmailDetails(
     organizationName: organization?.name ?? null,
     requestedConfig: formatRequestedConfig(requestedNetHeight, requestedCourtLines),
     appUrl: getAppUrl(),
+    startTime,
+    endTime,
   };
 }
 

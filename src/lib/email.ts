@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { buildGoogleCalendarUrl, buildIcsContent, buildOutlookCalendarUrl } from "@/lib/calendarLinks";
 
 export interface BookingEmailDetails {
   bookingId: string;
@@ -8,6 +9,8 @@ export interface BookingEmailDetails {
   organizationName: string | null;
   requestedConfig: string | null;
   appUrl: string;
+  startTime: string;
+  endTime: string;
 }
 
 export interface EmailContent {
@@ -25,19 +28,43 @@ function bookingSummaryLines(details: BookingEmailDetails): string[] {
   return lines;
 }
 
+function calendarEvent(details: BookingEmailDetails, bookingUrl: string) {
+  return {
+    title: details.organizationName ? `${details.courtName} · ${details.organizationName}` : details.courtName,
+    startTime: details.startTime,
+    endTime: details.endTime,
+    location: details.organizationName ? `${details.courtName} · ${details.organizationName}` : details.courtName,
+    description: details.requestedConfig,
+    url: bookingUrl,
+  };
+}
+
 export function buildBookingConfirmationEmail(details: BookingEmailDetails): EmailContent {
   const summary = bookingSummaryLines(details);
   const bookingUrl = `${details.appUrl}/bookings/${details.bookingId}`;
+  const event = calendarEvent(details, bookingUrl);
+  const googleUrl = buildGoogleCalendarUrl(event);
+  const outlookUrl = buildOutlookCalendarUrl(event);
+  const icsUrl = `${details.appUrl}/api/bookings/${details.bookingId}/ics`;
 
   return {
     subject: "Booking confirmed",
-    text: [`Your booking is confirmed:`, "", ...summary, "", `View your booking: ${bookingUrl}`].join(
-      "\n"
-    ),
+    text: [
+      `Your booking is confirmed:`,
+      "",
+      ...summary,
+      "",
+      `View your booking: ${bookingUrl}`,
+      "",
+      `Add to calendar -- Google: ${googleUrl}`,
+      `Add to calendar -- Outlook: ${outlookUrl}`,
+      `Add to calendar -- Apple/other (.ics): ${icsUrl}`,
+    ].join("\n"),
     html: [
       `<p>Your booking is confirmed:</p>`,
       `<p>${summary.map(escapeHtml).join("<br>")}</p>`,
       `<p><a href="${bookingUrl}">View your booking</a></p>`,
+      `<p>Add to calendar: <a href="${googleUrl}">Google</a> · <a href="${outlookUrl}">Outlook</a> · <a href="${icsUrl}">Apple / other (.ics)</a></p>`,
     ].join("\n"),
   };
 }

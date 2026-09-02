@@ -6,6 +6,8 @@ import { formatRequestedConfig } from "@/lib/courtConfig";
 import { formatBookingDate } from "@/lib/dateFormat";
 import { cancelBooking } from "@/app/actions/bookings";
 import { categorizeBookingTime, isCancellable } from "@/lib/bookingStatus";
+import { buildGoogleCalendarUrl, buildOutlookCalendarUrl } from "@/lib/calendarLinks";
+import { getAppUrl } from "@/lib/appUrl";
 import SuccessBanner from "@/components/SuccessBanner";
 
 export default async function BookingDetailPage({
@@ -54,6 +56,19 @@ export default async function BookingDetailPage({
     booking.requested_court_lines
   );
 
+  const calendarTitle = organization?.name ? `${court?.name} · ${organization.name}` : (court?.name ?? "Court booking");
+  const calendarEvent = {
+    title: calendarTitle,
+    location: calendarTitle,
+    startTime: booking.start_time,
+    endTime: booking.end_time,
+    description: requestedConfig,
+    url: `${getAppUrl()}/bookings/${booking.id}`,
+  };
+  const googleUrl = buildGoogleCalendarUrl(calendarEvent);
+  const outlookUrl = buildOutlookCalendarUrl(calendarEvent);
+  const icsUrl = `/api/bookings/${booking.id}/ics`;
+
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <Link href="/bookings" className="text-sm underline">
@@ -91,6 +106,23 @@ export default async function BookingDetailPage({
             <span className="text-xs text-gray-500">In progress</span>
           )}
         </div>
+
+        {booking.status === "confirmed" && (
+          <p className="mt-3 text-sm">
+            Add to calendar:{" "}
+            <a href={googleUrl} target="_blank" rel="noopener noreferrer" className="underline">
+              Google
+            </a>{" "}
+            ·{" "}
+            <a href={outlookUrl} target="_blank" rel="noopener noreferrer" className="underline">
+              Outlook
+            </a>{" "}
+            ·{" "}
+            <a href={icsUrl} className="underline">
+              Apple / other (.ics)
+            </a>
+          </p>
+        )}
 
         {isCancellable(booking.status, timeStatus) && (
           <form action={cancelBooking} className="mt-4">
