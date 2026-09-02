@@ -55,18 +55,25 @@ export default function SkillLevelPicker({ defaultValue }: { defaultValue: strin
           ))}
         </select>
       ) : (
-        <select
-          value={plainValue}
-          onChange={(e) => setValue(PLAIN_TO_LETTER[e.target.value] ?? "")}
-          className="rounded border px-3 py-2 text-sm dark:bg-neutral-900"
-        >
-          <option value="">-- select --</option>
-          {Object.keys(PLAIN_TO_LETTER).map((label) => (
-            <option key={label} value={label}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <>
+          <select
+            value={plainValue}
+            onChange={(e) => setValue(PLAIN_TO_LETTER[e.target.value] ?? "")}
+            className="rounded border px-3 py-2 text-sm dark:bg-neutral-900"
+          >
+            <option value="">-- select --</option>
+            {Object.keys(PLAIN_TO_LETTER).map((label) => (
+              <option key={label} value={label}>
+                {label}
+              </option>
+            ))}
+          </select>
+          {value && !plainValue && (
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+              Currently saved: {value}
+            </p>
+          )}
+        </>
       )}
     </div>
   );
