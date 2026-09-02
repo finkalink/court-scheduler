@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isOwnerOrAdmin, wouldRemoveLastOwner } from "@/lib/orgRoles";
+import { canActOnMember, isOwnerOrAdmin, wouldRemoveLastOwner } from "@/lib/orgRoles";
 
 describe("isOwnerOrAdmin", () => {
   it("is true for owner and admin, false for staff", () => {
@@ -26,5 +26,22 @@ describe("wouldRemoveLastOwner", () => {
 
   it("treats an owner count of zero as still blocking (defensive)", () => {
     expect(wouldRemoveLastOwner(0, "owner")).toBe(true);
+  });
+});
+
+describe("canActOnMember", () => {
+  it("blocks a non-owner admin from acting on an owner", () => {
+    expect(canActOnMember("admin", "owner")).toBe(false);
+    expect(canActOnMember("staff", "owner")).toBe(false);
+  });
+
+  it("allows an owner to act on another owner", () => {
+    expect(canActOnMember("owner", "owner")).toBe(true);
+  });
+
+  it("allows any org admin/owner to act on a non-owner target", () => {
+    expect(canActOnMember("admin", "admin")).toBe(true);
+    expect(canActOnMember("admin", "staff")).toBe(true);
+    expect(canActOnMember("owner", "staff")).toBe(true);
   });
 });

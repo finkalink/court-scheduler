@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
-import { isOwnerOrAdmin } from "@/lib/orgRoles";
+import { canActOnMember, isOwnerOrAdmin, type OrgRole } from "@/lib/orgRoles";
 import { addOrgMember, updateOrgMemberRole, removeOrgMember } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
 
@@ -92,13 +92,15 @@ export default async function TeamPage({
               </form>
             )}
 
-            <form action={removeOrgMember}>
-              <input type="hidden" name="org_id" value={membership.orgId} />
-              <input type="hidden" name="user_id" value={member.user_id} />
-              <button type="submit" className="text-xs text-red-700 underline">
-                Remove
-              </button>
-            </form>
+            {canActOnMember(membership.role, member.role as OrgRole) && (
+              <form action={removeOrgMember}>
+                <input type="hidden" name="org_id" value={membership.orgId} />
+                <input type="hidden" name="user_id" value={member.user_id} />
+                <button type="submit" className="text-xs text-red-700 underline">
+                  Remove
+                </button>
+              </form>
+            )}
           </li>
         ))}
       </ul>

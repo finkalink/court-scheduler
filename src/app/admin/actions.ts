@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { validateSlotOverride } from "@/lib/slotOverride";
-import { wouldRemoveLastOwner, type OrgRole } from "@/lib/orgRoles";
+import { canActOnMember, wouldRemoveLastOwner, type OrgRole } from "@/lib/orgRoles";
+import { getRoleForOrg } from "@/lib/orgMembership";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -335,6 +336,9 @@ export async function updateOrgMemberRole(formData: FormData) {
   const role = roleInput === "admin" || roleInput === "staff" ? roleInput : "staff";
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: target } = await supabase
     .from("org_members")
@@ -353,14 +357,24 @@ export async function updateOrgMemberRole(formData: FormData) {
     redirect(`/admin/team?role_error=${encodeURIComponent("Can't change the club's last owner.")}`);
   }
 
-  const { error } = await supabase
+  const actorRole = await getRoleForOrg(supabase, user?.id, orgId);
+  if (target && (!actorRole || !canActOnMember(actorRole, target.role as OrgRole))) {
+    redirect(`/admin/team?role_error=${encodeURIComponent("Only an owner can change another owner's access.")}`);
+  }
+
+  const { data: updated, error } = await supabase
     .from("org_members")
     .update({ role })
     .eq("org_id", orgId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("user_id");
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (!updated || updated.length === 0) {
+    redirect(`/admin/team?role_error=${encodeURIComponent("Couldn't update that member's role.")}`);
   }
 
   revalidatePath("/admin/team");
@@ -372,6 +386,9 @@ export async function removeOrgMember(formData: FormData) {
   const userId = String(formData.get("user_id"));
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: target } = await supabase
     .from("org_members")
@@ -390,14 +407,24 @@ export async function removeOrgMember(formData: FormData) {
     redirect(`/admin/team?role_error=${encodeURIComponent("Can't change the club's last owner.")}`);
   }
 
-  const { error } = await supabase
+  const actorRole = await getRoleForOrg(supabase, user?.id, orgId);
+  if (target && (!actorRole || !canActOnMember(actorRole, target.role as OrgRole))) {
+    redirect(`/admin/team?role_error=${encodeURIComponent("Only an owner can remove another owner's access.")}`);
+  }
+
+  const { data: removed, error } = await supabase
     .from("org_members")
     .delete()
     .eq("org_id", orgId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("user_id");
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (!removed || removed.length === 0) {
+    redirect(`/admin/team?role_error=${encodeURIComponent("Couldn't remove that member.")}`);
   }
 
   revalidatePath("/admin/team");
