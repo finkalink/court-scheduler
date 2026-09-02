@@ -115,6 +115,25 @@ export async function registerForEvent(formData: FormData) {
           throw new Error(lookupError.message);
         }
 
+        // An existing account can be checked for profile completeness now,
+        // same requirement the captain themselves is held to above -- a
+        // pending invite (no account yet) can't be checked until they
+        // eventually sign up and claim it, a known, documented gap rather
+        // than something silently skipped.
+        if (matchedUserId && event.event_type !== "open_play") {
+          const { data: teammateProfileComplete, error: profileCheckError } = await supabase.rpc(
+            "is_profile_complete_for_user",
+            { p_user_id: matchedUserId }
+          );
+          if (profileCheckError) {
+            throw new Error(profileCheckError.message);
+          }
+          if (!teammateProfileComplete) {
+            rosterErrorMessage = `${teammate.name} (${teammate.email}) hasn't completed their player profile yet and can't be added to this team.`;
+            break;
+          }
+        }
+
         const { error: teammateError } = await supabase.from("event_team_members").insert(
           matchedUserId
             ? { team_id: teamId, user_id: matchedUserId, display_name: teammate.name }
