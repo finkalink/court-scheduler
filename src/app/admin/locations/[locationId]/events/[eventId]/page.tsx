@@ -16,6 +16,7 @@ export default async function AdminEventPage({
   searchParams: Promise<{
     event_added?: string;
     event_saved?: string;
+    event_error?: string;
     session_added?: string;
     session_removed?: string;
     session_error?: string;
@@ -27,6 +28,7 @@ export default async function AdminEventPage({
   const {
     event_added,
     event_saved,
+    event_error,
     session_added,
     session_removed,
     session_error,
@@ -37,7 +39,7 @@ export default async function AdminEventPage({
 
   const { data: location } = await supabase
     .from("locations")
-    .select("id, name, timezone")
+    .select("id, name, timezone, organization:organizations(venmo_handle)")
     .eq("id", locationId)
     .single();
 
@@ -45,9 +47,12 @@ export default async function AdminEventPage({
     notFound();
   }
 
+  const org = Array.isArray(location.organization) ? location.organization[0] : location.organization;
+  const hasVenmoHandle = Boolean(org?.venmo_handle);
+
   const { data: event } = await supabase
     .from("events")
-    .select("id, title, description, event_type, registration_mode, team_formation, capacity, status")
+    .select("id, title, description, event_type, registration_mode, team_formation, capacity, fee_cents, status")
     .eq("id", eventId)
     .eq("location_id", locationId)
     .single();
@@ -105,6 +110,11 @@ export default async function AdminEventPage({
 
       {event_added && <SuccessBanner>Event created — add sessions below.</SuccessBanner>}
       {event_saved && <SuccessBanner>Event saved.</SuccessBanner>}
+      {event_error && (
+        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {event_error}
+        </p>
+      )}
       {session_added && <SuccessBanner>Session added.</SuccessBanner>}
       {session_removed && <SuccessBanner>Session removed.</SuccessBanner>}
       {session_error && (
@@ -175,6 +185,27 @@ export default async function AdminEventPage({
               className="rounded border px-3 py-2"
             />
           </label>
+          {hasVenmoHandle ? (
+            <label className="flex flex-col gap-1 text-sm">
+              Fee (blank = free)
+              <input
+                name="fee_dollars"
+                type="number"
+                min="0"
+                step="0.01"
+                defaultValue={event.fee_cents ? (event.fee_cents / 100).toFixed(2) : ""}
+                className="rounded border px-3 py-2"
+              />
+            </label>
+          ) : (
+            <p className="text-xs text-gray-600 dark:text-neutral-400">
+              Set your club&apos;s Venmo handle on the{" "}
+              <Link href="/admin" className="underline">
+                club dashboard
+              </Link>{" "}
+              to charge a fee for this event.
+            </p>
+          )}
           <label className="flex flex-col gap-1 text-sm">
             Status
             <select

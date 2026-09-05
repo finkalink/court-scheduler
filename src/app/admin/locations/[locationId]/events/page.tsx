@@ -6,21 +6,27 @@ import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 
 export default async function AdminEventsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locationId: string }>;
+  searchParams: Promise<{ event_error?: string }>;
 }) {
   const { locationId } = await params;
+  const { event_error } = await searchParams;
   const supabase = await createClient();
 
   const { data: location } = await supabase
     .from("locations")
-    .select("id, name")
+    .select("id, name, organization:organizations(venmo_handle)")
     .eq("id", locationId)
     .single();
 
   if (!location) {
     notFound();
   }
+
+  const org = Array.isArray(location.organization) ? location.organization[0] : location.organization;
+  const hasVenmoHandle = Boolean(org?.venmo_handle);
 
   const { data: events } = await supabase
     .from("events")
@@ -35,6 +41,12 @@ export default async function AdminEventsPage({
       </Link>
 
       <h1 className="mt-4 text-lg font-medium">{location.name} — Events</h1>
+
+      {event_error && (
+        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {event_error}
+        </p>
+      )}
 
       {(!events || events.length === 0) && (
         <p className="mt-4 text-sm text-gray-600">No events yet.</p>
@@ -107,6 +119,27 @@ export default async function AdminEventsPage({
           Capacity (blank = unlimited)
           <input name="capacity" type="number" min="1" className="rounded border px-3 py-2" />
         </label>
+        {hasVenmoHandle ? (
+          <label className="flex flex-col gap-1 text-sm">
+            Fee (blank = free)
+            <input
+              name="fee_dollars"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="25.00"
+              className="rounded border px-3 py-2"
+            />
+          </label>
+        ) : (
+          <p className="text-xs text-gray-600 dark:text-neutral-400">
+            Set your club&apos;s Venmo handle on the{" "}
+            <Link href="/admin" className="underline">
+              club dashboard
+            </Link>{" "}
+            to charge a fee for this event.
+          </p>
+        )}
         <label className="flex flex-col gap-1 text-sm">
           Status
           <select

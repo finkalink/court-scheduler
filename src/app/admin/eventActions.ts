@@ -3,14 +3,26 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { fromZonedTime } from "date-fns-tz";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
 const EXCLUSION_VIOLATION = "23P01";
+
+async function resolveVenmoHandle(supabase: SupabaseClient, locationId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("locations")
+    .select("organization:organizations(venmo_handle)")
+    .eq("id", locationId)
+    .single();
+  const org = data ? (Array.isArray(data.organization) ? data.organization[0] : data.organization) : null;
+  return org?.venmo_handle ?? null;
+}
 
 function eventFieldsFromFormData(formData: FormData) {
   const registrationMode = String(formData.get("registration_mode") || "individual");
   const teamFormationInput = String(formData.get("team_formation") || "");
   const capacity = String(formData.get("capacity") || "");
+  const feeDollars = String(formData.get("fee_dollars") || "").trim();
 
   return {
     event_type: String(formData.get("event_type") || "tournament"),
@@ -19,17 +31,29 @@ function eventFieldsFromFormData(formData: FormData) {
     registration_mode: registrationMode,
     team_formation: registrationMode === "team" ? teamFormationInput || "self_formed" : null,
     capacity: capacity ? Number(capacity) : null,
+    fee_cents: feeDollars ? Math.round(Number(feeDollars) * 100) : null,
     status: String(formData.get("status") || "draft"),
   };
 }
 
 export async function createEvent(formData: FormData) {
   const locationId = String(formData.get("location_id"));
+  const fields = eventFieldsFromFormData(formData);
 
   const supabase = await createClient();
+
+  if (fields.fee_cents) {
+    const venmoHandle = await resolveVenmoHandle(supabase, locationId);
+    if (!venmoHandle) {
+      redirect(
+        `/admin/locations/${locationId}/events?event_error=${encodeURIComponent("Set your club's Venmo handle on the club dashboard before charging a fee.")}`
+      );
+    }
+  }
+
   const { data: event, error } = await supabase
     .from("events")
-    .insert({ location_id: locationId, ...eventFieldsFromFormData(formData) })
+    .insert({ location_id: locationId, ...fields })
     .select("id")
     .single();
 
@@ -44,11 +68,22 @@ export async function createEvent(formData: FormData) {
 export async function updateEvent(formData: FormData) {
   const eventId = String(formData.get("event_id"));
   const locationId = String(formData.get("location_id"));
+  const fields = eventFieldsFromFormData(formData);
 
   const supabase = await createClient();
+
+  if (fields.fee_cents) {
+    const venmoHandle = await resolveVenmoHandle(supabase, locationId);
+    if (!venmoHandle) {
+      redirect(
+        `/admin/locations/${locationId}/events/${eventId}?event_error=${encodeURIComponent("Set your club's Venmo handle on the club dashboard before charging a fee.")}`
+      );
+    }
+  }
+
   const { error } = await supabase
     .from("events")
-    .update(eventFieldsFromFormData(formData))
+    .update(fields)
     .eq("id", eventId);
 
   if (error) {
