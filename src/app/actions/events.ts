@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { determineRegistrationStatus } from "@/lib/eventRegistration";
+import { determineRegistrationStatus, initialPaymentStatus } from "@/lib/eventRegistration";
 import { isProfileComplete } from "@/lib/userProfile";
 
 const UNIQUE_VIOLATION = "23505";
@@ -25,7 +25,7 @@ export async function registerForEvent(formData: FormData) {
 
   const { data: event } = await supabase
     .from("events")
-    .select("event_type, capacity, registration_mode, team_formation, status")
+    .select("event_type, capacity, fee_cents, registration_mode, team_formation, status")
     .eq("id", eventId)
     .single();
 
@@ -179,6 +179,7 @@ export async function registerForEvent(formData: FormData) {
     user_id: teamId ? null : user.id,
     status,
     display_name: teamId ? null : displayName || null,
+    payment_status: initialPaymentStatus(event.fee_cents),
   });
 
   if (error) {
