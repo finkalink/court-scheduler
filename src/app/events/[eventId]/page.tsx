@@ -9,6 +9,8 @@ import { computeStandings } from "@/lib/standings";
 import MatchCard from "@/components/MatchCard";
 import SuccessBanner from "@/components/SuccessBanner";
 import { isProfileComplete } from "@/lib/userProfile";
+import { formatCents } from "@/lib/money";
+import { buildVenmoPaymentUrl } from "@/lib/venmoLink";
 
 function PlayerNameLink({
   href,
@@ -42,7 +44,7 @@ export default async function EventDetailPage({
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, title, description, event_type, status, capacity, registration_mode, team_formation, location:locations(id, name, timezone, organization:organizations(id, name)), event_sessions(id, start_time, end_time, label, court:courts(name))"
+      "id, title, description, event_type, status, capacity, fee_cents, registration_mode, team_formation, location:locations(id, name, timezone, organization:organizations(id, name, venmo_handle)), event_sessions(id, start_time, end_time, label, court:courts(name))"
     )
     .eq("id", eventId)
     .neq("status", "draft")
@@ -56,7 +58,7 @@ export default async function EventDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  let myRegistration: { id: string; status: string } | null = null;
+  let myRegistration: { id: string; status: string; payment_status: string } | null = null;
   let myTeamName: string | null = null;
   let registeredCount = 0;
   let profileName: string | null = null;
@@ -65,7 +67,7 @@ export default async function EventDetailPage({
   if (user) {
     const { data: individualReg } = await supabase
       .from("event_registrations")
-      .select("id, status")
+      .select("id, status, payment_status")
       .eq("event_id", eventId)
       .eq("user_id", user.id)
       .neq("status", "cancelled")
@@ -86,7 +88,7 @@ export default async function EventDetailPage({
       if (myTeamForEvent) {
         const { data: teamReg } = await supabase
           .from("event_registrations")
-          .select("id, status")
+          .select("id, status, payment_status")
           .eq("event_id", eventId)
           .eq("team_id", myTeamForEvent.id)
           .neq("status", "cancelled")
@@ -126,6 +128,7 @@ export default async function EventDetailPage({
       ? location.organization[0]
       : location.organization
     : null;
+  const venmoHandle = org?.venmo_handle ?? null;
   const timezone = location?.timezone ?? "UTC";
   const sessions = [...event.event_sessions].sort(
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
@@ -242,13 +245,40 @@ export default async function EventDetailPage({
               </a>
             </p>
           ) : alreadyRegistered ? (
-            <p className="mt-4 rounded bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
-              {myTeamName
-                ? `Your team, ${myTeamName}, is ${myRegistration?.status === "waitlisted" ? "on the waitlist" : "registered"}.`
-                : myRegistration?.status === "waitlisted"
-                  ? "You're on the waitlist."
-                  : "You're registered."}
-            </p>
+            <>
+              <p className="mt-4 rounded bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
+                {myTeamName
+                  ? `Your team, ${myTeamName}, is ${myRegistration?.status === "waitlisted" ? "on the waitlist" : "registered"}.`
+                  : myRegistration?.status === "waitlisted"
+                    ? "You're on the waitlist."
+                    : "You're registered."}
+              </p>
+              {myRegistration?.payment_status === "pending" && event.fee_cents && venmoHandle && (
+                <div className="mt-2 rounded border border-yellow-300 bg-yellow-50 p-3 text-sm dark:border-yellow-900 dark:bg-yellow-950">
+                  <p className="text-yellow-800 dark:text-yellow-300">
+                    Payment due: {formatCents(event.fee_cents)} to @{venmoHandle}
+                  </p>
+                  <a
+                    href={buildVenmoPaymentUrl({
+                      handle: venmoHandle,
+                      amountCents: event.fee_cents,
+                      note: `${event.title} — ${myTeamName ?? profileName ?? "Registration"}`,
+                    })}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-block text-yellow-800 underline dark:text-yellow-300"
+                  >
+                    Pay with Venmo
+                  </a>
+                </div>
+              )}
+              {myRegistration?.payment_status === "paid" && (
+                <p className="mt-2 text-sm text-green-700 dark:text-green-400">Paid ✓</p>
+              )}
+              {myRegistration?.payment_status === "refunded" && (
+                <p className="mt-2 text-sm text-gray-600 dark:text-neutral-400">Refunded</p>
+              )}
+            </>
           ) : profileIncomplete ? (
             <p className="mt-4 text-sm">
               Complete your profile to register for this event.{" "}

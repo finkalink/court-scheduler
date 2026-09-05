@@ -6,6 +6,8 @@ import { cancelEventRegistration } from "@/app/actions/events";
 import { formatBookingDate } from "@/lib/dateFormat";
 import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 import SuccessBanner from "@/components/SuccessBanner";
+import { formatCents } from "@/lib/money";
+import { buildVenmoPaymentUrl } from "@/lib/venmoLink";
 
 export default async function MyEventsPage({
   searchParams,
@@ -22,11 +24,14 @@ export default async function MyEventsPage({
     redirect("/login?next=/events/registrations");
   }
 
+  const { data: profile } = await supabase.from("users").select("name").eq("id", user.id).maybeSingle();
+  const myName = profile?.name ?? null;
+
   // Individual registrations: rows where this user is the direct registrant.
   const { data: individualRegs } = await supabase
     .from("event_registrations")
     .select(
-      "id, status, event:events(id, title, event_type, location:locations(timezone), event_sessions(start_time))"
+      "id, status, payment_status, event:events(id, title, event_type, fee_cents, location:locations(timezone, organization:organizations(venmo_handle)), event_sessions(start_time))"
     )
     .eq("user_id", user.id)
     .neq("status", "cancelled")
@@ -49,7 +54,7 @@ export default async function MyEventsPage({
       ? await supabase
           .from("event_registrations")
           .select(
-            "id, status, team:event_teams(id, name), event:events(id, title, event_type, location:locations(timezone), event_sessions(start_time))"
+            "id, status, payment_status, team:event_teams(id, name), event:events(id, title, event_type, fee_cents, location:locations(timezone, organization:organizations(venmo_handle)), event_sessions(start_time))"
           )
           .in("team_id", myTeamIds)
           .neq("status", "cancelled")
@@ -89,6 +94,8 @@ export default async function MyEventsPage({
           if (!event) return null;
           const location = Array.isArray(event.location) ? event.location[0] : event.location;
           const timezone = location?.timezone ?? "UTC";
+          const org = location ? (Array.isArray(location.organization) ? location.organization[0] : location.organization) : null;
+          const registrantLabel = row.team?.name ?? myName ?? "Registration";
           const sessions = [...event.event_sessions].sort(
             (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
           );
@@ -124,6 +131,31 @@ export default async function MyEventsPage({
                 >
                   {row.status === "waitlisted" ? "Waitlisted" : "Registered"}
                 </span>
+                {row.payment_status === "pending" && event.fee_cents && org?.venmo_handle && (
+                  <div className="text-right">
+                    <p className="text-xs text-yellow-800 dark:text-yellow-300">
+                      {formatCents(event.fee_cents)} due to @{org.venmo_handle}
+                    </p>
+                    <a
+                      href={buildVenmoPaymentUrl({
+                        handle: org.venmo_handle,
+                        amountCents: event.fee_cents,
+                        note: `${event.title} — ${registrantLabel}`,
+                      })}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-yellow-800 underline dark:text-yellow-300"
+                    >
+                      Pay with Venmo
+                    </a>
+                  </div>
+                )}
+                {row.payment_status === "paid" && (
+                  <span className="text-xs text-green-700 dark:text-green-400">Paid ✓</span>
+                )}
+                {row.payment_status === "refunded" && (
+                  <span className="text-xs text-gray-600 dark:text-neutral-400">Refunded</span>
+                )}
                 {/* Every row here already belongs to the viewer -- individualRegs is
                     scoped to their own user_id, teamRegs to teams they're a member
                     of via event_team_members -- so Cancel is always actionable.
