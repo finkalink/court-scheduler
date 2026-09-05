@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { fromZonedTime } from "date-fns-tz";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { buildPaymentConfirmationEmail, sendEmail } from "@/lib/email";
+import { getAppUrl } from "@/lib/appUrl";
 
 const EXCLUSION_VIOLATION = "23P01";
 
@@ -218,4 +220,86 @@ export async function removeEventSession(formData: FormData) {
   revalidatePath(`/events`);
   revalidatePath(`/events/${eventId}`);
   redirect(`/admin/locations/${locationId}/events/${eventId}?session_removed=1`);
+}
+
+export async function markRegistrationPaid(formData: FormData) {
+  const registrationId = String(formData.get("registration_id"));
+  const eventId = String(formData.get("event_id"));
+  const locationId = String(formData.get("location_id"));
+
+  const supabase = await createClient();
+
+  const { data: updated, error } = await supabase
+    .from("event_registrations")
+    .update({ payment_status: "paid" })
+    .eq("id", registrationId)
+    .eq("payment_status", "pending")
+    .select("id, display_name, team:event_teams(name), event:events(id, title, fee_cents)");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!updated || updated.length === 0) {
+    redirect(
+      `/admin/locations/${locationId}/events/${eventId}?payment_error=${encodeURIComponent("Couldn't mark that registration paid.")}`
+    );
+  }
+
+  const registration = updated[0];
+  const event = Array.isArray(registration.event) ? registration.event[0] : registration.event;
+  const team = Array.isArray(registration.team) ? registration.team[0] : registration.team;
+
+  if (event?.fee_cents) {
+    const { data: notify } = await supabase.rpc("get_registration_notification_email", {
+      p_registration_id: registrationId,
+    });
+    const email = notify?.[0]?.email;
+    if (email) {
+      await sendEmail(
+        email,
+        buildPaymentConfirmationEmail({
+          eventTitle: event.title,
+          amountCents: event.fee_cents,
+          registrantLabel: team?.name ?? registration.display_name ?? "Registration",
+          eventUrl: `${getAppUrl()}/events/${event.id}`,
+        })
+      );
+    }
+  }
+
+  revalidatePath(`/admin/locations/${locationId}/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/registrations`);
+  redirect(`/admin/locations/${locationId}/events/${eventId}?payment_marked=1`);
+}
+
+export async function markRegistrationRefunded(formData: FormData) {
+  const registrationId = String(formData.get("registration_id"));
+  const eventId = String(formData.get("event_id"));
+  const locationId = String(formData.get("location_id"));
+
+  const supabase = await createClient();
+
+  const { data: updated, error } = await supabase
+    .from("event_registrations")
+    .update({ payment_status: "refunded" })
+    .eq("id", registrationId)
+    .eq("payment_status", "paid")
+    .select("id");
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!updated || updated.length === 0) {
+    redirect(
+      `/admin/locations/${locationId}/events/${eventId}?payment_error=${encodeURIComponent("Couldn't mark that registration refunded.")}`
+    );
+  }
+
+  revalidatePath(`/admin/locations/${locationId}/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/registrations`);
+  redirect(`/admin/locations/${locationId}/events/${eventId}?payment_marked=1`);
 }

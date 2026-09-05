@@ -2,11 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
-import { updateEvent, addEventSession, removeEventSession } from "@/app/admin/eventActions";
+import {
+  updateEvent,
+  addEventSession,
+  removeEventSession,
+  markRegistrationPaid,
+  markRegistrationRefunded,
+} from "@/app/admin/eventActions";
 import { assembleEventTeam } from "@/app/admin/eventTeamActions";
 import SuccessBanner from "@/components/SuccessBanner";
 import { formatBookingDate } from "@/lib/dateFormat";
 import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
+import { formatCents } from "@/lib/money";
 
 export default async function AdminEventPage({
   params,
@@ -22,6 +29,8 @@ export default async function AdminEventPage({
     session_error?: string;
     team_assembled?: string;
     assemble_error?: string;
+    payment_marked?: string;
+    payment_error?: string;
   }>;
 }) {
   const { locationId, eventId } = await params;
@@ -34,6 +43,8 @@ export default async function AdminEventPage({
     session_error,
     team_assembled,
     assemble_error,
+    payment_marked,
+    payment_error,
   } = await searchParams;
   const supabase = await createClient();
 
@@ -91,6 +102,16 @@ export default async function AdminEventPage({
     .select("id, start_time, end_time, label, court:courts(name)")
     .eq("event_id", eventId)
     .order("start_time");
+
+  const { data: registrations } =
+    event.fee_cents
+      ? await supabase
+          .from("event_registrations")
+          .select("id, payment_status, display_name, team:event_teams(name)")
+          .eq("event_id", eventId)
+          .neq("status", "cancelled")
+          .order("registered_at")
+      : { data: null };
 
   return (
     <div>
@@ -326,6 +347,73 @@ export default async function AdminEventPage({
               </button>
             </form>
           )}
+        </>
+      )}
+
+      {event.fee_cents && (
+        <>
+          <h2 className="mt-10 text-lg font-medium">Registrants &amp; Payments</h2>
+          <p className="text-sm text-gray-600 dark:text-neutral-400">Fee: {formatCents(event.fee_cents)}</p>
+          {payment_marked && <SuccessBanner>Payment status updated.</SuccessBanner>}
+          {payment_error && (
+            <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+              {payment_error}
+            </p>
+          )}
+          {(!registrations || registrations.length === 0) && (
+            <p className="mt-1 text-sm text-gray-600">No registrants yet.</p>
+          )}
+          <ul className="mt-4 flex flex-col gap-2">
+            {(registrations ?? []).map((reg) => {
+              const team = Array.isArray(reg.team) ? reg.team[0] : reg.team;
+              const name = team?.name ?? reg.display_name ?? "Registrant";
+              return (
+                <li
+                  key={reg.id}
+                  className="flex items-center justify-between rounded border border-gray-300 px-4 py-2 dark:border-neutral-800"
+                >
+                  <span className="text-sm">{name}</span>
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={
+                        reg.payment_status === "paid"
+                          ? "rounded bg-green-50 px-2 py-1 text-xs text-green-800 dark:bg-green-950 dark:text-green-300"
+                          : reg.payment_status === "refunded"
+                            ? "rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-neutral-800 dark:text-neutral-300"
+                            : "rounded bg-yellow-50 px-2 py-1 text-xs text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300"
+                      }
+                    >
+                      {reg.payment_status === "paid"
+                        ? "Paid"
+                        : reg.payment_status === "refunded"
+                          ? "Refunded"
+                          : "Pending"}
+                    </span>
+                    {reg.payment_status === "pending" && (
+                      <form action={markRegistrationPaid}>
+                        <input type="hidden" name="registration_id" value={reg.id} />
+                        <input type="hidden" name="event_id" value={event.id} />
+                        <input type="hidden" name="location_id" value={locationId} />
+                        <button type="submit" className="text-xs underline">
+                          Mark Paid
+                        </button>
+                      </form>
+                    )}
+                    {reg.payment_status === "paid" && (
+                      <form action={markRegistrationRefunded}>
+                        <input type="hidden" name="registration_id" value={reg.id} />
+                        <input type="hidden" name="event_id" value={event.id} />
+                        <input type="hidden" name="location_id" value={locationId} />
+                        <button type="submit" className="text-xs text-red-700 underline dark:text-red-400">
+                          Mark Refunded
+                        </button>
+                      </form>
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         </>
       )}
     </div>
