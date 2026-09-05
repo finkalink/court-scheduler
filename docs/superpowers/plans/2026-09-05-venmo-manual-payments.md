@@ -235,14 +235,16 @@ Expected: 3 passed.
 
 - [ ] **Step 9: Write the failing tests for `initialPaymentStatus`**
 
-Add to `src/lib/eventRegistration.test.ts` (append after the existing `determineRegistrationStatus` describe block):
+In `src/lib/eventRegistration.test.ts`, change the existing import line (currently
+`import { determineRegistrationStatus } from "@/lib/eventRegistration";`) to:
 
 ```ts
 import { determineRegistrationStatus, initialPaymentStatus } from "@/lib/eventRegistration";
+```
 
-// (update the existing import line at the top of the file to include
-// initialPaymentStatus alongside determineRegistrationStatus)
+Then append this new describe block after the existing `determineRegistrationStatus` describe block:
 
+```ts
 describe("initialPaymentStatus", () => {
   it("is not_required when there's no fee", () => {
     expect(initialPaymentStatus(null)).toBe("not_required");
