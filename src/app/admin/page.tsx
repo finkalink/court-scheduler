@@ -2,16 +2,16 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
 import { isOwnerOrAdmin } from "@/lib/orgRoles";
-import { createLocation } from "@/app/admin/actions";
+import { createLocation, updateOrganization } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
 import LocationFormFields from "@/components/LocationFormFields";
 
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ location_added?: string }>;
+  searchParams: Promise<{ location_added?: string; org_updated?: string }>;
 }) {
-  const { location_added } = await searchParams;
+  const { location_added, org_updated } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -22,6 +22,12 @@ export default async function AdminPage({
   if (!membership) {
     return null; // admin/layout.tsx already handles the no-membership state.
   }
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("venmo_handle")
+    .eq("id", membership.orgId)
+    .single();
 
   const { data: locations } = await supabase
     .from("locations")
@@ -39,7 +45,29 @@ export default async function AdminPage({
         </Link>
       )}
 
+      {isOwnerOrAdmin(membership.role) && (
+        <details className="mt-4">
+          <summary className="w-fit cursor-pointer text-sm underline">Edit club settings</summary>
+          <form action={updateOrganization} className="mt-2 flex max-w-sm flex-col gap-3">
+            <input type="hidden" name="org_id" value={membership.orgId} />
+            <label className="flex flex-col gap-1 text-sm">
+              Venmo handle (for paid events)
+              <input
+                name="venmo_handle"
+                defaultValue={org?.venmo_handle ?? ""}
+                placeholder="your-venmo-handle"
+                className="rounded border px-3 py-2"
+              />
+            </label>
+            <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+              Save
+            </button>
+          </form>
+        </details>
+      )}
+
       {location_added && <SuccessBanner>Location added.</SuccessBanner>}
+      {org_updated && <SuccessBanner>Club settings saved.</SuccessBanner>}
 
       {(!locations || locations.length === 0) && (
         <p className="mt-1 text-sm text-gray-600">No locations yet. Add one below.</p>

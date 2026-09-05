@@ -109,6 +109,24 @@ export async function updateLocation(formData: FormData) {
   redirect(`/admin/locations/${locationId}?location_saved=1`);
 }
 
+export async function updateOrganization(formData: FormData) {
+  const orgId = String(formData.get("org_id"));
+  const venmoHandle = String(formData.get("venmo_handle") || "").trim() || null;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("organizations")
+    .update({ venmo_handle: venmoHandle })
+    .eq("id", orgId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?org_updated=1");
+}
+
 export async function createCourt(formData: FormData) {
   const locationId = String(formData.get("location_id"));
   const name = String(formData.get("name"));
