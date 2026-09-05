@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildBookingCancellationEmail, buildBookingConfirmationEmail } from "@/lib/email";
+import { buildBookingCancellationEmail, buildBookingConfirmationEmail, buildPaymentConfirmationEmail } from "@/lib/email";
 
 const baseDetails = {
   bookingId: "abc-123",
@@ -65,5 +65,30 @@ describe("buildBookingCancellationEmail", () => {
   it("does not link back to the (now cancelled) booking as something actionable", () => {
     const email = buildBookingCancellationEmail(baseDetails);
     expect(email.subject).not.toContain("confirmed");
+  });
+});
+
+describe("buildPaymentConfirmationEmail", () => {
+  const details = {
+    eventTitle: "Fall Open Tournament",
+    amountCents: 2500,
+    registrantLabel: "Spike Force",
+    eventUrl: "https://court-scheduler-gold.vercel.app/events/abc-123",
+  };
+
+  it("includes the event title, registrant label, and formatted amount", () => {
+    const email = buildPaymentConfirmationEmail(details);
+    expect(email.subject).toBe("Payment received");
+    expect(email.text).toContain("Fall Open Tournament");
+    expect(email.text).toContain("Spike Force");
+    expect(email.text).toContain("$25.00");
+    expect(email.html).toContain("Spike Force");
+    expect(email.html).toContain("$25.00");
+  });
+
+  it("links back to the event page", () => {
+    const email = buildPaymentConfirmationEmail(details);
+    expect(email.text).toContain("https://court-scheduler-gold.vercel.app/events/abc-123");
+    expect(email.html).toContain('href="https://court-scheduler-gold.vercel.app/events/abc-123"');
   });
 });

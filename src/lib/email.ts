@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { buildGoogleCalendarUrl, buildIcsContent, buildOutlookCalendarUrl } from "@/lib/calendarLinks";
+import { formatCents } from "@/lib/money";
 
 export interface BookingEmailDetails {
   bookingId: string;
@@ -17,6 +18,13 @@ export interface EmailContent {
   subject: string;
   text: string;
   html: string;
+}
+
+export interface PaymentEmailDetails {
+  eventTitle: string;
+  amountCents: number;
+  registrantLabel: string;
+  eventUrl: string;
 }
 
 function bookingSummaryLines(details: BookingEmailDetails): string[] {
@@ -78,6 +86,25 @@ export function buildBookingCancellationEmail(details: BookingEmailDetails): Ema
     html: [`<p>This booking has been cancelled:</p>`, `<p>${summary.map(escapeHtml).join("<br>")}</p>`].join(
       "\n"
     ),
+  };
+}
+
+export function buildPaymentConfirmationEmail(details: PaymentEmailDetails): EmailContent {
+  const amount = formatCents(details.amountCents);
+  return {
+    subject: "Payment received",
+    text: [
+      `We've recorded your payment for ${details.eventTitle}:`,
+      "",
+      `${details.registrantLabel} · ${amount}`,
+      "",
+      `View event: ${details.eventUrl}`,
+    ].join("\n"),
+    html: [
+      `<p>We've recorded your payment for ${escapeHtml(details.eventTitle)}:</p>`,
+      `<p>${escapeHtml(details.registrantLabel)} · ${amount}</p>`,
+      `<p><a href="${details.eventUrl}">View event</a></p>`,
+    ].join("\n"),
   };
 }
 
