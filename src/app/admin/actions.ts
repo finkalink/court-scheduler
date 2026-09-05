@@ -114,13 +114,36 @@ export async function updateOrganization(formData: FormData) {
   const venmoHandle = String(formData.get("venmo_handle") || "").trim() || null;
 
   const supabase = await createClient();
-  const { error } = await supabase
+
+  if (!venmoHandle) {
+    const { data: orgLocations } = await supabase.from("locations").select("id").eq("org_id", orgId);
+    const locationIds = (orgLocations ?? []).map((l) => l.id);
+    if (locationIds.length > 0) {
+      const { count } = await supabase
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .in("location_id", locationIds)
+        .gt("fee_cents", 0);
+      if (count && count > 0) {
+        redirect(
+          `/admin?org_error=${encodeURIComponent("Can't clear the Venmo handle while a paid event exists — remove the fee from those events first.")}`
+        );
+      }
+    }
+  }
+
+  const { data: updated, error } = await supabase
     .from("organizations")
     .update({ venmo_handle: venmoHandle })
-    .eq("id", orgId);
+    .eq("id", orgId)
+    .select("id");
 
   if (error) {
     throw new Error(error.message);
+  }
+
+  if (!updated || updated.length === 0) {
+    redirect(`/admin?org_error=${encodeURIComponent("Couldn't save club settings.")}`);
   }
 
   revalidatePath("/admin");

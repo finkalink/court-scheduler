@@ -107,9 +107,9 @@ export default async function AdminEventPage({
     event.fee_cents
       ? await supabase
           .from("event_registrations")
-          .select("id, payment_status, display_name, team:event_teams(name)")
+          .select("id, status, payment_status, display_name, team:event_teams(name)")
           .eq("event_id", eventId)
-          .neq("status", "cancelled")
+          .or("status.neq.cancelled,payment_status.in.(paid,refunded)")
           .order("registered_at")
       : { data: null };
 
@@ -372,7 +372,11 @@ export default async function AdminEventPage({
                   key={reg.id}
                   className="flex items-center justify-between rounded border border-gray-300 px-4 py-2 dark:border-neutral-800"
                 >
-                  <span className="text-sm">{name}</span>
+                  <span className="text-sm">
+                    {name}
+                    {reg.status === "cancelled" && <span className="ml-1 text-xs italic text-gray-500">(cancelled)</span>}
+                    {reg.status === "waitlisted" && <span className="ml-1 text-xs italic text-gray-500">(waitlisted)</span>}
+                  </span>
                   <span className="flex items-center gap-3">
                     <span
                       className={

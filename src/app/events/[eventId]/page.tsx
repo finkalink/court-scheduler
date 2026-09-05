@@ -58,7 +58,7 @@ export default async function EventDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  let myRegistration: { id: string; status: string; payment_status: string } | null = null;
+  let myRegistration: { id: string; status: string; payment_status: string; display_name: string | null } | null = null;
   let myTeamName: string | null = null;
   let registeredCount = 0;
   let profileName: string | null = null;
@@ -67,7 +67,7 @@ export default async function EventDetailPage({
   if (user) {
     const { data: individualReg } = await supabase
       .from("event_registrations")
-      .select("id, status, payment_status")
+      .select("id, status, payment_status, display_name")
       .eq("event_id", eventId)
       .eq("user_id", user.id)
       .neq("status", "cancelled")
@@ -88,7 +88,7 @@ export default async function EventDetailPage({
       if (myTeamForEvent) {
         const { data: teamReg } = await supabase
           .from("event_registrations")
-          .select("id, status, payment_status")
+          .select("id, status, payment_status, display_name")
           .eq("event_id", eventId)
           .eq("team_id", myTeamForEvent.id)
           .neq("status", "cancelled")
@@ -253,7 +253,10 @@ export default async function EventDetailPage({
                     ? "You're on the waitlist."
                     : "You're registered."}
               </p>
-              {myRegistration?.payment_status === "pending" && event.fee_cents && venmoHandle && (
+              {myRegistration?.payment_status === "pending" &&
+                myRegistration?.status === "registered" &&
+                event.fee_cents &&
+                venmoHandle && (
                 <div className="mt-2 rounded border border-yellow-300 bg-yellow-50 p-3 text-sm dark:border-yellow-900 dark:bg-yellow-950">
                   <p className="text-yellow-800 dark:text-yellow-300">
                     Payment due: {formatCents(event.fee_cents)} to @{venmoHandle}
@@ -262,7 +265,7 @@ export default async function EventDetailPage({
                     href={buildVenmoPaymentUrl({
                       handle: venmoHandle,
                       amountCents: event.fee_cents,
-                      note: `${event.title} — ${myTeamName ?? profileName ?? "Registration"}`,
+                      note: `${event.title} — ${myTeamName ?? myRegistration?.display_name ?? "Registration"}`,
                     })}
                     target="_blank"
                     rel="noreferrer"

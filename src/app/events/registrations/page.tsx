@@ -31,7 +31,7 @@ export default async function MyEventsPage({
   const { data: individualRegs } = await supabase
     .from("event_registrations")
     .select(
-      "id, status, payment_status, event:events(id, title, event_type, fee_cents, location:locations(timezone, organization:organizations(venmo_handle)), event_sessions(start_time))"
+      "id, status, payment_status, display_name, event:events(id, title, event_type, fee_cents, location:locations(timezone, organization:organizations(venmo_handle)), event_sessions(start_time))"
     )
     .eq("user_id", user.id)
     .neq("status", "cancelled")
@@ -54,7 +54,7 @@ export default async function MyEventsPage({
       ? await supabase
           .from("event_registrations")
           .select(
-            "id, status, payment_status, team:event_teams(id, name), event:events(id, title, event_type, fee_cents, location:locations(timezone, organization:organizations(venmo_handle)), event_sessions(start_time))"
+            "id, status, payment_status, display_name, team:event_teams(id, name), event:events(id, title, event_type, fee_cents, location:locations(timezone, organization:organizations(venmo_handle)), event_sessions(start_time))"
           )
           .in("team_id", myTeamIds)
           .neq("status", "cancelled")
@@ -95,7 +95,7 @@ export default async function MyEventsPage({
           const location = Array.isArray(event.location) ? event.location[0] : event.location;
           const timezone = location?.timezone ?? "UTC";
           const org = location ? (Array.isArray(location.organization) ? location.organization[0] : location.organization) : null;
-          const registrantLabel = row.team?.name ?? myName ?? "Registration";
+          const registrantLabel = row.team?.name ?? row.display_name ?? myName ?? "Registration";
           const sessions = [...event.event_sessions].sort(
             (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
           );
@@ -131,7 +131,10 @@ export default async function MyEventsPage({
                 >
                   {row.status === "waitlisted" ? "Waitlisted" : "Registered"}
                 </span>
-                {row.payment_status === "pending" && event.fee_cents && org?.venmo_handle && (
+                {row.payment_status === "pending" &&
+                  row.status === "registered" &&
+                  event.fee_cents &&
+                  org?.venmo_handle && (
                   <div className="text-right">
                     <p className="text-xs text-yellow-800 dark:text-yellow-300">
                       {formatCents(event.fee_cents)} due to @{org.venmo_handle}

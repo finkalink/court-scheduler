@@ -33,7 +33,7 @@ function eventFieldsFromFormData(formData: FormData) {
     registration_mode: registrationMode,
     team_formation: registrationMode === "team" ? teamFormationInput || "self_formed" : null,
     capacity: capacity ? Number(capacity) : null,
-    fee_cents: feeDollars ? Math.round(Number(feeDollars) * 100) : null,
+    fee_cents: feeDollars && Number(feeDollars) > 0 ? Math.round(Number(feeDollars) * 100) : null,
     status: String(formData.get("status") || "draft"),
   };
 }
@@ -86,7 +86,8 @@ export async function updateEvent(formData: FormData) {
   const { error } = await supabase
     .from("events")
     .update(fields)
-    .eq("id", eventId);
+    .eq("id", eventId)
+    .eq("location_id", locationId);
 
   if (error) {
     throw new Error(error.message);

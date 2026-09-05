@@ -9,9 +9,9 @@ import LocationFormFields from "@/components/LocationFormFields";
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ location_added?: string; org_updated?: string }>;
+  searchParams: Promise<{ location_added?: string; org_updated?: string; org_error?: string }>;
 }) {
-  const { location_added, org_updated } = await searchParams;
+  const { location_added, org_updated, org_error } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -68,6 +68,11 @@ export default async function AdminPage({
 
       {location_added && <SuccessBanner>Location added.</SuccessBanner>}
       {org_updated && <SuccessBanner>Club settings saved.</SuccessBanner>}
+      {org_error && (
+        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+          {org_error}
+        </p>
+      )}
 
       {(!locations || locations.length === 0) && (
         <p className="mt-1 text-sm text-gray-600">No locations yet. Add one below.</p>
