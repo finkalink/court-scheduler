@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { determineRegistrationStatus } from "@/lib/eventRegistration";
+import { determineRegistrationStatus, initialPaymentStatus } from "@/lib/eventRegistration";
 
 describe("determineRegistrationStatus", () => {
   it("registers when capacity is unlimited (null)", () => {
@@ -25,5 +25,16 @@ describe("determineRegistrationStatus", () => {
 
   it("waitlists immediately when capacity is zero", () => {
     expect(determineRegistrationStatus(0, 0)).toBe("waitlisted");
+  });
+});
+
+describe("initialPaymentStatus", () => {
+  it("is not_required when there's no fee", () => {
+    expect(initialPaymentStatus(null)).toBe("not_required");
+    expect(initialPaymentStatus(0)).toBe("not_required");
+  });
+
+  it("is pending when there's a positive fee", () => {
+    expect(initialPaymentStatus(2500)).toBe("pending");
   });
 });
