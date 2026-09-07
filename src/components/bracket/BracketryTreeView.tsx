@@ -1,4 +1,3 @@
-// src/components/bracket/BracketryTreeView.tsx
 "use client";
 
 import { useEffect, useRef } from "react";
