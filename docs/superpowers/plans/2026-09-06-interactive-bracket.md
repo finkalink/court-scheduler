@@ -1019,7 +1019,7 @@ git commit -m "Add MatchCardGrid"
 
 **Interfaces:**
 - Consumes: `computeActiveRounds` (Task 2); `computeStandings` from `@/lib/standings` (existing); `BracketryTreeView` (Task 6); `MatchCardGrid` (Task 7); `MatchResultSheet` (Task 5); `useRouter` from `next/navigation`.
-- Produces: default-exported `InteractiveBracket` component, props `{ eventId, locationId, matches, sets, nameByRegistrationId, bestOfSets, pointsPerSet, winBy, interactive, onReviewNeeded? }` — consumed by Task 9 (admin page) and Task 10 (player page).
+- Produces: default-exported `InteractiveBracket` component, props `{ eventId, locationId, matches, sets, nameByRegistrationId, bestOfSets, pointsPerSet, winBy, interactive }` — consumed by Task 9 (admin page) and Task 10 (player page). `InteractiveBracket` owns the "review needed" banner itself (see the implementation below) — there is no `onReviewNeeded` callback prop for a parent server component to wire up, since a server component can't hold the client state that banner needs anyway.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1028,6 +1028,7 @@ git commit -m "Add MatchCardGrid"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import InteractiveBracket from "./InteractiveBracket";
+import { recordMatchResult } from "@/app/admin/eventMatchActions";
 import type { EventMatch } from "@/lib/matchAdvancement";
 
 let capturedOnMatchClick: ((match: { roundIndex: number; order: number }) => void) | null = null;
@@ -1141,6 +1142,29 @@ describe("InteractiveBracket", () => {
 
     expect(screen.getByText("Team A vs Team B")).toBeInTheDocument();
   });
+
+  it("shows the review-needed banner, listing the affected match, when a correction returns one", async () => {
+    vi.mocked(recordMatchResult).mockResolvedValueOnce({ ok: true, reviewNeeded: ["r2"] });
+    const round1 = buildMatch({ id: "r1", round_number: 1, slot_in_round: 1, status: "pending" });
+    const round2 = buildMatch({
+      id: "r2",
+      round_number: 2,
+      slot_in_round: 1,
+      team_a_registration_id: "regC",
+      team_b_registration_id: "regD",
+      status: "completed",
+      winner_registration_id: "regC",
+    });
+    render(<InteractiveBracket {...defaultProps} matches={[round1, round2]} sets={[]} />);
+
+    capturedOnMatchClick?.({ roundIndex: 0, order: 0 });
+    fireEvent.click(screen.getByText("Save Result"));
+
+    await waitFor(() =>
+      expect(screen.getByText(/fed into 1 match/i)).toBeInTheDocument()
+    );
+    expect(screen.getByText(/winners round 2: Team C vs Team D/i)).toBeInTheDocument();
+  });
 });
 ```
 
@@ -1177,7 +1201,6 @@ interface InteractiveBracketProps {
   pointsPerSet: number;
   winBy: number;
   interactive: boolean;
-  onReviewNeeded?: (matchIds: string[]) => void;
 }
 
 export default function InteractiveBracket({
@@ -1190,16 +1213,38 @@ export default function InteractiveBracket({
   pointsPerSet,
   winBy,
   interactive,
-  onReviewNeeded,
 }: InteractiveBracketProps) {
   const router = useRouter();
   const [openMatch, setOpenMatch] = useState<EventMatch | null>(null);
+  const [reviewNeededIds, setReviewNeededIds] = useState<string[]>([]);
 
   const activeRounds = computeActiveRounds(matches.filter((m) => ELIMINATION_BRACKETS.has(m.bracket)));
   const bracketGroups = Array.from(new Set(matches.map((m) => m.bracket)));
 
   return (
     <div className="flex flex-col gap-8">
+      {reviewNeededIds.length > 0 && (
+        <div className="rounded bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300">
+          <p>
+            This correction fed into {reviewNeededIds.length} match{reviewNeededIds.length > 1 ? "es" : ""} that{" "}
+            {reviewNeededIds.length > 1 ? "were" : "was"} already completed, so it wasn&apos;t auto-updated. Tap it
+            to review and, if needed, correct it.
+          </p>
+          <ul className="mt-1 list-disc pl-5">
+            {reviewNeededIds.map((id) => {
+              const m = matches.find((match) => match.id === id);
+              if (!m) return <li key={id}>Match {id}</li>;
+              return (
+                <li key={id}>
+                  {m.bracket} round {m.round_number}: {nameByRegistrationId.get(m.team_a_registration_id ?? "") ?? "TBD"} vs{" "}
+                  {nameByRegistrationId.get(m.team_b_registration_id ?? "") ?? "TBD"}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       {bracketGroups.map((bracket) => {
         const bracketMatches = matches.filter((m) => m.bracket === bracket);
         const isElimination = ELIMINATION_BRACKETS.has(bracket);
@@ -1249,7 +1294,7 @@ export default function InteractiveBracket({
           onClose={() => setOpenMatch(null)}
           onSuccess={(reviewNeeded) => {
             setOpenMatch(null);
-            if (reviewNeeded.length > 0) onReviewNeeded?.(reviewNeeded);
+            setReviewNeededIds(reviewNeeded);
             router.refresh();
           }}
         />
@@ -1262,7 +1307,7 @@ export default function InteractiveBracket({
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `npx vitest run src/components/bracket/InteractiveBracket.test.tsx`
-Expected: PASS (4 tests). If `fireEvent.click` on the submit button doesn't trigger the mocked action in this project's jsdom version, replace it with `fireEvent.submit(screen.getByText("Save Result").closest("form")!)` in that one test and re-run.
+Expected: PASS (5 tests). If `fireEvent.click` on the submit button doesn't trigger the mocked action in this project's jsdom version, replace it with `fireEvent.submit(screen.getByText("Save Result").closest("form")!)` in the affected tests and re-run.
 
 - [ ] **Step 5: Run the full suite and typecheck**
 
@@ -1295,7 +1340,13 @@ This removes: the `recordMatchResult` import (no longer called directly here —
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { generateBracket, regenerateBracket, editMatch, autoAssignSessions } from "@/app/admin/eventMatchActions";
+import {
+  generateBracket,
+  regenerateBracket,
+  editMatch,
+  autoAssignSessions,
+  withdrawRegistration,
+} from "@/app/admin/eventMatchActions";
 import { nextPowerOf2 } from "@/lib/bracketGeneration";
 import SuccessBanner from "@/components/SuccessBanner";
 import InteractiveBracket from "@/components/bracket/InteractiveBracket";
@@ -1648,14 +1699,7 @@ export default async function AdminBracketPage({
           </details>
         </>
       )}
-    </div>
-  );
-}
-```
 
-Note: this drops the "Registrants" section with the "Withdraw" form that lived at the bottom of the old file (it used `withdrawRegistration`, imported but now unused above). That section belongs on the main event admin page already (added in the previous pass — see `src/app/admin/locations/[locationId]/events/[eventId]/page.tsx`'s "Registrants" section), not this bracket-specific page; withdrawing mid-bracket (which needs to resolve a pending match by forfeit/substitute) was a bracket-page-specific feature though. **Add it back** as a final section, unchanged from the original file, using the same `registrations` query already run above:
-
-```tsx
       <h2 className="mt-10 text-lg font-medium">Registrants</h2>
       <ul className="mt-2 flex flex-col gap-2">
         {(registrations ?? []).map((r) => (
@@ -1697,8 +1741,6 @@ Note: this drops the "Registrants" section with the "Withdraw" form that lived a
   );
 }
 ```
-
-Place this right before the file's final closing `</div>\n  );\n}` (i.e. it becomes the new last section), and add `withdrawRegistration` back into the `eventMatchActions` import list at the top (it was dropped from the import line above by mistake in Step 1 — the import should read `generateBracket, regenerateBracket, editMatch, autoAssignSessions, withdrawRegistration`).
 
 - [ ] **Step 2: Typecheck and run the full suite**
 
@@ -1801,7 +1843,7 @@ Using the dev server against the seeded test tournament (or a fresh one), work t
 
 1. Generate a single-elim bracket; confirm the tree renders with connector lines, Round 1 is tappable, later rounds show as greyed TBD.
 2. Score every Round 1 match; confirm Round 2 becomes tappable only once *all* of Round 1 is done.
-3. Edit an already-completed match's score in a way that changes the winner and cascades into an already-completed downstream match; confirm the review-needed banner appears (rendered via `InteractiveBracket`'s `onReviewNeeded` callback — wire a simple banner using it if Task 9 didn't already render one; if it's missing, add a small `useState`-driven yellow banner in the admin bracket page above `<InteractiveBracket>`, matching the old banner's copy/styling, passed as the `onReviewNeeded` prop).
+3. Edit an already-completed match's score in a way that changes the winner and cascades into an already-completed downstream match; confirm the review-needed banner appears (rendered internally by `InteractiveBracket`, above the bracket groups).
 4. Generate a double-elim bracket; confirm winners/losers/playoff each render as their own tree, locking independently.
 5. Generate a round-robin bracket; confirm every match is tappable at any time via the card grid, with a working standings table.
 6. Enter an invalid score in the sheet; confirm the error shows inline and the sheet stays open with entered values intact.
