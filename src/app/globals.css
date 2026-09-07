@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+/* Redefines what "dark:" means everywhere in the app -- not just the new
+   token-driven components -- so it respects the explicit theme cookie
+   (data-theme) with the same fallback-to-system-preference cascade as our
+   own custom properties below, instead of Tailwind's default of purely
+   following prefers-color-scheme. Without this, a page/component that
+   still uses plain dark: classes (everything outside AppShell, until
+   Phase 2's token sweep) would ignore an explicit "Light" choice whenever
+   the OS itself prefers dark -- e.g. dark:hover:bg-neutral-800 firing on
+   hover with unreadable dark-on-light text, which is the exact bug this
+   fixes. Two sibling rules = OR'd together: explicit dark always wins;
+   otherwise system preference decides, unless the explicit choice is light. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:not(:where([data-theme="light"], [data-theme="light"] *)) {
+      @slot;
+    }
+  }
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+}
+
 :root {
   --surface: #F5F1E8;
   --card: #FFFDF8;

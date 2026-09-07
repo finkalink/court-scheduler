@@ -28,7 +28,7 @@ export default function ThemeToggle({ initialTheme }: { initialTheme: Theme | nu
       aria-checked={theme === "dark"}
       aria-label="Toggle dark mode"
       onClick={toggle}
-      className="flex items-center gap-2 text-xs text-fg-muted"
+      className="flex items-center gap-2 border-0 bg-transparent p-0 text-xs text-fg-muted appearance-none"
     >
       <span
         className={`relative h-4 w-7 rounded-full transition-colors ${
