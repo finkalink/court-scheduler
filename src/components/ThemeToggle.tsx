@@ -10,6 +10,7 @@ export default function ThemeToggle({ initialTheme }: { initialTheme: Theme | nu
   useEffect(() => {
     if (initialTheme) return; // server already resolved an explicit choice -- trust it
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate one-shot post-hydration correction to match OS preference when no cookie exists yet; not a subscription/loop
     setTheme(prefersDark ? "dark" : "light");
   }, [initialTheme]);
 
@@ -31,7 +32,7 @@ export default function ThemeToggle({ initialTheme }: { initialTheme: Theme | nu
     >
       <span
         className={`relative h-4 w-7 rounded-full transition-colors ${
-          theme === "dark" ? "bg-accent" : "bg-border"
+          theme === "dark" ? "bg-accent" : "bg-fg-muted"
         }`}
       >
         <span

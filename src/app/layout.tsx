@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
-import { isValidTheme } from "@/lib/theme";
+import { isValidTheme, THEME_COOKIE_NAME } from "@/lib/theme";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 
@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const membership = await getCurrentMembership(supabase, user?.id);
 
   const cookieStore = await cookies();
-  const themeCookie = cookieStore.get("theme")?.value;
+  const themeCookie = cookieStore.get(THEME_COOKIE_NAME)?.value;
   const initialTheme = isValidTheme(themeCookie) ? themeCookie : null;
 
   return (
