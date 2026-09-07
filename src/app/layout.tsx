@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
+import { isValidTheme } from "@/lib/theme";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 
@@ -28,13 +30,18 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
 
   const membership = await getCurrentMembership(supabase, user?.id);
 
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("theme")?.value;
+  const initialTheme = isValidTheme(themeCookie) ? themeCookie : null;
+
   return (
     <html
       lang="en"
+      data-theme={initialTheme ?? undefined}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <AppShell userEmail={user?.email ?? null} isOrgMember={!!membership}>
+        <AppShell userEmail={user?.email ?? null} isOrgMember={!!membership} initialTheme={initialTheme}>
           {children}
         </AppShell>
       </body>
