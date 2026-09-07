@@ -168,7 +168,12 @@ async function applyAdvancement(
   return secondHopWarnings.map((m) => m.id);
 }
 
-export async function recordMatchResult(formData: FormData) {
+export type MatchResultState = { ok: true; reviewNeeded: string[] } | { ok: false; error: string };
+
+export async function recordMatchResult(
+  _prevState: MatchResultState | null,
+  formData: FormData
+): Promise<MatchResultState> {
   const matchId = String(formData.get("match_id"));
   const eventId = String(formData.get("event_id"));
   const locationId = String(formData.get("location_id"));
@@ -194,7 +199,7 @@ export async function recordMatchResult(formData: FormData) {
 
   if (forfeit) {
     if (!forfeitWinner) {
-      redirect(`${bracketPath(locationId, eventId)}?result_error=${encodeURIComponent("Pick who wins the forfeit.")}`);
+      return { ok: false, error: "Pick who wins the forfeit." };
     }
     winnerId = forfeitWinner;
   } else {
@@ -206,23 +211,20 @@ export async function recordMatchResult(formData: FormData) {
       const teamAPoints = Number(a);
       const teamBPoints = Number(b);
       if (!isValidSetScore(teamAPoints, teamBPoints, scoringConfig)) {
-        redirect(
-          `${bracketPath(locationId, eventId)}?result_error=${encodeURIComponent(
-            `Set ${i}: not a valid score (first to ${scoringConfig.pointsPerSet}, win by ${scoringConfig.winBy}).`
-          )}`
-        );
+        return {
+          ok: false,
+          error: `Set ${i}: not a valid score (first to ${scoringConfig.pointsPerSet}, win by ${scoringConfig.winBy}).`,
+        };
       }
       setRows.push({ match_id: matchId, set_number: i, team_a_points: teamAPoints, team_b_points: teamBPoints });
     }
     if (setRows.length === 0) {
-      redirect(
-        `${bracketPath(locationId, eventId)}?result_error=${encodeURIComponent("Enter at least one set's score, or mark a forfeit.")}`
-      );
+      return { ok: false, error: "Enter at least one set's score, or mark a forfeit." };
     }
 
     winnerId = deriveMatchWinner(setRows, match.team_a_registration_id, match.team_b_registration_id);
     if (!winnerId) {
-      redirect(`${bracketPath(locationId, eventId)}?result_error=${encodeURIComponent("Sets are tied -- can't determine a winner.")}`);
+      return { ok: false, error: "Sets are tied -- can't determine a winner." };
     }
 
     await supabase.from("event_match_sets").delete().eq("match_id", matchId);
@@ -248,9 +250,7 @@ export async function recordMatchResult(formData: FormData) {
 
   revalidatePath(bracketPath(locationId, eventId));
   revalidatePath(`/events/${eventId}`);
-  redirect(
-    `${bracketPath(locationId, eventId)}?result_saved=1${reviewNeeded.length > 0 ? `&review_needed=${reviewNeeded.join(",")}` : ""}`
-  );
+  return { ok: true, reviewNeeded };
 }
 
 export async function editMatch(formData: FormData) {
