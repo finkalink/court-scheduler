@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import type { EventMatch } from "@/lib/matchAdvancement";
 import type { EventMatchSetRow } from "@/lib/bracketryData";
 import { computeActiveRounds } from "@/lib/activeRounds";
 import { computeStandings } from "@/lib/standings";
-import BracketryTreeView from "@/components/bracket/BracketryTreeView";
 import MatchCardGrid from "@/components/bracket/MatchCardGrid";
 import MatchResultSheet from "@/components/bracket/MatchResultSheet";
+
+const BracketryTreeView = dynamic(() => import("@/components/bracket/BracketryTreeView"), {
+  ssr: false,
+});
 
 const ELIMINATION_BRACKETS = new Set(["winners", "losers", "playoff"]);
 
