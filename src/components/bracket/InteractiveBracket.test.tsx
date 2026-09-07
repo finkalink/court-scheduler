@@ -83,7 +83,7 @@ describe("InteractiveBracket", () => {
     expect(screen.getByText("Team A vs Team B")).toBeInTheDocument();
   });
 
-  it("does not open the sheet for a match in a locked round", () => {
+  it("does not open the sheet for a match in a locked round", async () => {
     const round1 = buildMatch({ id: "r1", round_number: 1, slot_in_round: 1, status: "pending" });
     const round2 = buildMatch({
       id: "r2",
@@ -95,6 +95,7 @@ describe("InteractiveBracket", () => {
     });
     render(<InteractiveBracket {...defaultProps} matches={[round1, round2]} sets={[]} />);
 
+    await waitFor(() => expect(capturedOnMatchClick).not.toBeNull());
     act(() => {
       capturedOnMatchClick?.({ roundIndex: 1, order: 0 });
     });
