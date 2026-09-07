@@ -63,7 +63,9 @@ export default async function AdminEventPage({
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, title, description, event_type, registration_mode, team_formation, capacity, fee_cents, status")
+    .select(
+      "id, title, description, event_type, registration_mode, team_formation, capacity, fee_cents, status, best_of_sets, points_per_set, win_by"
+    )
     .eq("id", eventId)
     .eq("location_id", locationId)
     .single();
@@ -113,6 +115,28 @@ export default async function AdminEventPage({
           .order("registered_at")
       : { data: null };
 
+  // Registrant roster, always shown regardless of fee -- distinct from the
+  // fee-gated "Registrants & Payments" list above, which is about payment
+  // status, not who's actually on a team.
+  const { data: teams } =
+    event.registration_mode === "team"
+      ? await supabase
+          .from("event_teams")
+          .select("id, name, members:event_team_members(display_name), registration:event_registrations(status)")
+          .eq("event_id", eventId)
+          .order("name")
+      : { data: null };
+
+  const { data: individualRegistrations } =
+    event.registration_mode === "individual"
+      ? await supabase
+          .from("event_registrations")
+          .select("id, status, display_name")
+          .eq("event_id", eventId)
+          .neq("status", "cancelled")
+          .order("registered_at")
+      : { data: null };
+
   return (
     <div>
       <Link href={`/admin/locations/${locationId}/events`} className="text-sm underline">
@@ -142,6 +166,49 @@ export default async function AdminEventPage({
         <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
           {session_error}
         </p>
+      )}
+
+      <h2 className="mt-8 text-lg font-medium">Registrants</h2>
+      {event.registration_mode === "team" && (!teams || teams.length === 0) && (
+        <p className="mt-1 text-sm text-gray-600">No teams registered yet.</p>
+      )}
+      {event.registration_mode === "team" && teams && teams.length > 0 && (
+        <ul className="mt-2 flex flex-col gap-2">
+          {teams.map((team) => {
+            const registration = Array.isArray(team.registration) ? team.registration[0] : team.registration;
+            return (
+              <li key={team.id} className="rounded border border-gray-300 px-4 py-2 text-sm dark:border-neutral-800">
+                <p className="font-medium">
+                  {team.name}
+                  {registration?.status === "waitlisted" && (
+                    <span className="ml-1 text-xs italic text-gray-500">(waitlisted)</span>
+                  )}
+                  {registration?.status === "cancelled" && (
+                    <span className="ml-1 text-xs italic text-gray-500">(cancelled)</span>
+                  )}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-neutral-400">
+                  {team.members.length === 0
+                    ? "No roster yet"
+                    : team.members.map((m) => m.display_name).join(", ")}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {event.registration_mode === "individual" && (!individualRegistrations || individualRegistrations.length === 0) && (
+        <p className="mt-1 text-sm text-gray-600">No registrants yet.</p>
+      )}
+      {event.registration_mode === "individual" && individualRegistrations && individualRegistrations.length > 0 && (
+        <ul className="mt-2 flex flex-col gap-2">
+          {individualRegistrations.map((reg) => (
+            <li key={reg.id} className="rounded border border-gray-300 px-4 py-2 text-sm dark:border-neutral-800">
+              {reg.display_name ?? "Registrant"}
+              {reg.status === "waitlisted" && <span className="ml-1 text-xs italic text-gray-500">(waitlisted)</span>}
+            </li>
+          ))}
+        </ul>
       )}
 
       <details className="mt-4">
@@ -243,6 +310,41 @@ export default async function AdminEventPage({
               <option value="cancelled">Cancelled</option>
             </select>
           </label>
+
+          <p className="mt-2 text-sm font-medium">Match scoring</p>
+          <label className="flex flex-col gap-1 text-sm">
+            Sets per match
+            <select
+              name="best_of_sets"
+              defaultValue={event.best_of_sets}
+              className="rounded border px-3 py-2 dark:bg-neutral-900"
+            >
+              <option value={1}>Best of 1</option>
+              <option value={3}>Best of 3</option>
+              <option value={5}>Best of 5</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Points to win a set
+            <input
+              name="points_per_set"
+              type="number"
+              min="1"
+              defaultValue={event.points_per_set}
+              className="rounded border px-3 py-2"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Win by
+            <input
+              name="win_by"
+              type="number"
+              min="1"
+              defaultValue={event.win_by}
+              className="rounded border px-3 py-2"
+            />
+          </label>
+
           <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
             Save
           </button>

@@ -35,6 +35,9 @@ function eventFieldsFromFormData(formData: FormData) {
     capacity: capacity ? Number(capacity) : null,
     fee_cents: feeDollars && Number(feeDollars) > 0 ? Math.round(Number(feeDollars) * 100) : null,
     status: String(formData.get("status") || "draft"),
+    best_of_sets: Number(formData.get("best_of_sets") || 3),
+    points_per_set: Number(formData.get("points_per_set") || 21),
+    win_by: Number(formData.get("win_by") || 2),
   };
 }
 

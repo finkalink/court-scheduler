@@ -12,7 +12,7 @@ import {
   type SeedSlot,
 } from "@/lib/bracketGeneration";
 import { propagateAdvancement, type EventMatch } from "@/lib/matchAdvancement";
-import { deriveMatchWinner } from "@/lib/matchResult";
+import { deriveMatchWinner, isValidSetScore } from "@/lib/matchResult";
 import { pairMatchesToSessions } from "@/lib/matchScheduling";
 
 function bracketPath(locationId: string, eventId: string) {
@@ -182,6 +182,14 @@ export async function recordMatchResult(formData: FormData) {
     throw new Error("Match not found.");
   }
 
+  const { data: event } = await supabase
+    .from("events")
+    .select("best_of_sets, points_per_set, win_by")
+    .eq("id", eventId)
+    .single();
+  const scoringConfig = { pointsPerSet: event?.points_per_set ?? 21, winBy: event?.win_by ?? 2 };
+  const bestOfSets = event?.best_of_sets ?? 3;
+
   let winnerId: string | null = null;
 
   if (forfeit) {
@@ -191,11 +199,20 @@ export async function recordMatchResult(formData: FormData) {
     winnerId = forfeitWinner;
   } else {
     const setRows: { match_id: string; set_number: number; team_a_points: number; team_b_points: number }[] = [];
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= bestOfSets; i++) {
       const a = formData.get(`set_${i}_a`);
       const b = formData.get(`set_${i}_b`);
       if (a === null || b === null || a === "" || b === "") continue;
-      setRows.push({ match_id: matchId, set_number: i, team_a_points: Number(a), team_b_points: Number(b) });
+      const teamAPoints = Number(a);
+      const teamBPoints = Number(b);
+      if (!isValidSetScore(teamAPoints, teamBPoints, scoringConfig)) {
+        redirect(
+          `${bracketPath(locationId, eventId)}?result_error=${encodeURIComponent(
+            `Set ${i}: not a valid score (first to ${scoringConfig.pointsPerSet}, win by ${scoringConfig.winBy}).`
+          )}`
+        );
+      }
+      setRows.push({ match_id: matchId, set_number: i, team_a_points: teamAPoints, team_b_points: teamBPoints });
     }
     if (setRows.length === 0) {
       redirect(

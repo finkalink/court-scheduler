@@ -38,7 +38,7 @@ export default async function AdminBracketPage({
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, title, registration_mode")
+    .select("id, title, registration_mode, best_of_sets, points_per_set, win_by")
     .eq("id", eventId)
     .eq("location_id", locationId)
     .single();
@@ -79,6 +79,13 @@ export default async function AdminBracketPage({
     .from("event_match_sets")
     .select("*")
     .in("match_id", (matches ?? []).map((m) => m.id).length > 0 ? (matches ?? []).map((m) => m.id) : ["00000000-0000-0000-0000-000000000000"]);
+
+  const setsByMatchId = new Map<string, { set_number: number; team_a_points: number; team_b_points: number }[]>();
+  for (const s of sets ?? []) {
+    const existing = setsByMatchId.get(s.match_id) ?? [];
+    existing.push(s);
+    setsByMatchId.set(s.match_id, existing);
+  }
 
   const { data: sessions } = await supabase
     .from("event_sessions")
@@ -155,6 +162,24 @@ export default async function AdminBracketPage({
               <option value="pool_play">Pool play</option>
             </select>
           </label>
+          <dl className="flex flex-col gap-2 rounded border border-gray-200 p-3 text-xs text-gray-600 dark:border-neutral-800 dark:text-neutral-400">
+            <div>
+              <dt className="font-medium text-gray-800 dark:text-neutral-200">Single elimination</dt>
+              <dd>One loss and you&apos;re out. Fastest format -- good when court time or the day itself is limited.</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-gray-800 dark:text-neutral-200">Double elimination</dt>
+              <dd>A loss drops you to a losers bracket instead of eliminating you outright -- you&apos;re out only after a second loss. Takes longer but gives every team a second chance.</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-gray-800 dark:text-neutral-200">Round robin</dt>
+              <dd>Every team plays every other team once; standings are ranked by wins. No eliminations -- best for a small group with time to play a full set of matches.</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-gray-800 dark:text-neutral-200">Pool play</dt>
+              <dd>Teams are split into pools and round-robin within their own pool. Use this for a larger field where a full round robin across everyone would take too long.</dd>
+            </div>
+          </dl>
           <label className="flex flex-col gap-1 text-sm">
             Seeding
             <select name="seeding" className="rounded border px-3 py-2 dark:bg-neutral-900">
@@ -314,39 +339,77 @@ export default async function AdminBracketPage({
                         </p>
                         {match.admin_note && <p className="text-xs italic text-gray-600 dark:text-neutral-400">{match.admin_note}</p>}
 
-                        {match.status !== "completed" && match.team_a_registration_id && match.team_b_registration_id && (
-                          <details className="mt-2">
-                            <summary className="w-fit cursor-pointer text-xs underline">Enter Result</summary>
-                            <form action={recordMatchResult} className="mt-2 flex max-w-sm flex-col gap-2">
-                              <input type="hidden" name="match_id" value={match.id} />
-                              <input type="hidden" name="event_id" value={eventId} />
-                              <input type="hidden" name="location_id" value={locationId} />
-                              {[1, 2, 3, 4, 5].map((n) => (
-                                <div key={n} className="flex items-center gap-2 text-xs">
-                                  <span className="w-10">Set {n}</span>
-                                  <input name={`set_${n}_a`} type="number" min="0" className="w-16 rounded border px-2 py-1" />
-                                  <span>-</span>
-                                  <input name={`set_${n}_b`} type="number" min="0" className="w-16 rounded border px-2 py-1" />
+                        {match.team_a_registration_id && match.team_b_registration_id && (() => {
+                          const existingSets = setsByMatchId.get(match.id) ?? [];
+                          const isEditing = match.status === "completed";
+                          return (
+                            <details className="mt-2">
+                              <summary className="w-fit cursor-pointer text-xs underline">
+                                {isEditing ? "Edit Result" : "Enter Result"}
+                              </summary>
+                              <form
+                                key={`result-${match.id}-${match.status}-${match.winner_registration_id}-${match.is_forfeit}-${existingSets.map((s) => `${s.set_number}:${s.team_a_points}-${s.team_b_points}`).join(",")}`}
+                                action={recordMatchResult}
+                                className="mt-2 flex max-w-sm flex-col gap-2"
+                              >
+                                <input type="hidden" name="match_id" value={match.id} />
+                                <input type="hidden" name="event_id" value={eventId} />
+                                <input type="hidden" name="location_id" value={locationId} />
+                                <p className="text-xs text-gray-600 dark:text-neutral-400">
+                                  First to {event.points_per_set}, win by {event.win_by}
+                                </p>
+                                <div className="flex items-center gap-2 text-xs font-medium">
+                                  <span className="w-10" />
+                                  <span className="w-16 truncate">{nameByRegistrationId.get(match.team_a_registration_id)}</span>
+                                  <span className="w-3" />
+                                  <span className="w-16 truncate">{nameByRegistrationId.get(match.team_b_registration_id)}</span>
                                 </div>
-                              ))}
-                              <label className="flex items-center gap-2 text-xs">
-                                <input type="checkbox" name="forfeit" /> Forfeit / walkover instead
-                              </label>
-                              <select name="forfeit_winner" className="rounded border px-2 py-1 text-xs dark:bg-neutral-900">
-                                <option value="">Forfeit winner (if checked above)</option>
-                                <option value={match.team_a_registration_id}>
-                                  {nameByRegistrationId.get(match.team_a_registration_id)}
-                                </option>
-                                <option value={match.team_b_registration_id}>
-                                  {nameByRegistrationId.get(match.team_b_registration_id)}
-                                </option>
-                              </select>
-                              <button type="submit" className="w-fit rounded bg-black px-3 py-1.5 text-xs text-white">
-                                Save Result
-                              </button>
-                            </form>
-                          </details>
-                        )}
+                                {Array.from({ length: event.best_of_sets }, (_, i) => i + 1).map((n) => {
+                                  const existing = existingSets.find((s) => s.set_number === n);
+                                  return (
+                                    <div key={n} className="flex items-center gap-2 text-xs">
+                                      <span className="w-10">Set {n}</span>
+                                      <input
+                                        name={`set_${n}_a`}
+                                        type="number"
+                                        min="0"
+                                        defaultValue={existing?.team_a_points ?? ""}
+                                        className="w-16 rounded border px-2 py-1"
+                                      />
+                                      <span>-</span>
+                                      <input
+                                        name={`set_${n}_b`}
+                                        type="number"
+                                        min="0"
+                                        defaultValue={existing?.team_b_points ?? ""}
+                                        className="w-16 rounded border px-2 py-1"
+                                      />
+                                    </div>
+                                  );
+                                })}
+                                <label className="flex items-center gap-2 text-xs">
+                                  <input type="checkbox" name="forfeit" defaultChecked={match.is_forfeit} /> Forfeit / walkover instead
+                                </label>
+                                <select
+                                  name="forfeit_winner"
+                                  defaultValue={match.is_forfeit ? (match.winner_registration_id ?? "") : ""}
+                                  className="rounded border px-2 py-1 text-xs dark:bg-neutral-900"
+                                >
+                                  <option value="">Forfeit winner (if checked above)</option>
+                                  <option value={match.team_a_registration_id}>
+                                    {nameByRegistrationId.get(match.team_a_registration_id)}
+                                  </option>
+                                  <option value={match.team_b_registration_id}>
+                                    {nameByRegistrationId.get(match.team_b_registration_id)}
+                                  </option>
+                                </select>
+                                <button type="submit" className="w-fit rounded bg-black px-3 py-1.5 text-xs text-white">
+                                  Save Result
+                                </button>
+                              </form>
+                            </details>
+                          );
+                        })()}
 
                         <details className="mt-2">
                           <summary className="w-fit cursor-pointer text-xs underline">Edit Match</summary>

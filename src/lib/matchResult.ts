@@ -18,3 +18,17 @@ export function deriveMatchWinner(
   if (aSetsWon === bSetsWon) return null;
   return aSetsWon > bSetsWon ? registrationIdA : registrationIdB;
 }
+
+export interface MatchScoringConfig {
+  pointsPerSet: number;
+  winBy: number;
+}
+
+// No hard cap -- a set that runs past pointsPerSet (deuce) is valid as long
+// as the winning margin is still met.
+export function isValidSetScore(teamAPoints: number, teamBPoints: number, config: MatchScoringConfig): boolean {
+  if (teamAPoints === teamBPoints) return false;
+  const winnerPoints = Math.max(teamAPoints, teamBPoints);
+  const margin = Math.abs(teamAPoints - teamBPoints);
+  return winnerPoints >= config.pointsPerSet && margin >= config.winBy;
+}
