@@ -71,10 +71,11 @@ afterEach(() => {
 });
 
 describe("InteractiveBracket", () => {
-  it("opens the result sheet when an active-round match is tapped", () => {
+  it("opens the result sheet when an active-round match is tapped", async () => {
     const round1 = buildMatch({ id: "r1", round_number: 1, slot_in_round: 1, status: "pending" });
     render(<InteractiveBracket {...defaultProps} matches={[round1]} sets={[]} />);
 
+    await waitFor(() => expect(capturedOnMatchClick).not.toBeNull());
     act(() => {
       capturedOnMatchClick?.({ roundIndex: 0, order: 0 });
     });
@@ -105,6 +106,7 @@ describe("InteractiveBracket", () => {
     const round1 = buildMatch({ id: "r1", round_number: 1, slot_in_round: 1, status: "pending" });
     render(<InteractiveBracket {...defaultProps} matches={[round1]} sets={[]} />);
 
+    await waitFor(() => expect(capturedOnMatchClick).not.toBeNull());
     act(() => {
       capturedOnMatchClick?.({ roundIndex: 0, order: 0 });
     });
@@ -137,6 +139,7 @@ describe("InteractiveBracket", () => {
     });
     render(<InteractiveBracket {...defaultProps} matches={[round1, round2]} sets={[]} />);
 
+    await waitFor(() => expect(capturedOnMatchClick).not.toBeNull());
     act(() => {
       capturedOnMatchClick?.({ roundIndex: 0, order: 0 });
     });
