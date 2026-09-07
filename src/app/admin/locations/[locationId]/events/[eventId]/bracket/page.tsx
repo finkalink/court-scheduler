@@ -25,6 +25,7 @@ export default async function AdminBracketPage({
     sessions_total?: string;
     withdrawn?: string;
     generate_error?: string;
+    review_needed?: string;
   }>;
 }) {
   const { locationId, eventId } = await params;
@@ -109,6 +110,30 @@ export default async function AdminBracketPage({
           {sp.generate_error}
         </p>
       )}
+      {sp.review_needed && (() => {
+        const reviewNeededIds = sp.review_needed!.split(",");
+        return (
+          <div className="mt-2 rounded bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300">
+            <p>
+              This correction fed into {reviewNeededIds.length} match{reviewNeededIds.length > 1 ? "es" : ""} that{" "}
+              {reviewNeededIds.length > 1 ? "were" : "was"} already completed, so it wasn&apos;t auto-updated. Review
+              and, if needed, correct it via Edit Match:
+            </p>
+            <ul className="mt-1 list-disc pl-5">
+              {reviewNeededIds.map((id) => {
+                const m = (matches ?? []).find((match) => match.id === id);
+                if (!m) return <li key={id}>Match {id}</li>;
+                return (
+                  <li key={id}>
+                    {m.bracket} round {m.round_number}: {nameByRegistrationId.get(m.team_a_registration_id ?? "") ?? "TBD"} vs{" "}
+                    {nameByRegistrationId.get(m.team_b_registration_id ?? "") ?? "TBD"}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })()}
 
       {(!matches || matches.length === 0) && (
         <form action={generateBracket} className="mt-6 flex max-w-md flex-col gap-3">

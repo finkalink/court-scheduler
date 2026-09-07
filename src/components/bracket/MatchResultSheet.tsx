@@ -57,17 +57,22 @@ export default function MatchResultSheet({
         <p className="text-sm font-medium">
           {sideAName} vs {sideBName}
         </p>
+        {match.admin_note && (
+          <p className="text-xs italic text-gray-600 dark:text-neutral-400">{match.admin_note}</p>
+        )}
 
         {!interactive && (
           <div className="mt-3 text-sm">
             {existingSets.length === 0 && (
               <p className="text-gray-600 dark:text-neutral-400">No sets recorded yet.</p>
             )}
-            {existingSets.map((s) => (
-              <p key={s.set_number}>
-                Set {s.set_number}: {s.team_a_points}-{s.team_b_points}
-              </p>
-            ))}
+            {[...existingSets]
+              .sort((a, b) => a.set_number - b.set_number)
+              .map((s) => (
+                <p key={s.set_number}>
+                  Set {s.set_number}: {s.team_a_points}-{s.team_b_points}
+                </p>
+              ))}
             {match.is_forfeit && <p className="text-gray-600 dark:text-neutral-400">Forfeit</p>}
             {match.winner_registration_id && (
               <p className="mt-1 font-medium">

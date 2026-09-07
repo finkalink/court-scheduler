@@ -31,13 +31,21 @@ export default function BracketryTreeView({
   // latest props, without needing to recreate (and lose scroll position
   // in) the bracketry instance every time matches/activeRound change.
   const matchesRef = useRef(matches);
-  matchesRef.current = matches;
   const activeRoundRef = useRef(activeRound);
-  activeRoundRef.current = activeRound;
   const interactiveRef = useRef(interactive);
-  interactiveRef.current = interactive;
   const onMatchTapRef = useRef(onMatchTap);
-  onMatchTapRef.current = onMatchTap;
+
+  // Keep the refs mirroring the latest props on every render. This must
+  // run as an effect (not directly in the render body) so it stays sound
+  // under concurrent rendering, where a discarded/replayed render body
+  // must not mutate refs as a side effect. No dependency array -- it's
+  // meant to run after every render, same as the old inline assignments.
+  useEffect(() => {
+    matchesRef.current = matches;
+    activeRoundRef.current = activeRound;
+    interactiveRef.current = interactive;
+    onMatchTapRef.current = onMatchTap;
+  });
 
   useEffect(() => {
     if (!wrapperRef.current) return;

@@ -48,6 +48,9 @@ export function toBracketryData(
     existing.push(s);
     setsByMatchId.set(s.match_id, existing);
   }
+  for (const matchSets of setsByMatchId.values()) {
+    matchSets.sort((a, b) => a.set_number - b.set_number);
+  }
 
   const contestantIds = new Set<string>();
 

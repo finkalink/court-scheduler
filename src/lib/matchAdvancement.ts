@@ -17,6 +17,7 @@ export interface EventMatch {
   is_bye: boolean;
   is_forfeit: boolean;
   status: MatchStatus;
+  admin_note?: string | null;
 }
 
 export interface AdvancementResult {
