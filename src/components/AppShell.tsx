@@ -4,14 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "@/app/actions/auth";
+import ThemeToggle from "@/components/ThemeToggle";
+import type { Theme } from "@/lib/theme";
 
 export default function AppShell({
   userEmail,
   isOrgMember,
+  initialTheme,
   children,
 }: {
   userEmail: string | null;
   isOrgMember: boolean;
+  initialTheme: Theme | null;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -30,14 +34,12 @@ export default function AppShell({
 
   const linkClass = (active: boolean) =>
     `block rounded px-3 py-2 text-sm ${
-      active
-        ? "bg-gray-100 font-medium dark:bg-neutral-800"
-        : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-neutral-800"
+      active ? "bg-active font-medium" : "text-fg-muted hover:bg-active"
     }`;
 
   return (
     <div className="min-h-screen">
-      <div className="flex items-center justify-between border-b bg-white px-4 py-3 text-gray-900 dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-100 sm:hidden">
+      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 text-fg sm:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -58,7 +60,7 @@ export default function AppShell({
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r bg-white text-gray-900 transition-transform dark:border-neutral-800 dark:bg-neutral-900 dark:text-gray-100 sm:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-card text-fg transition-transform sm:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -112,7 +114,7 @@ export default function AppShell({
           )}
           {isOrgMember && (
             <>
-              <div className="my-2 border-t dark:border-neutral-800" />
+              <div className="my-2 border-t border-border" />
               <Link
                 href="/admin"
                 className={linkClass(adminActive)}
@@ -124,22 +126,25 @@ export default function AppShell({
           )}
         </nav>
 
-        <div className="border-t px-4 py-3 text-sm dark:border-neutral-800">
+        <div className="border-t border-border px-4 py-3 text-sm">
+          <div className="mb-3">
+            <ThemeToggle initialTheme={initialTheme} />
+          </div>
           {userEmail ? (
             <div className="flex flex-col gap-2">
-              <span className="truncate text-gray-600 dark:text-gray-400">{userEmail}</span>
+              <span className="truncate text-fg-muted">{userEmail}</span>
               <form action={signOut}>
-                <button type="submit" className="text-left underline">
+                <button type="submit" className="text-left text-link underline">
                   Sign out
                 </button>
               </form>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <Link href="/login" className="underline" onClick={() => setOpen(false)}>
+              <Link href="/login" className="text-link underline" onClick={() => setOpen(false)}>
                 Sign In
               </Link>
-              <Link href="/signup" className="underline" onClick={() => setOpen(false)}>
+              <Link href="/signup" className="text-link underline" onClick={() => setOpen(false)}>
                 Sign Up
               </Link>
             </div>
