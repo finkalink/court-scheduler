@@ -66,13 +66,13 @@ export default async function LocationPage({
       </Link>
 
       <h1 className="mt-4 text-xl font-semibold sm:text-2xl">{location.name}</h1>
-      <p className="text-sm text-gray-600">{org?.name}</p>
+      <p className="text-sm text-fg-muted">{org?.name}</p>
       {location.address && (
         <a
           href={mapsUrl ?? "#"}
           target="_blank"
           rel="noreferrer"
-          className="text-sm text-gray-600 underline decoration-dotted"
+          className="text-sm text-fg-muted underline decoration-dotted"
         >
           {location.address}
         </a>
@@ -86,10 +86,10 @@ export default async function LocationPage({
               <li key={event.id}>
                 <Link
                   href={`/events/${event.id}`}
-                  className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                  className="block rounded border border-border px-4 py-3 hover:bg-active"
                 >
                   <p className="font-medium">{event.title}</p>
-                  <p className="text-sm text-gray-600">{EVENT_TYPE_LABELS[event.eventType]}</p>
+                  <p className="text-sm text-fg-muted">{EVENT_TYPE_LABELS[event.eventType]}</p>
                 </Link>
               </li>
             ))}
@@ -100,7 +100,7 @@ export default async function LocationPage({
       <h2 className="mt-8 text-sm font-medium">Courts</h2>
 
       {(!courts || courts.length === 0) && (
-        <p className="mt-2 text-sm text-gray-600">No courts available at this location yet.</p>
+        <p className="mt-2 text-sm text-fg-muted">No courts available at this location yet.</p>
       )}
 
       <ul className="mt-2 flex flex-col gap-3">
@@ -108,11 +108,11 @@ export default async function LocationPage({
           <li key={court.id}>
             <Link
               href={`/locations/${locationId}/courts/${court.id}`}
-              className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+              className="block rounded border border-border px-4 py-3 hover:bg-active"
             >
               <p className="font-medium">{court.name}</p>
               {court.surface_type && (
-                <p className="text-sm text-gray-600">{court.surface_type}</p>
+                <p className="text-sm text-fg-muted">{court.surface_type}</p>
               )}
             </Link>
           </li>

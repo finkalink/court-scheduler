@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createBooking } from "@/app/actions/bookings";
 import { NET_HEIGHT_OPTIONS, COURT_LINES_OPTIONS } from "@/lib/courtConfig";
 import { formatBookingDate } from "@/lib/dateFormat";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export default async function BookCourtPage({
   params,
@@ -48,7 +49,7 @@ export default async function BookCourtPage({
       </Link>
 
       <h1 className="mt-4 text-xl font-semibold sm:text-2xl">Confirm Booking</h1>
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-fg-muted">
         {court.name} — {location?.name}
       </p>
       <p className="mt-1 font-medium">
@@ -56,7 +57,7 @@ export default async function BookCourtPage({
       </p>
 
       {!user && (
-        <p className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+        <p className="mt-4 rounded bg-active p-3 text-sm text-fg">
           You&apos;ll be asked to sign in when you confirm.
         </p>
       )}
@@ -70,7 +71,7 @@ export default async function BookCourtPage({
 
         <label className="flex flex-col gap-1 text-sm">
           Net height
-          <select name="requested_net_height" className="rounded border px-3 py-2">
+          <select name="requested_net_height" className="rounded border border-border px-3 py-2">
             {NET_HEIGHT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -81,7 +82,7 @@ export default async function BookCourtPage({
 
         <label className="flex flex-col gap-1 text-sm">
           Court lines
-          <select name="requested_court_lines" className="rounded border px-3 py-2">
+          <select name="requested_court_lines" className="rounded border border-border px-3 py-2">
             {COURT_LINES_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -90,7 +91,7 @@ export default async function BookCourtPage({
           </select>
         </label>
 
-        <button type="submit" className="mt-2 w-fit rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className={`mt-2 w-fit ${buttonClass("primary")}`}>
           Confirm booking
         </button>
       </form>

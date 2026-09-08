@@ -61,7 +61,7 @@ export default async function ClubPage({
           return (
             <li
               key={location.id}
-              className="rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+              className="rounded border border-border px-4 py-3 hover:bg-active"
             >
               <Link href={`/locations/${location.id}`} className="block">
                 <p className="font-medium">{location.name}</p>
@@ -71,7 +71,7 @@ export default async function ClubPage({
                   href={mapsUrl ?? "#"}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 block text-sm text-gray-600 underline decoration-dotted"
+                  className="mt-1 block text-sm text-fg-muted underline decoration-dotted"
                 >
                   {location.address}
                 </a>

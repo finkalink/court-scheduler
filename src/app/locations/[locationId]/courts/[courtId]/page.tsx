@@ -133,16 +133,16 @@ export default async function CourtPage({
           href={mapsUrl ?? "#"}
           target="_blank"
           rel="noreferrer"
-          className="text-sm text-gray-600 underline decoration-dotted"
+          className="text-sm text-fg-muted underline decoration-dotted"
         >
           {location.address}
         </a>
       )}
 
-      {court.notes && <p className="mt-2 text-sm text-gray-600">{court.notes}</p>}
+      {court.notes && <p className="mt-2 text-sm text-fg-muted">{court.notes}</p>}
 
       {error && (
-        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-4 rounded bg-error-bg p-3 text-sm text-error-fg">
           {error}
         </p>
       )}
@@ -164,14 +164,14 @@ export default async function CourtPage({
             return (
               <div
                 key={hour.time}
-                className="flex shrink-0 flex-col items-center rounded border border-gray-300 px-3 py-2 text-center text-xs"
+                className="flex shrink-0 flex-col items-center rounded border border-border px-3 py-2 text-center text-xs"
               >
                 <span className="font-medium">{formatTimeOfDay(hour.time.slice(11, 16))}</span>
                 <span className="mt-1 text-lg" title={label}>
                   {emoji}
                 </span>
                 <span>{Math.round(hour.temperature)}°F</span>
-                <span className="text-gray-600">{Math.round(hour.precipitationProbability)}%</span>
+                <span className="text-fg-muted">{Math.round(hour.precipitationProbability)}%</span>
               </div>
             );
           })}
@@ -180,7 +180,7 @@ export default async function CourtPage({
 
       <div className="mt-6">
         {slots.length === 0 ? (
-          <p className="text-sm text-gray-600">No open slots this day.</p>
+          <p className="text-sm text-fg-muted">No open slots this day.</p>
         ) : (
           <TimeBlockPicker
             slots={slots}
