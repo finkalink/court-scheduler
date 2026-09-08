@@ -89,13 +89,15 @@ export default async function SiteAdminUsersPage({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm font-medium">{u.email}</span>
               <div className="flex items-center gap-3">
-                <form action={togglePlatformAdmin}>
-                  <input type="hidden" name="user_id" value={u.id} />
-                  <input type="hidden" name="next_value" value={String(!u.is_platform_admin)} />
-                  <button type="submit" className="text-xs underline">
-                    {u.is_platform_admin ? "Remove site admin" : "Make site admin"}
-                  </button>
-                </form>
+                {u.id !== user?.id && (
+                  <form action={togglePlatformAdmin}>
+                    <input type="hidden" name="user_id" value={u.id} />
+                    <input type="hidden" name="next_value" value={String(!u.is_platform_admin)} />
+                    <button type="submit" className="text-xs underline">
+                      {u.is_platform_admin ? "Remove site admin" : "Make site admin"}
+                    </button>
+                  </form>
+                )}
                 <form action={toggleUserActive}>
                   <input type="hidden" name="user_id" value={u.id} />
                   <input type="hidden" name="next_active" value={String(!u.is_active)} />
