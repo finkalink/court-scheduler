@@ -52,13 +52,10 @@ create policy "users platform admin all" on users
 drop policy "locations select all" on locations;
 create policy "locations select all" on locations
   for select using (
-    auth.role() = 'authenticated'
-    and (
-      public.is_org_member(org_id)
-      or public.is_platform_admin()
-      or exists (
-        select 1 from organizations o where o.id = locations.org_id and o.is_active
-      )
+    public.is_org_member(org_id)
+    or public.is_platform_admin()
+    or exists (
+      select 1 from organizations o where o.id = locations.org_id and o.is_active
     )
   );
 
