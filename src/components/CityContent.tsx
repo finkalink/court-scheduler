@@ -64,10 +64,10 @@ export default async function CityContent({ city }: { city: string }) {
               <li key={event.id}>
                 <Link
                   href={`/events/${event.id}`}
-                  className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                  className="block rounded border border-border bg-card px-4 py-3 hover:bg-active"
                 >
                   <p className="font-medium">{event.title}</p>
-                  <p className="text-sm text-gray-600">{EVENT_TYPE_LABELS[event.eventType]}</p>
+                  <p className="text-sm text-fg-muted">{EVENT_TYPE_LABELS[event.eventType]}</p>
                 </Link>
               </li>
             ))}
@@ -82,10 +82,10 @@ export default async function CityContent({ city }: { city: string }) {
           <li key={club.orgId}>
             <Link
               href={`/clubs/${club.orgId}`}
-              className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+              className="block rounded border border-border bg-card px-4 py-3 hover:bg-active"
             >
               <p className="font-medium">{club.orgName}</p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-fg-muted">
                 {club.locationCount} location{club.locationCount === 1 ? "" : "s"}
               </p>
             </Link>

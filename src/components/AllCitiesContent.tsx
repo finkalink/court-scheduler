@@ -43,7 +43,7 @@ export default async function AllCitiesContent() {
   return (
     <>
       {cities.length === 0 && sortedOtherLocations.length === 0 && (
-        <p className="mt-6 text-sm text-gray-600">No locations available yet.</p>
+        <p className="mt-6 text-sm text-fg-muted">No locations available yet.</p>
       )}
 
       <ul className="mt-6 flex flex-col gap-3">
@@ -53,10 +53,10 @@ export default async function AllCitiesContent() {
               <input type="hidden" name="city" value={cityGroup.city} />
               <button
                 type="submit"
-                className="block w-full rounded border border-gray-300 px-4 py-3 text-left hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                className="block w-full rounded border border-border bg-card px-4 py-3 text-left hover:bg-active"
               >
                 <p className="font-medium">{cityGroup.city}</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-fg-muted">
                   {cityGroup.clubCount} club{cityGroup.clubCount === 1 ? "" : "s"}
                 </p>
               </button>
@@ -79,14 +79,14 @@ export default async function AllCitiesContent() {
               return (
                 <li
                   key={location.id}
-                  className="rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                  className="rounded border border-border bg-card px-4 py-3 hover:bg-active"
                 >
                   <Link href={`/locations/${location.id}`} className="block font-medium">
                     {location.name}
                   </Link>
                   <Link
                     href={`/clubs/${location.orgId}`}
-                    className="text-sm text-gray-600 underline decoration-dotted"
+                    className="text-sm text-fg-muted underline decoration-dotted"
                   >
                     {location.orgName}
                   </Link>
@@ -95,7 +95,7 @@ export default async function AllCitiesContent() {
                       href={mapsUrl ?? "#"}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 block text-sm text-gray-600 underline decoration-dotted"
+                      className="mt-1 block text-sm text-fg-muted underline decoration-dotted"
                     >
                       {location.address}
                     </a>

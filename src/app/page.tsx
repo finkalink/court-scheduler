@@ -45,7 +45,7 @@ export default async function Home() {
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <h1 className="text-xl font-semibold sm:text-2xl">Find a Court</h1>
 
-      <div className="mt-2 flex items-center justify-between text-sm text-gray-600 dark:text-neutral-400">
+      <div className="mt-2 flex items-center justify-between text-sm text-fg-muted">
         <span>Browsing: {resolvedCity}</span>
         <span className="flex items-center gap-3">
           <Link href="/cities" className="underline">
