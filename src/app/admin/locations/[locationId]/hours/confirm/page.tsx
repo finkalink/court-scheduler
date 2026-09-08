@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { pushHoursToAllCourts } from "@/app/admin/actions";
 import { formatTimeOfDay } from "@/lib/dateFormat";
+import { buttonClass } from "@/lib/buttonStyles";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -67,12 +68,12 @@ export default async function LocationHoursConfirmPage({
       </ul>
 
       {!courts || courts.length === 0 ? (
-        <p className="mt-6 text-sm text-gray-600">
+        <p className="mt-6 text-sm text-fg-muted">
           This location has no courts yet, so there&apos;s nothing to apply these hours to.
         </p>
       ) : (
         <>
-          <p className="mt-6 text-sm text-gray-600">
+          <p className="mt-6 text-sm text-fg-muted">
             This will replace the current weekly hours for these {courts.length} court
             {courts.length === 1 ? "" : "s"}:
           </p>
@@ -90,7 +91,7 @@ export default async function LocationHoursConfirmPage({
                 <input type="hidden" name={`close_${day}`} value={resolvedSearchParams[`close_${day}`] ?? ""} />
               </span>
             ))}
-            <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+            <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
               Apply to All Courts
             </button>
             <Link href={`/admin/locations/${locationId}`} className="text-sm underline">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { buttonClass } from "@/lib/buttonStyles";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -29,7 +30,7 @@ export default async function LocationHoursPage({
       </Link>
 
       <h1 className="mt-4 text-lg font-medium">General Hours — {location.name}</h1>
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-fg-muted">
         Set the hours you want to use as this location&apos;s default, then apply them to every
         court. You&apos;ll see which courts are affected before anything is saved. Leave both
         times blank for a day the location is closed.
@@ -42,11 +43,11 @@ export default async function LocationHoursPage({
         {DAY_NAMES.map((name, day) => (
           <div key={day} className="flex flex-col gap-2 sm:grid sm:grid-cols-3 sm:items-center sm:gap-3">
             <label className="text-sm font-medium">{name}</label>
-            <input type="time" name={`open_${day}`} className="w-full rounded border px-3 py-2 text-sm" />
-            <input type="time" name={`close_${day}`} className="w-full rounded border px-3 py-2 text-sm" />
+            <input type="time" name={`open_${day}`} className="w-full rounded border border-border px-3 py-2 text-sm" />
+            <input type="time" name={`close_${day}`} className="w-full rounded border border-border px-3 py-2 text-sm" />
           </div>
         ))}
-        <button type="submit" className="mt-4 w-fit rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className={`mt-4 w-fit ${buttonClass("primary")}`}>
           Review &amp; Push to All Courts
         </button>
       </form>

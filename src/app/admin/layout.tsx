@@ -16,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!membership) {
     return (
-      <div className="mx-auto mt-16 max-w-lg text-center text-gray-600">
+      <div className="mx-auto mt-16 max-w-lg text-center text-fg-muted">
         Your account ({user.email}) isn&apos;t a member of any organization.
       </div>
     );

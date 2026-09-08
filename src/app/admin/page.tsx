@@ -5,6 +5,7 @@ import { isOwnerOrAdmin } from "@/lib/orgRoles";
 import { createLocation, updateOrganization } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
 import LocationFormFields from "@/components/LocationFormFields";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export default async function AdminPage({
   searchParams,
@@ -56,10 +57,10 @@ export default async function AdminPage({
                 name="venmo_handle"
                 defaultValue={org?.venmo_handle ?? ""}
                 placeholder="your-venmo-handle"
-                className="rounded border px-3 py-2"
+                className="rounded border border-border px-3 py-2"
               />
             </label>
-            <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+            <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
               Save
             </button>
           </form>
@@ -69,13 +70,13 @@ export default async function AdminPage({
       {location_added && <SuccessBanner>Location added.</SuccessBanner>}
       {org_updated && <SuccessBanner>Club settings saved.</SuccessBanner>}
       {org_error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
           {org_error}
         </p>
       )}
 
       {(!locations || locations.length === 0) && (
-        <p className="mt-1 text-sm text-gray-600">No locations yet. Add one below.</p>
+        <p className="mt-1 text-sm text-fg-muted">No locations yet. Add one below.</p>
       )}
 
       <ul className="mt-4 flex flex-col gap-3">
@@ -83,10 +84,10 @@ export default async function AdminPage({
           <li key={location.id}>
             <Link
               href={`/admin/locations/${location.id}`}
-              className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+              className="block rounded border border-border px-4 py-3 hover:bg-active"
             >
               <p className="font-medium">{location.name}</p>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-fg-muted">
                 {location.address ? `${location.address} · ` : ""}
                 {location.courts?.length ?? 0} court{location.courts?.length === 1 ? "" : "s"}
               </p>
@@ -102,7 +103,7 @@ export default async function AdminPage({
             <input type="hidden" name="org_id" value={membership.orgId} />
             <label className="flex flex-col gap-1 text-sm">
               Name
-              <input name="name" required className="rounded border px-3 py-2" />
+              <input name="name" required className="rounded border border-border px-3 py-2" />
             </label>
             <LocationFormFields
               defaultAddress=""
@@ -113,7 +114,7 @@ export default async function AdminPage({
               defaultFormattedAddress={null}
               defaultTimezone="America/Los_Angeles"
             />
-            <button type="submit" className="mt-1 w-fit rounded bg-black px-4 py-2 text-sm text-white">
+            <button type="submit" className={`mt-1 w-fit ${buttonClass("primary")}`}>
               Add location
             </button>
           </form>

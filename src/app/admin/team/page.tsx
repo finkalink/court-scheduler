@@ -4,6 +4,7 @@ import { getCurrentMembership } from "@/lib/orgMembership";
 import { canActOnMember, isOwnerOrAdmin, type OrgRole } from "@/lib/orgRoles";
 import { addOrgMember, updateOrgMemberRole, removeOrgMember } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export default async function TeamPage({
   searchParams,
@@ -26,7 +27,7 @@ export default async function TeamPage({
 
   if (!membership || !isOwnerOrAdmin(membership.role)) {
     return (
-      <div className="mx-auto mt-16 max-w-lg text-center text-gray-600">
+      <div className="mx-auto mt-16 max-w-lg text-center text-fg-muted">
         You don&apos;t have access to manage this club&apos;s team.
       </div>
     );
@@ -58,12 +59,12 @@ export default async function TeamPage({
       {role_updated && <SuccessBanner>Role updated.</SuccessBanner>}
       {member_removed && <SuccessBanner>Access removed.</SuccessBanner>}
       {add_error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
           {add_error}
         </p>
       )}
       {role_error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
           {role_error}
         </p>
       )}
@@ -72,17 +73,17 @@ export default async function TeamPage({
         {(memberRows ?? []).map((member) => (
           <li
             key={member.user_id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded border border-gray-300 px-4 py-3"
+            className="flex flex-wrap items-center justify-between gap-3 rounded border border-border px-4 py-3"
           >
             <span className="text-sm">{emailById.get(member.user_id) ?? member.user_id}</span>
 
             {member.role === "owner" ? (
-              <span className="text-sm text-gray-600">Owner</span>
+              <span className="text-sm text-fg-muted">Owner</span>
             ) : (
               <form action={updateOrgMemberRole} className="flex items-center gap-2">
                 <input type="hidden" name="org_id" value={membership.orgId} />
                 <input type="hidden" name="user_id" value={member.user_id} />
-                <select name="role" defaultValue={member.role} className="rounded border px-2 py-1 text-sm">
+                <select name="role" defaultValue={member.role} className="rounded border border-border px-2 py-1 text-sm">
                   <option value="admin">Admin</option>
                   <option value="staff">Staff</option>
                 </select>
@@ -96,7 +97,7 @@ export default async function TeamPage({
               <form action={removeOrgMember}>
                 <input type="hidden" name="org_id" value={membership.orgId} />
                 <input type="hidden" name="user_id" value={member.user_id} />
-                <button type="submit" className="text-xs text-red-700 underline">
+                <button type="submit" className="text-xs text-error-fg underline">
                   Remove
                 </button>
               </form>
@@ -110,16 +111,16 @@ export default async function TeamPage({
         <input type="hidden" name="org_id" value={membership.orgId} />
         <label className="flex flex-col gap-1 text-sm">
           Email
-          <input type="email" name="email" required className="rounded border px-3 py-2" />
+          <input type="email" name="email" required className="rounded border border-border px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Role
-          <select name="role" defaultValue="staff" className="rounded border px-3 py-2">
+          <select name="role" defaultValue="staff" className="rounded border border-border px-3 py-2">
             <option value="admin">Admin</option>
             <option value="staff">Staff</option>
           </select>
         </label>
-        <button type="submit" className="mt-1 w-fit rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className={`mt-1 w-fit ${buttonClass("primary")}`}>
           Add
         </button>
       </form>
