@@ -46,7 +46,7 @@ export default function AppShell({
 
   const subNavLinkClass = (active: boolean) =>
     `text-xs font-semibold uppercase tracking-wide ${
-      active ? "text-accent" : "text-fg-muted hover:text-fg"
+      active ? "text-status-fg" : "text-fg-muted hover:text-fg"
     }`;
 
   return (

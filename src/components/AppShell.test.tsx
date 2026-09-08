@@ -112,6 +112,20 @@ describe("AppShell", () => {
     expect(within(mobileMenu).getByRole("switch")).toBeInTheDocument();
   });
 
+  it("shows unscoped admin links in the mobile menu for an org member on a non-admin route", () => {
+    mockUsePathname.mockReturnValue("/");
+    render(
+      <AppShell userEmail="admin@example.com" isOrgMember={true} initialTheme="light">
+        <div />
+      </AppShell>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
+    const mobileMenu = screen.getByRole("region", { name: "Mobile menu" });
+    expect(within(mobileMenu).getByRole("link", { name: "Admin: Locations" })).toBeInTheDocument();
+    expect(within(mobileMenu).getByRole("link", { name: "Admin: Team" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Locations" })).not.toBeInTheDocument();
+  });
+
   it("renders children", () => {
     render(
       <AppShell userEmail={null} isOrgMember={false} initialTheme="light">
