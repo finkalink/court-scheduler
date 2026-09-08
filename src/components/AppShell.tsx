@@ -10,11 +10,13 @@ import type { Theme } from "@/lib/theme";
 export default function AppShell({
   userEmail,
   isOrgMember,
+  isPlatformAdmin,
   initialTheme,
   children,
 }: {
   userEmail: string | null;
   isOrgMember: boolean;
+  isPlatformAdmin: boolean;
   initialTheme: Theme | null;
   children: React.ReactNode;
 }) {
@@ -33,6 +35,10 @@ export default function AppShell({
   const profileActive = pathname.startsWith("/profile");
   const adminLocationsActive = pathname === "/admin" || pathname.startsWith("/admin/locations");
   const adminTeamActive = pathname.startsWith("/admin/team");
+  const siteAdminActive = pathname.startsWith("/site-admin");
+  const siteAdminOrgsActive = pathname === "/site-admin" || pathname.startsWith("/site-admin/orgs");
+  const siteAdminUsersActive = pathname.startsWith("/site-admin/users");
+  const siteAdminSettingsActive = pathname.startsWith("/site-admin/settings");
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -44,9 +50,9 @@ export default function AppShell({
       active ? "bg-active font-medium text-fg" : "text-fg-muted hover:bg-active"
     }`;
 
-  const subNavLinkClass = (active: boolean) =>
-    `text-xs font-semibold uppercase tracking-wide ${
-      active ? "text-status-fg" : "text-fg-muted hover:text-fg"
+  const subNavPillClass = (active: boolean) =>
+    `rounded-full px-3 py-1.5 text-xs font-semibold ${
+      active ? "bg-status text-status-fg" : "text-fg-muted hover:text-fg"
     }`;
 
   return (
@@ -85,7 +91,12 @@ export default function AppShell({
             )}
             {isOrgMember && (
               <Link href="/admin" className={navLinkClass(adminActive)}>
-                Admin Dashboard
+                Club admin
+              </Link>
+            )}
+            {isPlatformAdmin && (
+              <Link href="/site-admin" className={navLinkClass(siteAdminActive)}>
+                Site admin
               </Link>
             )}
           </nav>
@@ -125,12 +136,26 @@ export default function AppShell({
         </div>
 
         {isOrgMember && adminActive && (
-          <div className="hidden border-t border-border px-4 py-2 sm:flex sm:gap-5 sm:px-6">
-            <Link href="/admin" className={subNavLinkClass(adminLocationsActive)}>
+          <div className="hidden border-t border-border px-4 py-2 sm:flex sm:gap-2 sm:px-6">
+            <Link href="/admin" className={subNavPillClass(adminLocationsActive)}>
               Locations
             </Link>
-            <Link href="/admin/team" className={subNavLinkClass(adminTeamActive)}>
+            <Link href="/admin/team" className={subNavPillClass(adminTeamActive)}>
               Team
+            </Link>
+          </div>
+        )}
+
+        {isPlatformAdmin && siteAdminActive && (
+          <div className="hidden border-t border-border px-4 py-2 sm:flex sm:gap-2 sm:px-6">
+            <Link href="/site-admin/orgs" className={subNavPillClass(siteAdminOrgsActive)}>
+              Organizations
+            </Link>
+            <Link href="/site-admin/users" className={subNavPillClass(siteAdminUsersActive)}>
+              Users
+            </Link>
+            <Link href="/site-admin/settings" className={subNavPillClass(siteAdminSettingsActive)}>
+              Settings
             </Link>
           </div>
         )}
@@ -178,6 +203,32 @@ export default function AppShell({
                   onClick={closeMenu}
                 >
                   Admin: Team
+                </Link>
+              </>
+            )}
+            {isPlatformAdmin && (
+              <>
+                <div className="my-2 border-t border-border" />
+                <Link
+                  href="/site-admin/orgs"
+                  className={mobileLinkClass(siteAdminOrgsActive)}
+                  onClick={closeMenu}
+                >
+                  Site Admin: Organizations
+                </Link>
+                <Link
+                  href="/site-admin/users"
+                  className={mobileLinkClass(siteAdminUsersActive)}
+                  onClick={closeMenu}
+                >
+                  Site Admin: Users
+                </Link>
+                <Link
+                  href="/site-admin/settings"
+                  className={mobileLinkClass(siteAdminSettingsActive)}
+                  onClick={closeMenu}
+                >
+                  Site Admin: Settings
                 </Link>
               </>
             )}
