@@ -45,7 +45,7 @@ export default function SkillLevelPicker({ defaultValue }: { defaultValue: strin
         <select
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="rounded border px-3 py-2 text-sm dark:bg-neutral-900"
+          className="rounded border border-border bg-card px-3 py-2 text-sm"
         >
           <option value="">-- select --</option>
           {LETTER_OPTIONS.map((o) => (
@@ -59,7 +59,7 @@ export default function SkillLevelPicker({ defaultValue }: { defaultValue: strin
           <select
             value={plainValue}
             onChange={(e) => setValue(PLAIN_TO_LETTER[e.target.value] ?? "")}
-            className="rounded border px-3 py-2 text-sm dark:bg-neutral-900"
+            className="rounded border border-border bg-card px-3 py-2 text-sm"
           >
             <option value="">-- select --</option>
             {Object.keys(PLAIN_TO_LETTER).map((label) => (
@@ -69,7 +69,7 @@ export default function SkillLevelPicker({ defaultValue }: { defaultValue: strin
             ))}
           </select>
           {value && !plainValue && (
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted">
               Currently saved: {value}
             </p>
           )}

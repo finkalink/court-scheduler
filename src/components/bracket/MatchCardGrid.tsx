@@ -23,7 +23,7 @@ export default function MatchCardGrid({ matches, standings, nameByRegistrationId
       {standings && (
         <table className="w-full max-w-md text-sm">
           <thead>
-            <tr className="text-left text-xs text-gray-600 dark:text-neutral-400">
+            <tr className="text-left text-xs text-fg-muted">
               <th>Team</th>
               <th>W</th>
               <th>L</th>
@@ -45,7 +45,7 @@ export default function MatchCardGrid({ matches, standings, nameByRegistrationId
 
       {rounds.map((round) => (
         <div key={round}>
-          <p className="mb-2 text-xs font-medium text-gray-600 dark:text-neutral-400">Round {round}</p>
+          <p className="mb-2 text-xs font-medium text-fg-muted">Round {round}</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {matches
               .filter((m) => m.round_number === round)
@@ -54,7 +54,7 @@ export default function MatchCardGrid({ matches, standings, nameByRegistrationId
                   key={match.id}
                   type="button"
                   onClick={() => onMatchTap(match)}
-                  className="rounded border border-gray-300 px-3 py-2 text-left text-xs hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                  className="rounded border border-border px-3 py-2 text-left text-xs hover:bg-active"
                 >
                   <p>{nameByRegistrationId.get(match.team_a_registration_id ?? "") ?? "TBD"}</p>
                   <p>{nameByRegistrationId.get(match.team_b_registration_id ?? "") ?? "TBD"}</p>

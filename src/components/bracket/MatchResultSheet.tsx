@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect } from "react";
 import { recordMatchResult, type MatchResultState } from "@/app/admin/eventMatchActions";
+import { buttonClass } from "@/lib/buttonStyles";
 import type { EventMatch } from "@/lib/matchAdvancement";
 import type { EventMatchSetRow } from "@/lib/bracketryData";
 
@@ -50,21 +51,21 @@ export default function MatchResultSheet({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-t-2xl bg-white p-4 dark:bg-neutral-900"
+        className="w-full max-w-md rounded-t-2xl bg-card p-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-gray-300 dark:bg-neutral-700" />
+        <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-border" />
         <p className="text-sm font-medium">
           {sideAName} vs {sideBName}
         </p>
         {match.admin_note && (
-          <p className="text-xs italic text-gray-600 dark:text-neutral-400">{match.admin_note}</p>
+          <p className="text-xs italic text-fg-muted">{match.admin_note}</p>
         )}
 
         {!interactive && (
           <div className="mt-3 text-sm">
             {existingSets.length === 0 && (
-              <p className="text-gray-600 dark:text-neutral-400">No sets recorded yet.</p>
+              <p className="text-fg-muted">No sets recorded yet.</p>
             )}
             {[...existingSets]
               .sort((a, b) => a.set_number - b.set_number)
@@ -73,7 +74,7 @@ export default function MatchResultSheet({
                   Set {s.set_number}: {s.team_a_points}-{s.team_b_points}
                 </p>
               ))}
-            {match.is_forfeit && <p className="text-gray-600 dark:text-neutral-400">Forfeit</p>}
+            {match.is_forfeit && <p className="text-fg-muted">Forfeit</p>}
             {match.winner_registration_id && (
               <p className="mt-1 font-medium">
                 Winner: {nameByRegistrationId.get(match.winner_registration_id)}
@@ -82,7 +83,7 @@ export default function MatchResultSheet({
             <button
               type="button"
               onClick={onClose}
-              className="mt-4 w-full rounded border px-3 py-2 text-sm dark:border-neutral-700"
+              className="mt-4 w-full rounded border border-border px-3 py-2 text-sm"
             >
               Close
             </button>
@@ -94,7 +95,7 @@ export default function MatchResultSheet({
             <input type="hidden" name="match_id" value={match.id} />
             <input type="hidden" name="event_id" value={eventId} />
             <input type="hidden" name="location_id" value={locationId} />
-            <p className="text-xs text-gray-600 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted">
               First to {pointsPerSet}, win by {winBy}
             </p>
             <div className="flex items-center gap-2 text-xs font-medium">
@@ -113,7 +114,7 @@ export default function MatchResultSheet({
                     type="number"
                     min="0"
                     defaultValue={existing?.team_a_points ?? ""}
-                    className="w-20 rounded border px-2 py-1"
+                    className="w-20 rounded border border-border px-2 py-1"
                   />
                   <span>-</span>
                   <input
@@ -121,7 +122,7 @@ export default function MatchResultSheet({
                     type="number"
                     min="0"
                     defaultValue={existing?.team_b_points ?? ""}
-                    className="w-20 rounded border px-2 py-1"
+                    className="w-20 rounded border border-border px-2 py-1"
                   />
                 </div>
               );
@@ -132,7 +133,7 @@ export default function MatchResultSheet({
             <select
               name="forfeit_winner"
               defaultValue={match.is_forfeit ? (match.winner_registration_id ?? "") : ""}
-              className="rounded border px-2 py-1 text-xs dark:bg-neutral-900"
+              className="rounded border border-border bg-card px-2 py-1 text-xs"
             >
               <option value="">Forfeit winner (if checked above)</option>
               {match.team_a_registration_id && (
@@ -143,7 +144,7 @@ export default function MatchResultSheet({
               )}
             </select>
             {state?.ok === false && (
-              <p className="rounded bg-red-50 p-2 text-xs text-red-800 dark:bg-red-950 dark:text-red-300">
+              <p className="rounded bg-error-bg p-2 text-xs text-error-fg">
                 {state.error}
               </p>
             )}
@@ -151,14 +152,14 @@ export default function MatchResultSheet({
               <button
                 type="submit"
                 disabled={isPending}
-                className="flex-1 rounded bg-black px-3 py-2 text-xs text-white disabled:opacity-50"
+                className={`flex-1 text-xs disabled:opacity-50 ${buttonClass("primary")}`}
               >
                 {isPending ? "Saving..." : "Save Result"}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded border px-3 py-2 text-xs dark:border-neutral-700"
+                className="rounded border border-border px-3 py-2 text-xs"
               >
                 Cancel
               </button>

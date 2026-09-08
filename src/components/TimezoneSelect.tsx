@@ -83,15 +83,15 @@ export default function TimezoneSelect({
           setOpen((o) => !o);
           setHighlighted(0);
         }}
-        className="flex w-full items-center justify-between rounded border px-3 py-2 text-left text-sm dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+        className="flex w-full items-center justify-between rounded border border-border bg-card px-3 py-2 text-left text-sm text-fg"
       >
         <span>{selected ? formatTimezoneLabel(selected) : value}</span>
-        <span className="text-gray-400 dark:text-neutral-500">▾</span>
+        <span className="text-fg-muted">▾</span>
       </button>
 
       {open && (
-        <div className="absolute z-10 mt-1 w-full rounded border bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
-          <div className="border-b p-2 dark:border-neutral-700">
+        <div className="absolute z-10 mt-1 w-full rounded border border-border bg-card shadow-lg">
+          <div className="border-b border-border p-2">
             <input
               ref={searchRef}
               value={query}
@@ -101,12 +101,12 @@ export default function TimezoneSelect({
               }}
               onKeyDown={handleKeyDown}
               placeholder="Search timezones…"
-              className="w-full rounded border px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+              className="w-full rounded border border-border bg-card px-2 py-1.5 text-sm text-fg"
             />
           </div>
           <ul role="listbox" className="max-h-64 overflow-y-auto py-1 text-sm">
             {results.length === 0 && (
-              <li className="px-3 py-2 text-gray-500 dark:text-neutral-400">No matches.</li>
+              <li className="px-3 py-2 text-fg-muted">No matches.</li>
             )}
             {results.map((option, i) => (
               <li key={option.id}>
@@ -118,18 +118,18 @@ export default function TimezoneSelect({
                   onMouseEnter={() => setHighlighted(i)}
                   className={`w-full px-3 py-1.5 text-left ${
                     i === highlighted
-                      ? "bg-gray-100 dark:bg-neutral-800"
+                      ? "bg-active"
                       : ""
                   } ${
                     option.id === value
-                      ? "font-medium text-blue-700 dark:text-blue-400"
-                      : "dark:text-neutral-100"
+                      ? "font-medium text-accent"
+                      : "text-fg"
                   }`}
                 >
                   {formatTimezoneLabel(option)}
                 </button>
                 {!query && option.id === value && (
-                  <div className="my-1 border-t dark:border-neutral-700" />
+                  <div className="my-1 border-t border-border" />
                 )}
               </li>
             ))}
