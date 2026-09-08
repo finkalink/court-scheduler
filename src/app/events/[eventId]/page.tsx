@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
 import { formatBookingDate } from "@/lib/dateFormat";
-import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 import { registerForEvent } from "@/app/actions/events";
 import InteractiveBracket from "@/components/bracket/InteractiveBracket";
 import SuccessBanner from "@/components/SuccessBanner";
+import EventTypeBadge from "@/components/EventTypeBadge";
+import { buttonClass } from "@/lib/buttonStyles";
 import { isProfileComplete } from "@/lib/userProfile";
 import { formatCents } from "@/lib/money";
 import { buildVenmoPaymentUrl } from "@/lib/venmoLink";
@@ -193,27 +194,24 @@ export default async function EventDetailPage({
       </Link>
 
       <h1 className="mt-4 text-xl font-semibold sm:text-2xl">{event.title}</h1>
-      <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400">
-        {EVENT_TYPE_LABELS[event.event_type]}
-        {location && ` · ${location.name}`}
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-fg-muted">
+        <EventTypeBadge eventType={event.event_type} />
+        {location && <span>{location.name}</span>}
         {org?.id && (
-          <>
-            {" · "}
-            <Link href={`/clubs/${org.id}`} className="underline decoration-dotted">
-              {org.name}
-            </Link>
-          </>
+          <Link href={`/clubs/${org.id}`} className="underline decoration-dotted">
+            {org.name}
+          </Link>
         )}
-      </p>
+      </div>
 
       {message && <SuccessBanner>{message}</SuccessBanner>}
 
       {event.description && <p className="mt-3 text-sm">{event.description}</p>}
       {event.capacity && (
-        <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400">Capacity: {event.capacity}</p>
+        <p className="mt-1 text-sm text-fg-muted">Capacity: {event.capacity}</p>
       )}
       {event.status === "cancelled" && (
-        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-4 rounded bg-error-bg p-3 text-sm text-error-fg">
           This event has been cancelled.
         </p>
       )}
@@ -221,10 +219,10 @@ export default async function EventDetailPage({
       {event.status !== "cancelled" && (
         <>
           {!user ? (
-            <p className="mt-4 text-sm">
+            <p className="mt-4">
               <a
                 href={`/login?next=${encodeURIComponent(`/events/${eventId}`)}`}
-                className="underline"
+                className={buttonClass("primary")}
               >
                 Sign in to register
               </a>
@@ -264,7 +262,7 @@ export default async function EventDetailPage({
                 <p className="mt-2 text-sm text-green-700 dark:text-green-400">Paid ✓</p>
               )}
               {myRegistration?.payment_status === "refunded" && (
-                <p className="mt-2 text-sm text-gray-600 dark:text-neutral-400">Refunded</p>
+                <p className="mt-2 text-sm text-fg-muted">Refunded</p>
               )}
             </>
           ) : profileIncomplete ? (
@@ -280,7 +278,7 @@ export default async function EventDetailPage({
           ) : (
             <div className="mt-4">
               {registerError && (
-                <p className="mb-3 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+                <p className="mb-3 rounded bg-error-bg p-3 text-sm text-error-fg">
                   {registerError}
                 </p>
               )}
@@ -300,7 +298,7 @@ export default async function EventDetailPage({
                       className="rounded border px-3 py-2"
                     />
                   </label>
-                  <p className="text-xs text-gray-600 dark:text-neutral-400">
+                  <p className="text-xs text-fg-muted">
                     Teammates (optional) -- each needs a name and their email. If they
                     aren&apos;t registered yet, they&apos;ll show as &quot;Pending&quot;
                     until they sign up with that exact email.
@@ -320,10 +318,7 @@ export default async function EventDetailPage({
                       />
                     </div>
                   ))}
-                  <button
-                    type="submit"
-                    className="w-fit rounded bg-black px-4 py-2 text-sm text-white"
-                  >
+                  <button type="submit" className={buttonClass("primary")}>
                     {isFull ? "Join Waitlist" : "Register Team"}
                   </button>
                 </form>
@@ -339,16 +334,13 @@ export default async function EventDetailPage({
                       className="rounded border px-3 py-2"
                     />
                   </label>
-                  <button
-                    type="submit"
-                    className="w-fit rounded bg-black px-4 py-2 text-sm text-white"
-                  >
+                  <button type="submit" className={buttonClass("primary")}>
                     {isFull ? "Join Waitlist" : "Register"}
                   </button>
                 </form>
               )}
               {event.capacity != null && (
-                <p className="mt-2 text-xs text-gray-600 dark:text-neutral-400">
+                <p className="mt-2 text-xs text-fg-muted">
                   {registeredCount} of {event.capacity} spots filled
                 </p>
               )}
@@ -364,12 +356,12 @@ export default async function EventDetailPage({
             {teams.map((team) => (
               <li
                 key={team.id}
-                className="rounded border border-gray-300 px-4 py-3 dark:border-neutral-800"
+                className="rounded border border-border px-4 py-3"
               >
                 <p className="text-sm font-medium">{team.name}</p>
                 <ul className="mt-1 flex flex-col gap-0.5">
                   {team.members.map((m) => (
-                    <li key={m.id} className="text-sm text-gray-600 dark:text-neutral-400">
+                    <li key={m.id} className="text-sm text-fg-muted">
                       <PlayerNameLink
                         href={m.user_id && sharingUserIds.has(m.user_id) ? `/players/${m.user_id}` : null}
                       >
@@ -387,7 +379,7 @@ export default async function EventDetailPage({
 
       <h2 className="mt-6 text-lg font-medium">Sessions</h2>
       {sessions.length === 0 && (
-        <p className="mt-1 text-sm text-gray-600">No sessions scheduled yet.</p>
+        <p className="mt-1 text-sm text-fg-muted">No sessions scheduled yet.</p>
       )}
       <ul className="mt-3 flex flex-col gap-2">
         {sessions.map((session) => {
@@ -395,7 +387,7 @@ export default async function EventDetailPage({
           return (
             <li
               key={session.id}
-              className="rounded border border-gray-300 px-4 py-3 dark:border-neutral-800"
+              className="rounded border border-border px-4 py-3"
             >
               {session.label && <p className="text-sm font-medium">{session.label}</p>}
               <p className="text-sm">
@@ -403,7 +395,7 @@ export default async function EventDetailPage({
                 {formatInTimeZone(new Date(session.start_time), timezone, "h:mm a")} –{" "}
                 {formatInTimeZone(new Date(session.end_time), timezone, "h:mm a")}
               </p>
-              {court?.name && <p className="text-sm text-gray-600">{court.name}</p>}
+              {court?.name && <p className="text-sm text-fg-muted">{court.name}</p>}
             </li>
           );
         })}

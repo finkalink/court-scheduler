@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { groupEventsByCity } from "@/lib/eventGrouping";
-import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 import { formatEventDateRange } from "@/lib/dateFormat";
+import EventTypeBadge from "@/components/EventTypeBadge";
 
 export default async function EventsPage() {
   const supabase = await createClient();
@@ -32,7 +32,7 @@ export default async function EventsPage() {
       <h1 className="text-xl font-semibold sm:text-2xl">Events</h1>
 
       {cities.length === 0 && otherEvents.length === 0 && (
-        <p className="mt-6 text-sm text-gray-600">No upcoming events yet.</p>
+        <p className="mt-6 text-sm text-fg-muted">No upcoming events yet.</p>
       )}
 
       <div className="mt-6 flex flex-col gap-6">
@@ -44,13 +44,13 @@ export default async function EventsPage() {
                 <li key={event.id}>
                   <Link
                     href={`/events/${event.id}`}
-                    className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                    className="block rounded border border-border px-4 py-3 hover:bg-active"
                   >
                     <p className="font-medium">{event.title}</p>
                     {event.dateRange && (
-                      <p className="text-sm text-gray-600 dark:text-neutral-400">{event.dateRange}</p>
+                      <p className="text-sm text-fg-muted">{event.dateRange}</p>
                     )}
-                    <p className="text-sm text-gray-600">{EVENT_TYPE_LABELS[event.eventType]}</p>
+                    <EventTypeBadge eventType={event.eventType} />
                   </Link>
                 </li>
               ))}
@@ -67,13 +67,13 @@ export default async function EventsPage() {
               <li key={event.id}>
                 <Link
                   href={`/events/${event.id}`}
-                  className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+                  className="block rounded border border-border px-4 py-3 hover:bg-active"
                 >
                   <p className="font-medium">{event.title}</p>
                   {event.dateRange && (
-                    <p className="text-sm text-gray-600 dark:text-neutral-400">{event.dateRange}</p>
+                    <p className="text-sm text-fg-muted">{event.dateRange}</p>
                   )}
-                  <p className="text-sm text-gray-600">{EVENT_TYPE_LABELS[event.eventType]}</p>
+                  <EventTypeBadge eventType={event.eventType} />
                 </Link>
               </li>
             ))}

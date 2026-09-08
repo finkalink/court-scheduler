@@ -4,8 +4,8 @@ import { formatInTimeZone } from "date-fns-tz";
 import { createClient } from "@/lib/supabase/server";
 import { cancelEventRegistration } from "@/app/actions/events";
 import { formatBookingDate } from "@/lib/dateFormat";
-import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 import SuccessBanner from "@/components/SuccessBanner";
+import EventTypeBadge from "@/components/EventTypeBadge";
 import { formatCents } from "@/lib/money";
 import { buildVenmoPaymentUrl } from "@/lib/venmoLink";
 
@@ -79,13 +79,13 @@ export default async function MyEventsPage({
       {cancelled && <SuccessBanner>Registration cancelled.</SuccessBanner>}
 
       {cancelError && (
-        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-4 rounded bg-error-bg p-3 text-sm text-error-fg">
           {cancelError}
         </p>
       )}
 
       {rows.length === 0 && (
-        <p className="mt-6 text-sm text-gray-600">You haven&apos;t registered for any events yet.</p>
+        <p className="mt-6 text-sm text-fg-muted">You haven&apos;t registered for any events yet.</p>
       )}
 
       <ul className="mt-6 flex flex-col gap-3">
@@ -104,18 +104,18 @@ export default async function MyEventsPage({
           return (
             <li
               key={row.id}
-              className="flex items-center justify-between rounded border border-gray-300 px-4 py-3 dark:border-neutral-800"
+              className="flex items-center justify-between rounded border border-border px-4 py-3"
             >
               <div>
                 <Link href={`/events/${event.id}`} className="font-medium underline">
                   {event.title}
                 </Link>
-                <p className="text-sm text-gray-600 dark:text-neutral-400">
-                  {EVENT_TYPE_LABELS[event.event_type]}
-                  {row.team ? ` · Team: ${row.team.name}` : ""}
-                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-fg-muted">
+                  <EventTypeBadge eventType={event.event_type} />
+                  {row.team && <span>Team: {row.team.name}</span>}
+                </div>
                 {nextSession && (
-                  <p className="text-sm text-gray-600 dark:text-neutral-400">
+                  <p className="text-sm text-fg-muted">
                     {formatBookingDate(nextSession.start_time, timezone)} ·{" "}
                     {formatInTimeZone(new Date(nextSession.start_time), timezone, "h:mm a")}
                   </p>
@@ -157,7 +157,7 @@ export default async function MyEventsPage({
                   <span className="text-xs text-green-700 dark:text-green-400">Paid ✓</span>
                 )}
                 {row.payment_status === "refunded" && (
-                  <span className="text-xs text-gray-600 dark:text-neutral-400">Refunded</span>
+                  <span className="text-xs text-fg-muted">Refunded</span>
                 )}
                 {/* Every row here already belongs to the viewer -- individualRegs is
                     scoped to their own user_id, teamRegs to teams they're a member
@@ -168,7 +168,7 @@ export default async function MyEventsPage({
                 <form action={cancelEventRegistration}>
                   <input type="hidden" name="registration_id" value={row.id} />
                   <input type="hidden" name="event_id" value={event.id} />
-                  <button type="submit" className="text-xs text-red-700 underline dark:text-red-400">
+                  <button type="submit" className="text-xs text-error-fg underline">
                     Cancel
                   </button>
                 </form>
