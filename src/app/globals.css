@@ -23,51 +23,60 @@
 }
 
 :root {
-  --surface: #F5F1E8;
-  --card: #FFFDF8;
-  --active: #EFE8D8;
-  --border: #E8DFC9;
-  --fg: #2B2418;
-  --fg-muted: #7A6F58;
-  --accent: #0F7A6B;
-  --accent-hover: #0C6255;
-  --accent-fg: #FFFFFF;
-  --link: #0F7A6B;
-  --status: #F5E4D0;
-  --status-fg: #8A5322;
+  --surface: #F8FAFC;
+  --card: #FFFFFF;
+  --active: #EFF4FB;
+  --border: #E2E8F0;
+  --fg: #1E293B;
+  --fg-muted: #55647A;
+  --accent: #F97316;
+  --accent-hover: #EA6A0C;
+  --accent-fg: #1E1006;
+  --link: #3B82F6;
+  --status: #FEF3E8;
+  --status-fg: #C2540A;
+  --success: #0F7A6B;
+  --success-bg: #E6F5F2;
+  --success-fg: #0B5D51;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --surface: #15171C;
-    --card: #1E2128;
-    --active: #262A32;
-    --border: #2C3038;
-    --fg: #F2F3F5;
-    --fg-muted: #9AA0AC;
-    --accent: #2B6FE0;
-    --accent-hover: #3D7EF0;
-    --accent-fg: #FFFFFF;
-    --link: #4E9BFF;
-    --status: #3D2E12;
-    --status-fg: #FFB25E;
+    --surface: #0B1220;
+    --card: #121A2B;
+    --active: #17233A;
+    --border: #223049;
+    --fg: #E7ECF6;
+    --fg-muted: #93A2BD;
+    --accent: #FB923C;
+    --accent-hover: #FDBA74;
+    --accent-fg: #1E1006;
+    --link: #7CB2FB;
+    --status: #2A1B0C;
+    --status-fg: #FDBA74;
+    --success: #2DD4BF;
+    --success-bg: #10302B;
+    --success-fg: #5EEAD4;
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --surface: #15171C;
-  --card: #1E2128;
-  --active: #262A32;
-  --border: #2C3038;
-  --fg: #F2F3F5;
-  --fg-muted: #9AA0AC;
-  --accent: #2B6FE0;
-  --accent-hover: #3D7EF0;
-  --accent-fg: #FFFFFF;
-  --link: #4E9BFF;
-  --status: #3D2E12;
-  --status-fg: #FFB25E;
+  --surface: #0B1220;
+  --card: #121A2B;
+  --active: #17233A;
+  --border: #223049;
+  --fg: #E7ECF6;
+  --fg-muted: #93A2BD;
+  --accent: #FB923C;
+  --accent-hover: #FDBA74;
+  --accent-fg: #1E1006;
+  --link: #7CB2FB;
+  --status: #2A1B0C;
+  --status-fg: #FDBA74;
+  --success: #2DD4BF;
+  --success-bg: #10302B;
+  --success-fg: #5EEAD4;
   color-scheme: dark;
 }
 
@@ -84,11 +93,15 @@
   --color-link: var(--link);
   --color-status: var(--status);
   --color-status-fg: var(--status-fg);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--success-fg);
+  --font-sans: var(--font-barlow);
+  --font-display: var(--font-barlow-condensed);
 }
 
 body {
   background: var(--surface);
   color: var(--fg);
+  font-family: var(--font-sans);
 }
