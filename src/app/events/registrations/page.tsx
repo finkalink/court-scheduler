@@ -110,10 +110,10 @@ export default async function MyEventsPage({
                 <Link href={`/events/${event.id}`} className="font-medium underline">
                   {event.title}
                 </Link>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-fg-muted">
+                <div className="mt-1">
                   <EventTypeBadge eventType={event.event_type} />
-                  {row.team && <span>Team: {row.team.name}</span>}
                 </div>
+                {row.team && <p className="mt-1 text-sm text-fg-muted">Team: {row.team.name}</p>}
                 {nextSession && (
                   <p className="text-sm text-fg-muted">
                     {formatBookingDate(nextSession.start_time, timezone)} ·{" "}

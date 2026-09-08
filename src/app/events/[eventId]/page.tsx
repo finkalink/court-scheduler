@@ -194,15 +194,18 @@ export default async function EventDetailPage({
       </Link>
 
       <h1 className="mt-4 text-xl font-semibold sm:text-2xl">{event.title}</h1>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-fg-muted">
+      <div className="mt-2">
         <EventTypeBadge eventType={event.event_type} />
-        {location && <span>{location.name}</span>}
+      </div>
+      <p className="mt-1 text-sm text-fg-muted">
+        {location && <>{location.name}</>}
+        {location && org?.id && " · "}
         {org?.id && (
           <Link href={`/clubs/${org.id}`} className="underline decoration-dotted">
             {org.name}
           </Link>
         )}
-      </div>
+      </p>
 
       {message && <SuccessBanner>{message}</SuccessBanner>}
 
