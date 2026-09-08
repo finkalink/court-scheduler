@@ -15,7 +15,7 @@ beforeEach(() => {
 describe("AppShell", () => {
   it("always shows Find a Court and Events in the primary nav", () => {
     render(
-      <AppShell userEmail={null} isOrgMember={false} initialTheme="light">
+      <AppShell userEmail={null} isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
         <div />
       </AppShell>
     );
@@ -26,7 +26,7 @@ describe("AppShell", () => {
 
   it("hides account-only links when signed out", () => {
     render(
-      <AppShell userEmail={null} isOrgMember={false} initialTheme="light">
+      <AppShell userEmail={null} isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
         <div />
       </AppShell>
     );
@@ -40,7 +40,7 @@ describe("AppShell", () => {
 
   it("shows account-only links and a sign-out form when signed in", () => {
     render(
-      <AppShell userEmail="player@example.com" isOrgMember={false} initialTheme="light">
+      <AppShell userEmail="player@example.com" isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
         <div />
       </AppShell>
     );
@@ -52,10 +52,20 @@ describe("AppShell", () => {
     expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
   });
 
+  it("shows Club admin (renamed from Admin Dashboard) only for org members", () => {
+    render(
+      <AppShell userEmail="admin@example.com" isOrgMember={true} isPlatformAdmin={false} initialTheme="light">
+        <div />
+      </AppShell>
+    );
+    const primaryNav = screen.getByRole("navigation", { name: "Primary" });
+    expect(within(primaryNav).getByRole("link", { name: "Club admin" })).toBeInTheDocument();
+  });
+
   it("shows the admin sub-nav only for org members on an admin route", () => {
     mockUsePathname.mockReturnValue("/admin");
     render(
-      <AppShell userEmail="admin@example.com" isOrgMember={true} initialTheme="light">
+      <AppShell userEmail="admin@example.com" isOrgMember={true} isPlatformAdmin={false} initialTheme="light">
         <div />
       </AppShell>
     );
@@ -66,7 +76,7 @@ describe("AppShell", () => {
   it("does not show the admin sub-nav for org members off an admin route", () => {
     mockUsePathname.mockReturnValue("/");
     render(
-      <AppShell userEmail="admin@example.com" isOrgMember={true} initialTheme="light">
+      <AppShell userEmail="admin@example.com" isOrgMember={true} isPlatformAdmin={false} initialTheme="light">
         <div />
       </AppShell>
     );
@@ -74,20 +84,45 @@ describe("AppShell", () => {
     expect(screen.queryByRole("link", { name: "Team" })).not.toBeInTheDocument();
   });
 
-  it("does not show Admin Dashboard or the sub-nav for non-members", () => {
+  it("does not show Club admin or the sub-nav for non-members", () => {
     mockUsePathname.mockReturnValue("/admin");
     render(
-      <AppShell userEmail="player@example.com" isOrgMember={false} initialTheme="light">
+      <AppShell userEmail="player@example.com" isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
         <div />
       </AppShell>
     );
-    expect(screen.queryByRole("link", { name: "Admin Dashboard" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Club admin" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Locations" })).not.toBeInTheDocument();
+  });
+
+  it("shows Site admin and its sub-nav only for platform admins on a site-admin route", () => {
+    mockUsePathname.mockReturnValue("/site-admin/orgs");
+    render(
+      <AppShell userEmail="owner@example.com" isOrgMember={false} isPlatformAdmin={true} initialTheme="light">
+        <div />
+      </AppShell>
+    );
+    const primaryNav = screen.getByRole("navigation", { name: "Primary" });
+    expect(within(primaryNav).getByRole("link", { name: "Site admin" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Organizations" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Users" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
+  });
+
+  it("does not show Site admin or its sub-nav for a non-platform-admin", () => {
+    mockUsePathname.mockReturnValue("/site-admin/orgs");
+    render(
+      <AppShell userEmail="player@example.com" isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
+        <div />
+      </AppShell>
+    );
+    expect(screen.queryByRole("link", { name: "Site admin" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Organizations" })).not.toBeInTheDocument();
   });
 
   it("opens and closes the mobile menu", () => {
     render(
-      <AppShell userEmail={null} isOrgMember={false} initialTheme="light">
+      <AppShell userEmail={null} isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
         <div />
       </AppShell>
     );
@@ -102,7 +137,7 @@ describe("AppShell", () => {
 
   it("mirrors the primary links and the theme toggle inside the mobile menu", () => {
     render(
-      <AppShell userEmail={null} isOrgMember={false} initialTheme="light">
+      <AppShell userEmail={null} isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
         <div />
       </AppShell>
     );
@@ -115,7 +150,7 @@ describe("AppShell", () => {
   it("shows unscoped admin links in the mobile menu for an org member on a non-admin route", () => {
     mockUsePathname.mockReturnValue("/");
     render(
-      <AppShell userEmail="admin@example.com" isOrgMember={true} initialTheme="light">
+      <AppShell userEmail="admin@example.com" isOrgMember={true} isPlatformAdmin={false} initialTheme="light">
         <div />
       </AppShell>
     );
@@ -126,9 +161,47 @@ describe("AppShell", () => {
     expect(screen.queryByRole("link", { name: "Locations" })).not.toBeInTheDocument();
   });
 
+  it("shows unscoped site-admin links in the mobile menu for a platform admin on any route", () => {
+    mockUsePathname.mockReturnValue("/");
+    render(
+      <AppShell userEmail="owner@example.com" isOrgMember={false} isPlatformAdmin={true} initialTheme="light">
+        <div />
+      </AppShell>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
+    const mobileMenu = screen.getByRole("region", { name: "Mobile menu" });
+    expect(within(mobileMenu).getByRole("link", { name: "Site Admin: Organizations" })).toBeInTheDocument();
+    expect(within(mobileMenu).getByRole("link", { name: "Site Admin: Users" })).toBeInTheDocument();
+    expect(within(mobileMenu).getByRole("link", { name: "Site Admin: Settings" })).toBeInTheDocument();
+  });
+
+  it("opens the search panel when the search button is clicked", () => {
+    render(
+      <AppShell userEmail={null} isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
+        <div />
+      </AppShell>
+    );
+    expect(screen.queryByRole("region", { name: "Search" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open search" }));
+    expect(screen.getByRole("region", { name: "Search" })).toBeInTheDocument();
+  });
+
+  it("closes the search panel when the search button is clicked again", () => {
+    render(
+      <AppShell userEmail={null} isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
+        <div />
+      </AppShell>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open search" }));
+    expect(screen.getByRole("region", { name: "Search" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close search" }));
+    expect(screen.queryByRole("region", { name: "Search" })).not.toBeInTheDocument();
+  });
+
   it("renders children", () => {
     render(
-      <AppShell userEmail={null} isOrgMember={false} initialTheme="light">
+      <AppShell userEmail={null} isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
         <div>page content</div>
       </AppShell>
     );

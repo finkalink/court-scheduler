@@ -3,6 +3,7 @@ import { Barlow, Barlow_Condensed } from "next/font/google";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
+import { getIsPlatformAdmin } from "@/lib/platformAdmin";
 import { isValidTheme, THEME_COOKIE_NAME } from "@/lib/theme";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
@@ -30,7 +31,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const membership = await getCurrentMembership(supabase, user?.id);
+  const [membership, isPlatformAdmin] = await Promise.all([
+    getCurrentMembership(supabase, user?.id),
+    getIsPlatformAdmin(supabase, user?.id),
+  ]);
 
   const cookieStore = await cookies();
   const themeCookie = cookieStore.get(THEME_COOKIE_NAME)?.value;
@@ -43,7 +47,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${barlow.variable} ${barlowCondensed.variable} h-full antialiased`}
     >
       <body className="min-h-full">
-        <AppShell userEmail={user?.email ?? null} isOrgMember={!!membership} initialTheme={initialTheme}>
+        <AppShell
+          userEmail={user?.email ?? null}
+          isOrgMember={!!membership}
+          isPlatformAdmin={isPlatformAdmin}
+          initialTheme={initialTheme}
+        >
           {children}
         </AppShell>
       </body>

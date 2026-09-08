@@ -18,7 +18,13 @@ export default async function Home() {
       data: { user },
     },
     availableCities,
-  ] = await Promise.all([supabase.auth.getUser(), listActiveCities(supabase)]);
+    { data: bannerSetting },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    listActiveCities(supabase),
+    supabase.from("site_settings").select("value").eq("key", "announcement_banner").maybeSingle(),
+  ]);
+  const announcementBanner = bannerSetting?.value?.trim() || null;
 
   let defaultCity: string | null = null;
   if (user) {
@@ -31,41 +37,56 @@ export default async function Home() {
   }
   const resolvedCity = resolveHomeCity({ overrideCity, defaultCity, availableCities });
 
+  const banner = announcementBanner && (
+    <div className="bg-status px-4 py-2 text-center text-sm text-status-fg">{announcementBanner}</div>
+  );
+
   if (!resolvedCity) {
     if (!user) {
-      return <LandingPage />;
+      return (
+        <>
+          {banner}
+          <LandingPage />
+        </>
+      );
     }
     return (
-      <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-        <h1 className="text-xl font-semibold sm:text-2xl">Find a Court</h1>
-        <AllCitiesContent />
-      </div>
+      <>
+        {banner}
+        <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
+          <h1 className="text-xl font-semibold sm:text-2xl">Find a Court</h1>
+          <AllCitiesContent />
+        </div>
+      </>
     );
   }
 
   const overrideDiffersFromDefault = overrideCity === resolvedCity && overrideCity !== defaultCity;
 
   return (
-    <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-      <h1 className="text-xl font-semibold sm:text-2xl">Find a Court</h1>
+    <>
+      {banner}
+      <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
+        <h1 className="text-xl font-semibold sm:text-2xl">Find a Court</h1>
 
-      <div className="mt-2 flex items-center justify-between text-sm text-fg-muted">
-        <span>Browsing: {resolvedCity}</span>
-        <span className="flex items-center gap-3">
-          <Link href="/cities" className="underline">
-            See all cities
-          </Link>
-          {overrideDiffersFromDefault && (
-            <form action={clearCityOverride}>
-              <button type="submit" className="underline">
-                {defaultCity ? "Reset to my city" : "Clear"}
-              </button>
-            </form>
-          )}
-        </span>
+        <div className="mt-2 flex items-center justify-between text-sm text-fg-muted">
+          <span>Browsing: {resolvedCity}</span>
+          <span className="flex items-center gap-3">
+            <Link href="/cities" className="underline">
+              See all cities
+            </Link>
+            {overrideDiffersFromDefault && (
+              <form action={clearCityOverride}>
+                <button type="submit" className="underline">
+                  {defaultCity ? "Reset to my city" : "Clear"}
+                </button>
+              </form>
+            )}
+          </span>
+        </div>
+
+        <CityContent city={resolvedCity} />
       </div>
-
-      <CityContent city={resolvedCity} />
-    </div>
+    </>
   );
 }
