@@ -48,6 +48,15 @@ Add these three variables to the `:root` block, the `@media (prefers-color-schem
 | `border-red-400`, `border-red-300` + `dark:border-red-800`/`dark:border-red-900` | `border-error-fg` (delete the `dark:` override) |
 | `text-blue-700 dark:text-blue-400` (selected-item highlight, not a link) | `text-accent` |
 | `bg-gray-100 dark:bg-neutral-800` (hover/highlighted row, not a link) | `bg-active` |
+| `bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-300` (confirmed/paid/saved banner or badge) | `bg-success-bg text-success-fg` |
+| `text-green-700`/`text-green-800` (bare, no bg — a small "Saved."/"Paid ✓" confirmation) | `text-success-fg` |
+| `dark:text-green-300`/`dark:text-green-400` (paired with a green class above) | delete — drop the `dark:` override |
+| `bg-yellow-50 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300` (pending/waitlisted/incomplete-profile banner or badge) | `bg-status text-status-fg` |
+| `border-yellow-300 dark:border-yellow-900` (bordered warning box) | `border-status-fg` — if `border-status-fg` renders too strong against `bg-status`, use `border-border` instead; use judgment, this is a soft warning box not an alert |
+| `text-yellow-800` (bare, no bg — an underlined "waitlisted" link) | `text-status-fg` |
+| `dark:text-yellow-300`/`dark:text-yellow-400` (paired with a yellow class above) | delete — drop the `dark:` override |
+
+**Note on scope:** yellow/green usage was found *after* Task 3 was already implemented and reviewed (ruling recorded in the ledger) — it is NOT part of Tasks 3-8's per-task scope even in files those tasks otherwise cover. It is handled entirely by Task 9 below, in one dedicated pass, so no earlier task's file list should be reopened for this.
 
 Anywhere a class isn't in this table, match it to the nearest token by what it's doing (muted secondary text → `text-fg-muted`, a card/row border → `border-border`, a hover surface → `hover:bg-active`) rather than guessing a new one.
 
@@ -422,11 +431,48 @@ git add src/components/bracket/MatchCardGrid.tsx src/components/bracket/MatchRes
 git commit -m "Sweep remaining shared components onto the token system"
 ```
 
+## Task 9: Sweep remaining yellow/green status colors app-wide
+
+Discovered mid-execution (after Task 3): a parallel legacy-color pattern using `yellow`/`green` for pending/warning and confirmed/success states, missed by the plan's original grep (which only searched black/gray/blue/red/neutral). Same treatment as every other task — reuse existing tokens, no new ones needed: green → `--success`/`--success-bg`/`--success-fg` (already exists, used by `SuccessBanner`), yellow → `--status`/`--status-fg` (already exists, used by the homepage's event-type pill).
+
+**Files:**
+- Modify: `src/components/AddressLookup.tsx`
+- Modify: `src/app/events/[eventId]/page.tsx`
+- Modify: `src/app/events/registrations/page.tsx`
+- Modify: `src/app/bookings/[bookingId]/page.tsx`
+- Modify: `src/app/bookings/page.tsx`
+- Modify: `src/app/profile/page.tsx`
+- Modify: `src/app/admin/locations/[locationId]/page.tsx`
+- Modify: `src/components/bracket/InteractiveBracket.tsx`
+- Modify: `src/app/admin/locations/[locationId]/courts/[courtId]/page.tsx`
+- Modify: `src/app/admin/locations/[locationId]/events/[eventId]/page.tsx`
+- Modify: `src/app/admin/locations/[locationId]/events/[eventId]/bracket/page.tsx`
+
+**Interfaces:** None — class-string edits only, using the yellow/green rows of the Class Replacement Map above.
+
+- [ ] **Step 1: Run this exact search to find every occurrence before starting, since line numbers above may have shifted after Tasks 3-8's edits:**
+
+Run: `grep -rn "bg-yellow-\|text-yellow-\|bg-green-\|text-green-\|border-yellow-\|border-green-" src/`
+
+- [ ] **Step 2: Apply the yellow/green rows of the Class Replacement Map to every match**, using judgment for semantics per file (a green "Paid ✓"/"Saved."/"confirmed" badge is success; a yellow "waitlisted"/"pending"/"incomplete profile" banner or badge is status).
+
+- [ ] **Step 3: Run tests and typecheck**
+
+Run: `npm test && npx tsc --noEmit`
+Expected: PASS.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/components/AddressLookup.tsx "src/app/events/[eventId]/page.tsx" src/app/events/registrations/page.tsx "src/app/bookings/[bookingId]/page.tsx" src/app/bookings/page.tsx src/app/profile/page.tsx "src/app/admin/locations/[locationId]/page.tsx" src/components/bracket/InteractiveBracket.tsx "src/app/admin/locations/[locationId]/courts/[courtId]/page.tsx" "src/app/admin/locations/[locationId]/events/[eventId]/page.tsx" "src/app/admin/locations/[locationId]/events/[eventId]/bracket/page.tsx"
+git commit -m "Sweep remaining yellow/green status colors onto success/status tokens"
+```
+
 ## Final Check
 
-After all 8 tasks:
+After all 9 tasks:
 - [ ] `npm test` — full suite green (249 existing + new tests from Tasks 1-2).
 - [ ] `npx tsc --noEmit` — clean.
 - [ ] `npm run lint` — clean (this app's lint has previously caught real regressions; don't skip it even though the plan didn't call it out per-task).
-- [ ] `grep -rE "bg-black|text-gray-|bg-gray-|border-gray-|bg-blue-|text-blue-|bg-red-|text-red-|dark:.*-neutral-" src/` returns nothing outside of `globals.css` itself (which defines what the tokens mean, not a violation) and any file this plan deliberately didn't touch (there shouldn't be any — all 30 identified files are covered across Tasks 3-8).
+- [ ] `grep -rE "bg-black|text-gray-|bg-gray-|border-gray-|bg-blue-|text-blue-|bg-red-|text-red-|bg-yellow-|text-yellow-|bg-green-|text-green-|border-yellow-|border-green-|dark:.*-neutral-|dark:.*-red-|dark:.*-blue-|dark:.*-yellow-|dark:.*-green-" src/` returns nothing outside of `globals.css` itself (which defines what the tokens mean, not a violation) and any file this plan deliberately didn't touch (there shouldn't be any — all 30 identified files plus Task 9's 11 files are covered across Tasks 3-9).
 - [ ] Manually verify in the browser (light + dark, desktop + mobile): booking flow slot selection is now orange, not black; an event's type shows as a colored pill on `/events`, `/events/[id]`, and the admin events pages consistently; login/signup have no leftover blue/red/gray/black; a booking cancellation and an admin "remove member" action still visually read as destructive (red-ish `--error-fg`), just tokenized.
