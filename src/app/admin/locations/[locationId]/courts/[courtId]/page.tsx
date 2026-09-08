@@ -15,6 +15,7 @@ import { formatBookingDate, formatCalendarDate, formatTimeOfDay } from "@/lib/da
 import { resolveDayHours, type AvailabilityRule, type SlotOverride } from "@/lib/availability";
 import { buildSlotGrid } from "@/lib/blockedSlots";
 import SuccessBanner from "@/components/SuccessBanner";
+import { buttonClass } from "@/lib/buttonStyles";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -137,7 +138,7 @@ export default async function AdminCourtAvailabilityPage({
       </Link>
 
       <h1 className="mt-4 text-lg font-medium">Weekly Availability — {court.name}</h1>
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-fg-muted">
         Leave both times blank for a day the court is closed. Saving replaces the full week.
       </p>
 
@@ -153,25 +154,25 @@ export default async function AdminCourtAvailabilityPage({
                 type="time"
                 name={`open_${day}`}
                 defaultValue={rule?.open_time?.slice(0, 5)}
-                className="w-full rounded border px-3 py-2 text-sm"
+                className="w-full rounded border border-border px-3 py-2 text-sm"
               />
               <input
                 type="time"
                 name={`close_${day}`}
                 defaultValue={rule?.close_time?.slice(0, 5)}
-                className="w-full rounded border px-3 py-2 text-sm"
+                className="w-full rounded border border-border px-3 py-2 text-sm"
               />
             </div>
           );
         })}
-        <button type="submit" className="mt-4 w-fit rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className={`mt-4 w-fit ${buttonClass("primary")}`}>
           Save
         </button>
         {saved && <SuccessBanner>Availability saved.</SuccessBanner>}
       </form>
 
       <h2 className="mt-10 text-lg font-medium">Date Overrides</h2>
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-fg-muted">
         One-off exceptions to the weekly hours above — a holiday closure, or a single day with
         different hours.
       </p>
@@ -179,20 +180,20 @@ export default async function AdminCourtAvailabilityPage({
       {override_saved && <SuccessBanner>Override saved.</SuccessBanner>}
       {override_deleted && <SuccessBanner>Override removed.</SuccessBanner>}
       {override_error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
           {override_error}
         </p>
       )}
 
       {(!overrides || overrides.length === 0) && (
-        <p className="mt-1 text-sm text-gray-600">No upcoming overrides.</p>
+        <p className="mt-1 text-sm text-fg-muted">No upcoming overrides.</p>
       )}
 
       <ul className="mt-4 flex flex-col gap-2">
         {(overrides ?? []).map((override) => (
           <li
             key={override.id}
-            className="flex items-center justify-between rounded border border-gray-300 px-4 py-2"
+            className="flex items-center justify-between rounded border border-border px-4 py-2"
           >
             <span className="text-sm">
               {formatCalendarDate(override.date)} —{" "}
@@ -204,7 +205,7 @@ export default async function AdminCourtAvailabilityPage({
               <input type="hidden" name="override_id" value={override.id} />
               <input type="hidden" name="court_id" value={court.id} />
               <input type="hidden" name="location_id" value={locationId} />
-              <button type="submit" className="text-xs text-red-700 underline">
+              <button type="submit" className="text-xs text-error-fg underline">
                 Remove
               </button>
             </form>
@@ -215,29 +216,29 @@ export default async function AdminCourtAvailabilityPage({
       <form action={saveSlotOverride} className="mt-4 flex flex-wrap items-end gap-3">
         <input type="hidden" name="court_id" value={court.id} />
         <input type="hidden" name="location_id" value={locationId} />
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-fg-muted">
           Date
-          <input type="date" name="date" required className="rounded border px-3 py-2 text-sm" />
+          <input type="date" name="date" required className="rounded border border-border px-3 py-2 text-sm" />
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-600">
+        <label className="flex items-center gap-2 text-xs text-fg-muted">
           <input type="checkbox" name="is_closed" />
           Closed all day
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-fg-muted">
           Custom open
-          <input type="time" name="custom_open" className="rounded border px-3 py-2 text-sm" />
+          <input type="time" name="custom_open" className="rounded border border-border px-3 py-2 text-sm" />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-fg-muted">
           Custom close
-          <input type="time" name="custom_close" className="rounded border px-3 py-2 text-sm" />
+          <input type="time" name="custom_close" className="rounded border border-border px-3 py-2 text-sm" />
         </label>
-        <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
           Add Override
         </button>
       </form>
 
       <h2 className="mt-10 text-lg font-medium">Blocked Slots</h2>
-      <p className="mt-1 text-sm text-gray-600">
+      <p className="mt-1 text-sm text-fg-muted">
         Block off specific times within the hours above — a recurring break, or a one-off
         private event.
       </p>
@@ -245,13 +246,13 @@ export default async function AdminCourtAvailabilityPage({
       <div className="mt-3 flex gap-4 text-sm">
         <Link
           href={`/admin/locations/${locationId}/courts/${court.id}?block_mode=recurring&block_day=${blockDay}`}
-          className={blockMode === "recurring" ? "font-medium underline" : "text-gray-600 underline"}
+          className={blockMode === "recurring" ? "font-medium underline" : "text-fg-muted underline"}
         >
           Recurring
         </Link>
         <Link
           href={`/admin/locations/${locationId}/courts/${court.id}?block_mode=date&block_date=${blockDate}`}
-          className={blockMode === "date" ? "font-medium underline" : "text-gray-600 underline"}
+          className={blockMode === "date" ? "font-medium underline" : "text-fg-muted underline"}
         >
           Specific date
         </Link>
@@ -265,8 +266,8 @@ export default async function AdminCourtAvailabilityPage({
               href={`/admin/locations/${locationId}/courts/${court.id}?block_mode=recurring&block_day=${day}`}
               className={`rounded border px-2 py-1 ${
                 day === blockDay
-                  ? "border-black font-medium dark:border-white"
-                  : "border-gray-300 text-gray-600"
+                  ? "border-fg font-medium"
+                  : "border-border text-fg-muted"
               }`}
             >
               {name.slice(0, 3)}
@@ -276,16 +277,16 @@ export default async function AdminCourtAvailabilityPage({
       ) : (
         <form method="get" className="mt-3 flex items-end gap-2">
           <input type="hidden" name="block_mode" value="date" />
-          <label className="flex flex-col gap-1 text-xs text-gray-600">
+          <label className="flex flex-col gap-1 text-xs text-fg-muted">
             Date
             <input
               type="date"
               name="block_date"
               defaultValue={blockDate}
-              className="rounded border px-3 py-2 text-sm"
+              className="rounded border border-border px-3 py-2 text-sm"
             />
           </label>
-          <button type="submit" className="rounded border border-gray-400 px-3 py-2 text-sm">
+          <button type="submit" className="rounded border border-border px-3 py-2 text-sm">
             View
           </button>
         </form>
@@ -309,8 +310,8 @@ export default async function AdminCourtAvailabilityPage({
                 type="submit"
                 className={`rounded border px-3 py-2 text-sm ${
                   slot.blocked
-                    ? "border-red-400 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300"
-                    : "border-gray-300"
+                    ? "border-error-fg bg-error-bg text-error-fg"
+                    : "border-border"
                 }`}
               >
                 {formatTimeOfDay(slot.startTime)}
@@ -319,7 +320,7 @@ export default async function AdminCourtAvailabilityPage({
           ))}
         </div>
       ) : (
-        <p className="mt-4 text-sm text-gray-600">
+        <p className="mt-4 text-sm text-fg-muted">
           {blockMode === "recurring"
             ? "This day is closed in the weekly schedule."
             : "This date is closed."}
@@ -330,13 +331,13 @@ export default async function AdminCourtAvailabilityPage({
 
       {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
       {error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
           {error}
         </p>
       )}
 
       {(!upcomingBookings || upcomingBookings.length === 0) && (
-        <p className="mt-1 text-sm text-gray-600">No upcoming bookings.</p>
+        <p className="mt-1 text-sm text-fg-muted">No upcoming bookings.</p>
       )}
 
       <ul className="mt-4 flex flex-col gap-3">
@@ -346,19 +347,19 @@ export default async function AdminCourtAvailabilityPage({
 
           if (booking.source === "event") {
             return (
-              <li key={booking.id} className="rounded border border-gray-300 px-4 py-3">
+              <li key={booking.id} className="rounded border border-border px-4 py-3">
                 <div className="flex items-center justify-between">
                   <p className="font-medium">
                     {dateLabel} · {timeLabel}
                   </p>
-                  <span className="text-xs text-gray-600">Reserved by event</span>
+                  <span className="text-xs text-fg-muted">Reserved by event</span>
                 </div>
               </li>
             );
           }
 
           return (
-            <li key={booking.id} className="rounded border border-gray-300 px-4 py-3">
+            <li key={booking.id} className="rounded border border-border px-4 py-3">
               <div className="flex items-center justify-between">
                 <p className="font-medium">
                   {dateLabel} · {timeLabel}
@@ -372,7 +373,7 @@ export default async function AdminCourtAvailabilityPage({
                     name="redirect_to"
                     value={`/admin/locations/${locationId}/courts/${court.id}`}
                   />
-                  <button type="submit" className="text-xs text-red-700 underline">
+                  <button type="submit" className="text-xs text-error-fg underline">
                     Cancel
                   </button>
                 </form>
@@ -385,12 +386,12 @@ export default async function AdminCourtAvailabilityPage({
                 <input type="hidden" name="booking_id" value={booking.id} />
                 <input type="hidden" name="location_id" value={locationId} />
                 <input type="hidden" name="court_id" value={court.id} />
-                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                <label className="flex flex-col gap-1 text-xs text-fg-muted">
                   Net height
                   <select
                     name="requested_net_height"
                     defaultValue={booking.requested_net_height ?? ""}
-                    className="rounded border px-2 py-1 text-sm"
+                    className="rounded border border-border px-2 py-1 text-sm"
                   >
                     {NET_HEIGHT_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -399,12 +400,12 @@ export default async function AdminCourtAvailabilityPage({
                     ))}
                   </select>
                 </label>
-                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                <label className="flex flex-col gap-1 text-xs text-fg-muted">
                   Court lines
                   <select
                     name="requested_court_lines"
                     defaultValue={booking.requested_court_lines ?? ""}
-                    className="rounded border px-2 py-1 text-sm"
+                    className="rounded border border-border px-2 py-1 text-sm"
                   >
                     {COURT_LINES_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>

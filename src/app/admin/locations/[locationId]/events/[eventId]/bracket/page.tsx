@@ -11,6 +11,7 @@ import {
 import { nextPowerOf2 } from "@/lib/bracketGeneration";
 import SuccessBanner from "@/components/SuccessBanner";
 import InteractiveBracket from "@/components/bracket/InteractiveBracket";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export default async function AdminBracketPage({
   params,
@@ -106,7 +107,7 @@ export default async function AdminBracketPage({
         </SuccessBanner>
       )}
       {sp.generate_error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
           {sp.generate_error}
         </p>
       )}
@@ -141,34 +142,34 @@ export default async function AdminBracketPage({
           <input type="hidden" name="location_id" value={locationId} />
           <label className="flex flex-col gap-1 text-sm">
             Format
-            <select name="format" className="rounded border px-3 py-2 dark:bg-neutral-900">
+            <select name="format" className="rounded border border-border bg-card px-3 py-2">
               <option value="single_elim">Single elimination</option>
               <option value="double_elim">Double elimination</option>
               <option value="round_robin">Round robin</option>
               <option value="pool_play">Pool play</option>
             </select>
           </label>
-          <dl className="flex flex-col gap-2 rounded border border-gray-200 p-3 text-xs text-gray-600 dark:border-neutral-800 dark:text-neutral-400">
+          <dl className="flex flex-col gap-2 rounded border border-border p-3 text-xs text-fg-muted">
             <div>
-              <dt className="font-medium text-gray-800 dark:text-neutral-200">Single elimination</dt>
+              <dt className="font-medium text-fg">Single elimination</dt>
               <dd>One loss and you&apos;re out. Fastest format -- good when court time or the day itself is limited.</dd>
             </div>
             <div>
-              <dt className="font-medium text-gray-800 dark:text-neutral-200">Double elimination</dt>
+              <dt className="font-medium text-fg">Double elimination</dt>
               <dd>A loss drops you to a losers bracket instead of eliminating you outright -- you&apos;re out only after a second loss. Takes longer but gives every team a second chance.</dd>
             </div>
             <div>
-              <dt className="font-medium text-gray-800 dark:text-neutral-200">Round robin</dt>
+              <dt className="font-medium text-fg">Round robin</dt>
               <dd>Every team plays every other team once; standings are ranked by wins. No eliminations -- best for a small group with time to play a full set of matches.</dd>
             </div>
             <div>
-              <dt className="font-medium text-gray-800 dark:text-neutral-200">Pool play</dt>
+              <dt className="font-medium text-fg">Pool play</dt>
               <dd>Teams are split into pools and round-robin within their own pool. Use this for a larger field where a full round robin across everyone would take too long.</dd>
             </div>
           </dl>
           <label className="flex flex-col gap-1 text-sm">
             Seeding
-            <select name="seeding" className="rounded border px-3 py-2 dark:bg-neutral-900">
+            <select name="seeding" className="rounded border border-border bg-card px-3 py-2">
               <option value="registration_order">Registration order</option>
               <option value="random">Random</option>
               <option value="manual">Manual (set seed numbers below)</option>
@@ -176,18 +177,18 @@ export default async function AdminBracketPage({
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Bye handling (single/double elimination only)
-            <select name="bye_mode" className="rounded border px-3 py-2 dark:bg-neutral-900">
+            <select name="bye_mode" className="rounded border border-border bg-card px-3 py-2">
               <option value="auto">Auto (top seeds get byes)</option>
               <option value="manual">Manual (choose bye seats below)</option>
             </select>
           </label>
-          <p className="text-xs text-gray-600 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted">
             Registered: {(registrations ?? []).length}. If elimination, the bracket rounds up to{" "}
             {eliminationBracketSize} slots ({eliminationBracketSize - (registrations ?? []).length} byes).
           </p>
 
           <div>
-            <p className="text-xs text-gray-600 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted">
               Seed numbers (used only when Seeding is Manual; lower = better seed)
             </p>
             <div className="mt-1 flex flex-col gap-1">
@@ -199,7 +200,7 @@ export default async function AdminBracketPage({
                     type="number"
                     min="1"
                     defaultValue={i + 1}
-                    className="w-16 rounded border px-2 py-1"
+                    className="w-16 rounded border border-border px-2 py-1"
                   />
                 </label>
               ))}
@@ -207,7 +208,7 @@ export default async function AdminBracketPage({
           </div>
 
           <div>
-            <p className="text-xs text-gray-600 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted">
               Bye seats (used only when Bye handling is Manual; check exactly{" "}
               {eliminationBracketSize - (registrations ?? []).length} of these seat numbers)
             </p>
@@ -221,14 +222,14 @@ export default async function AdminBracketPage({
           </div>
 
           <div>
-            <p className="text-xs text-gray-600 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted">
               Pool assignment (used only when format is Pool Play)
             </p>
             <div className="mt-1 flex flex-col gap-1">
               {(registrations ?? []).map((r) => (
                 <label key={r.id} className="flex items-center gap-2 text-xs">
                   <span className="w-32 truncate">{nameByRegistrationId.get(r.id)}</span>
-                  <select name={`pool_for_${r.id}`} defaultValue="pool_a" className="rounded border px-2 py-1 dark:bg-neutral-900">
+                  <select name={`pool_for_${r.id}`} defaultValue="pool_a" className="rounded border border-border bg-card px-2 py-1">
                     <option value="pool_a">Pool A</option>
                     <option value="pool_b">Pool B</option>
                     <option value="pool_c">Pool C</option>
@@ -239,7 +240,7 @@ export default async function AdminBracketPage({
             </div>
           </div>
 
-          <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+          <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
             Generate Bracket
           </button>
         </form>
@@ -251,7 +252,7 @@ export default async function AdminBracketPage({
             <form action={autoAssignSessions} className="mt-4">
               <input type="hidden" name="event_id" value={eventId} />
               <input type="hidden" name="location_id" value={locationId} />
-              <button type="submit" className="rounded border px-3 py-2 text-sm dark:border-neutral-700">
+              <button type="submit" className="rounded border border-border px-3 py-2 text-sm">
                 Auto-assign to sessions ({unscheduledCount} unscheduled, {unusedSessionCount} sessions
                 available)
               </button>
@@ -276,7 +277,7 @@ export default async function AdminBracketPage({
             <form action={regenerateBracket} className="mt-6">
               <input type="hidden" name="event_id" value={eventId} />
               <input type="hidden" name="location_id" value={locationId} />
-              <button type="submit" className="rounded border border-red-300 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:text-red-400">
+              <button type="submit" className="rounded border border-error-fg px-3 py-2 text-sm text-error-fg">
                 Regenerate Bracket
               </button>
             </form>
@@ -284,12 +285,12 @@ export default async function AdminBracketPage({
 
           <details className="mt-8">
             <summary className="w-fit cursor-pointer text-sm underline">Advanced: edit a match manually</summary>
-            <p className="mt-1 text-xs text-gray-600 dark:text-neutral-400">
+            <p className="mt-1 text-xs text-fg-muted">
               Directly reassign a match&apos;s sides, winner, or session -- bypasses the normal tap-to-score flow above.
             </p>
             <ul className="mt-3 flex flex-col gap-2">
               {matches.map((match) => (
-                <li key={match.id} className="rounded border border-gray-300 px-4 py-3 dark:border-neutral-800">
+                <li key={match.id} className="rounded border border-border px-4 py-3">
                   <p className="text-sm">
                     {match.bracket} round {match.round_number} &middot;{" "}
                     {nameByRegistrationId.get(match.team_a_registration_id ?? "") ?? "TBD"} vs{" "}
@@ -310,7 +311,7 @@ export default async function AdminBracketPage({
                         <select
                           name="team_a_registration_id"
                           defaultValue={match.team_a_registration_id ?? ""}
-                          className="rounded border px-2 py-1 dark:bg-neutral-900"
+                          className="rounded border border-border bg-card px-2 py-1"
                         >
                           <option value="">-- none --</option>
                           {(registrations ?? []).map((r) => (
@@ -325,7 +326,7 @@ export default async function AdminBracketPage({
                         <select
                           name="team_b_registration_id"
                           defaultValue={match.team_b_registration_id ?? ""}
-                          className="rounded border px-2 py-1 dark:bg-neutral-900"
+                          className="rounded border border-border bg-card px-2 py-1"
                         >
                           <option value="">-- none --</option>
                           {(registrations ?? []).map((r) => (
@@ -340,7 +341,7 @@ export default async function AdminBracketPage({
                         <select
                           name="winner_registration_id"
                           defaultValue={match.winner_registration_id ?? ""}
-                          className="rounded border px-2 py-1 dark:bg-neutral-900"
+                          className="rounded border border-border bg-card px-2 py-1"
                         >
                           <option value="">-- none --</option>
                           {match.team_a_registration_id && (
@@ -360,7 +361,7 @@ export default async function AdminBracketPage({
                         <select
                           name="session_id"
                           defaultValue={match.session_id ?? ""}
-                          className="rounded border px-2 py-1 dark:bg-neutral-900"
+                          className="rounded border border-border bg-card px-2 py-1"
                         >
                           <option value="">-- none --</option>
                           {(sessions ?? []).map((s) => (
@@ -372,9 +373,9 @@ export default async function AdminBracketPage({
                       </label>
                       <label className="flex flex-col gap-1 text-xs">
                         Admin note (shown to players)
-                        <input name="admin_note" defaultValue={match.admin_note ?? ""} className="rounded border px-2 py-1" />
+                        <input name="admin_note" defaultValue={match.admin_note ?? ""} className="rounded border border-border px-2 py-1" />
                       </label>
-                      <button type="submit" className="w-fit rounded border px-3 py-1.5 text-xs dark:border-neutral-700">
+                      <button type="submit" className="w-fit rounded border border-border px-3 py-1.5 text-xs">
                         Save Changes
                       </button>
                     </form>
@@ -389,7 +390,7 @@ export default async function AdminBracketPage({
       <h2 className="mt-10 text-lg font-medium">Registrants</h2>
       <ul className="mt-2 flex flex-col gap-2">
         {(registrations ?? []).map((r) => (
-          <li key={r.id} className="flex items-center justify-between rounded border border-gray-300 px-4 py-2 text-sm dark:border-neutral-800">
+          <li key={r.id} className="flex items-center justify-between rounded border border-border px-4 py-2 text-sm">
             <span>
               {nameByRegistrationId.get(r.id)} ({r.status})
             </span>
@@ -405,7 +406,7 @@ export default async function AdminBracketPage({
                 <label className="flex items-center gap-1 text-xs">
                   <input type="radio" name="resolution" value="substitute" /> Substitute a different registration
                 </label>
-                <select name="substitute_registration_id" className="rounded border px-2 py-1 text-xs dark:bg-neutral-900">
+                <select name="substitute_registration_id" className="rounded border border-border bg-card px-2 py-1 text-xs">
                   <option value="">-- pick substitute --</option>
                   {(registrations ?? [])
                     .filter((other) => other.id !== r.id)
@@ -415,7 +416,7 @@ export default async function AdminBracketPage({
                       </option>
                     ))}
                 </select>
-                <button type="submit" className="w-fit rounded border px-3 py-1.5 text-xs dark:border-neutral-700">
+                <button type="submit" className="w-fit rounded border border-border px-3 py-1.5 text-xs">
                   Confirm Withdraw
                 </button>
               </form>

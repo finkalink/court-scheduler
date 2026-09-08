@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createEvent } from "@/app/admin/eventActions";
-import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
+import EventTypeBadge from "@/components/EventTypeBadge";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export default async function AdminEventsPage({
   params,
@@ -43,13 +44,13 @@ export default async function AdminEventsPage({
       <h1 className="mt-4 text-lg font-medium">{location.name} — Events</h1>
 
       {event_error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
           {event_error}
         </p>
       )}
 
       {(!events || events.length === 0) && (
-        <p className="mt-4 text-sm text-gray-600">No events yet.</p>
+        <p className="mt-4 text-sm text-fg-muted">No events yet.</p>
       )}
 
       <ul className="mt-4 flex flex-col gap-3">
@@ -57,11 +58,14 @@ export default async function AdminEventsPage({
           <li key={event.id}>
             <Link
               href={`/admin/locations/${locationId}/events/${event.id}`}
-              className="block rounded border border-gray-300 px-4 py-3 hover:bg-gray-50 dark:border-neutral-800 dark:hover:bg-neutral-800"
+              className="block rounded border border-border px-4 py-3 hover:bg-active"
             >
               <p className="font-medium">{event.title}</p>
-              <p className="text-sm text-gray-600">
-                {EVENT_TYPE_LABELS[event.event_type]} · {event.status} ·{" "}
+              <div className="mt-1">
+                <EventTypeBadge eventType={event.event_type} />
+              </div>
+              <p className="text-sm text-fg-muted">
+                {event.status} ·{" "}
                 {event.event_sessions.length} session{event.event_sessions.length === 1 ? "" : "s"}
               </p>
             </Link>
@@ -74,18 +78,18 @@ export default async function AdminEventsPage({
         <input type="hidden" name="location_id" value={locationId} />
         <label className="flex flex-col gap-1 text-sm">
           Title
-          <input name="title" required className="rounded border px-3 py-2" />
+          <input name="title" required className="rounded border border-border px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Description
-          <textarea name="description" className="rounded border px-3 py-2" />
+          <textarea name="description" className="rounded border border-border px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Type
           <select
             name="event_type"
             defaultValue="tournament"
-            className="rounded border px-3 py-2 dark:bg-neutral-900"
+            className="rounded border border-border bg-card px-3 py-2"
           >
             <option value="tournament">Tournament</option>
             <option value="league">League</option>
@@ -98,7 +102,7 @@ export default async function AdminEventsPage({
           <select
             name="registration_mode"
             defaultValue="individual"
-            className="rounded border px-3 py-2 dark:bg-neutral-900"
+            className="rounded border border-border bg-card px-3 py-2"
           >
             <option value="individual">Individual</option>
             <option value="team">Team</option>
@@ -109,7 +113,7 @@ export default async function AdminEventsPage({
           <select
             name="team_formation"
             defaultValue="self_formed"
-            className="rounded border px-3 py-2 dark:bg-neutral-900"
+            className="rounded border border-border bg-card px-3 py-2"
           >
             <option value="self_formed">Players self-form teams</option>
             <option value="admin_assembled">We assemble teams</option>
@@ -117,7 +121,7 @@ export default async function AdminEventsPage({
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Capacity (blank = unlimited)
-          <input name="capacity" type="number" min="1" className="rounded border px-3 py-2" />
+          <input name="capacity" type="number" min="1" className="rounded border border-border px-3 py-2" />
         </label>
         {hasVenmoHandle ? (
           <label className="flex flex-col gap-1 text-sm">
@@ -128,11 +132,11 @@ export default async function AdminEventsPage({
               min="0"
               step="0.01"
               placeholder="25.00"
-              className="rounded border px-3 py-2"
+              className="rounded border border-border px-3 py-2"
             />
           </label>
         ) : (
-          <p className="text-xs text-gray-600 dark:text-neutral-400">
+          <p className="text-xs text-fg-muted">
             Set your club&apos;s Venmo handle on the{" "}
             <Link href="/admin" className="underline">
               club dashboard
@@ -145,13 +149,13 @@ export default async function AdminEventsPage({
           <select
             name="status"
             defaultValue="draft"
-            className="rounded border px-3 py-2 dark:bg-neutral-900"
+            className="rounded border border-border bg-card px-3 py-2"
           >
             <option value="draft">Draft (hidden from players)</option>
             <option value="published">Published</option>
           </select>
         </label>
-        <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
           Create Event
         </button>
       </form>

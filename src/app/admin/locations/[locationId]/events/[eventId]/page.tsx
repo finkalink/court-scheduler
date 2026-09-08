@@ -11,8 +11,9 @@ import {
 } from "@/app/admin/eventActions";
 import { assembleEventTeam } from "@/app/admin/eventTeamActions";
 import SuccessBanner from "@/components/SuccessBanner";
+import EventTypeBadge from "@/components/EventTypeBadge";
+import { buttonClass } from "@/lib/buttonStyles";
 import { formatBookingDate } from "@/lib/dateFormat";
-import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
 import { formatCents } from "@/lib/money";
 
 export default async function AdminEventPage({
@@ -144,9 +145,10 @@ export default async function AdminEventPage({
       </Link>
 
       <h1 className="mt-4 text-lg font-medium">{event.title}</h1>
-      <p className="text-sm text-gray-600">
-        {EVENT_TYPE_LABELS[event.event_type]} · {event.status}
-      </p>
+      <div className="mt-1">
+        <EventTypeBadge eventType={event.event_type} />
+      </div>
+      <p className="text-sm text-fg-muted">{event.status}</p>
       <p className="mt-2">
         <Link href={`/admin/locations/${locationId}/events/${eventId}/bracket`} className="text-sm underline">
           Manage Bracket &rarr;
@@ -156,38 +158,38 @@ export default async function AdminEventPage({
       {event_added && <SuccessBanner>Event created — add sessions below.</SuccessBanner>}
       {event_saved && <SuccessBanner>Event saved.</SuccessBanner>}
       {event_error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
           {event_error}
         </p>
       )}
       {session_added && <SuccessBanner>Session added.</SuccessBanner>}
       {session_removed && <SuccessBanner>Session removed.</SuccessBanner>}
       {session_error && (
-        <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
           {session_error}
         </p>
       )}
 
       <h2 className="mt-8 text-lg font-medium">Registrants</h2>
       {event.registration_mode === "team" && (!teams || teams.length === 0) && (
-        <p className="mt-1 text-sm text-gray-600">No teams registered yet.</p>
+        <p className="mt-1 text-sm text-fg-muted">No teams registered yet.</p>
       )}
       {event.registration_mode === "team" && teams && teams.length > 0 && (
         <ul className="mt-2 flex flex-col gap-2">
           {teams.map((team) => {
             const registration = Array.isArray(team.registration) ? team.registration[0] : team.registration;
             return (
-              <li key={team.id} className="rounded border border-gray-300 px-4 py-2 text-sm dark:border-neutral-800">
+              <li key={team.id} className="rounded border border-border px-4 py-2 text-sm">
                 <p className="font-medium">
                   {team.name}
                   {registration?.status === "waitlisted" && (
-                    <span className="ml-1 text-xs italic text-gray-500">(waitlisted)</span>
+                    <span className="ml-1 text-xs italic text-fg-muted">(waitlisted)</span>
                   )}
                   {registration?.status === "cancelled" && (
-                    <span className="ml-1 text-xs italic text-gray-500">(cancelled)</span>
+                    <span className="ml-1 text-xs italic text-fg-muted">(cancelled)</span>
                   )}
                 </p>
-                <p className="text-xs text-gray-600 dark:text-neutral-400">
+                <p className="text-xs text-fg-muted">
                   {team.members.length === 0
                     ? "No roster yet"
                     : team.members.map((m) => m.display_name).join(", ")}
@@ -198,14 +200,14 @@ export default async function AdminEventPage({
         </ul>
       )}
       {event.registration_mode === "individual" && (!individualRegistrations || individualRegistrations.length === 0) && (
-        <p className="mt-1 text-sm text-gray-600">No registrants yet.</p>
+        <p className="mt-1 text-sm text-fg-muted">No registrants yet.</p>
       )}
       {event.registration_mode === "individual" && individualRegistrations && individualRegistrations.length > 0 && (
         <ul className="mt-2 flex flex-col gap-2">
           {individualRegistrations.map((reg) => (
-            <li key={reg.id} className="rounded border border-gray-300 px-4 py-2 text-sm dark:border-neutral-800">
+            <li key={reg.id} className="rounded border border-border px-4 py-2 text-sm">
               {reg.display_name ?? "Registrant"}
-              {reg.status === "waitlisted" && <span className="ml-1 text-xs italic text-gray-500">(waitlisted)</span>}
+              {reg.status === "waitlisted" && <span className="ml-1 text-xs italic text-fg-muted">(waitlisted)</span>}
             </li>
           ))}
         </ul>
@@ -218,14 +220,14 @@ export default async function AdminEventPage({
           <input type="hidden" name="location_id" value={locationId} />
           <label className="flex flex-col gap-1 text-sm">
             Title
-            <input name="title" defaultValue={event.title} required className="rounded border px-3 py-2" />
+            <input name="title" defaultValue={event.title} required className="rounded border border-border px-3 py-2" />
           </label>
           <label className="flex flex-col gap-1 text-sm">
             Description
             <textarea
               name="description"
               defaultValue={event.description ?? ""}
-              className="rounded border px-3 py-2"
+              className="rounded border border-border px-3 py-2"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
@@ -233,7 +235,7 @@ export default async function AdminEventPage({
             <select
               name="event_type"
               defaultValue={event.event_type}
-              className="rounded border px-3 py-2 dark:bg-neutral-900"
+              className="rounded border border-border bg-card px-3 py-2"
             >
               <option value="tournament">Tournament</option>
               <option value="league">League</option>
@@ -246,7 +248,7 @@ export default async function AdminEventPage({
             <select
               name="registration_mode"
               defaultValue={event.registration_mode}
-              className="rounded border px-3 py-2 dark:bg-neutral-900"
+              className="rounded border border-border bg-card px-3 py-2"
             >
               <option value="individual">Individual</option>
               <option value="team">Team</option>
@@ -257,7 +259,7 @@ export default async function AdminEventPage({
             <select
               name="team_formation"
               defaultValue={event.team_formation ?? "self_formed"}
-              className="rounded border px-3 py-2 dark:bg-neutral-900"
+              className="rounded border border-border bg-card px-3 py-2"
             >
               <option value="self_formed">Players self-form teams</option>
               <option value="admin_assembled">We assemble teams</option>
@@ -270,7 +272,7 @@ export default async function AdminEventPage({
               type="number"
               min="1"
               defaultValue={event.capacity ?? ""}
-              className="rounded border px-3 py-2"
+              className="rounded border border-border px-3 py-2"
             />
           </label>
           {hasVenmoHandle ? (
@@ -282,11 +284,11 @@ export default async function AdminEventPage({
                 min="0"
                 step="0.01"
                 defaultValue={event.fee_cents ? (event.fee_cents / 100).toFixed(2) : ""}
-                className="rounded border px-3 py-2"
+                className="rounded border border-border px-3 py-2"
               />
             </label>
           ) : (
-            <p className="text-xs text-gray-600 dark:text-neutral-400">
+            <p className="text-xs text-fg-muted">
               Set your club&apos;s Venmo handle on the{" "}
               <Link href="/admin" className="underline">
                 club dashboard
@@ -299,7 +301,7 @@ export default async function AdminEventPage({
             <select
               name="status"
               defaultValue={event.status}
-              className="rounded border px-3 py-2 dark:bg-neutral-900"
+              className="rounded border border-border bg-card px-3 py-2"
             >
               <option value="draft">Draft (hidden from players)</option>
               <option value="published">Published</option>
@@ -317,7 +319,7 @@ export default async function AdminEventPage({
             <select
               name="best_of_sets"
               defaultValue={event.best_of_sets}
-              className="rounded border px-3 py-2 dark:bg-neutral-900"
+              className="rounded border border-border bg-card px-3 py-2"
             >
               <option value={1}>Best of 1</option>
               <option value={3}>Best of 3</option>
@@ -331,7 +333,7 @@ export default async function AdminEventPage({
               type="number"
               min="1"
               defaultValue={event.points_per_set}
-              className="rounded border px-3 py-2"
+              className="rounded border border-border px-3 py-2"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
@@ -341,11 +343,11 @@ export default async function AdminEventPage({
               type="number"
               min="1"
               defaultValue={event.win_by}
-              className="rounded border px-3 py-2"
+              className="rounded border border-border px-3 py-2"
             />
           </label>
 
-          <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+          <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
             Save
           </button>
         </form>
@@ -353,7 +355,7 @@ export default async function AdminEventPage({
 
       <h2 className="mt-10 text-lg font-medium">Sessions</h2>
       {(!sessions || sessions.length === 0) && (
-        <p className="mt-1 text-sm text-gray-600">No sessions scheduled yet.</p>
+        <p className="mt-1 text-sm text-fg-muted">No sessions scheduled yet.</p>
       )}
       <ul className="mt-4 flex flex-col gap-2">
         {(sessions ?? []).map((session) => {
@@ -361,7 +363,7 @@ export default async function AdminEventPage({
           return (
             <li
               key={session.id}
-              className="flex items-center justify-between rounded border border-gray-300 px-4 py-2 dark:border-neutral-800"
+              className="flex items-center justify-between rounded border border-border px-4 py-2"
             >
               <span className="text-sm">
                 {session.label ? `${session.label} — ` : ""}
@@ -373,7 +375,7 @@ export default async function AdminEventPage({
                 <input type="hidden" name="session_id" value={session.id} />
                 <input type="hidden" name="event_id" value={event.id} />
                 <input type="hidden" name="location_id" value={locationId} />
-                <button type="submit" className="text-xs text-red-700 underline dark:text-red-400">
+                <button type="submit" className="text-xs text-error-fg underline">
                   Remove
                 </button>
               </form>
@@ -385,9 +387,9 @@ export default async function AdminEventPage({
       <form action={addEventSession} className="mt-4 flex flex-wrap items-end gap-3">
         <input type="hidden" name="event_id" value={event.id} />
         <input type="hidden" name="location_id" value={locationId} />
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-fg-muted">
           Court
-          <select name="court_id" required className="rounded border px-3 py-2 text-sm dark:bg-neutral-900">
+          <select name="court_id" required className="rounded border border-border bg-card px-3 py-2 text-sm">
             {(courts ?? []).map((court) => (
               <option key={court.id} value={court.id}>
                 {court.name}
@@ -395,19 +397,19 @@ export default async function AdminEventPage({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-fg-muted">
           Label (optional)
-          <input name="label" placeholder="Round 1" className="rounded border px-3 py-2 text-sm" />
+          <input name="label" placeholder="Round 1" className="rounded border border-border px-3 py-2 text-sm" />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-fg-muted">
           Start
-          <input type="datetime-local" name="start_time" required className="rounded border px-3 py-2 text-sm" />
+          <input type="datetime-local" name="start_time" required className="rounded border border-border px-3 py-2 text-sm" />
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-600">
+        <label className="flex flex-col gap-1 text-xs text-fg-muted">
           End
-          <input type="datetime-local" name="end_time" required className="rounded border px-3 py-2 text-sm" />
+          <input type="datetime-local" name="end_time" required className="rounded border border-border px-3 py-2 text-sm" />
         </label>
-        <button type="submit" className="rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className={buttonClass("primary")}>
           Add Session
         </button>
       </form>
@@ -417,12 +419,12 @@ export default async function AdminEventPage({
           <h2 className="mt-10 text-lg font-medium">Assemble Teams</h2>
           {team_assembled && <SuccessBanner>Team created.</SuccessBanner>}
           {assemble_error && (
-            <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+            <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
               {assemble_error}
             </p>
           )}
           {(!ungroupedRegistrants || ungroupedRegistrants.length === 0) && (
-            <p className="mt-1 text-sm text-gray-600">No ungrouped registrants right now.</p>
+            <p className="mt-1 text-sm text-fg-muted">No ungrouped registrants right now.</p>
           )}
           {ungroupedRegistrants && ungroupedRegistrants.length > 0 && (
             <form action={assembleEventTeam} className="mt-4 flex flex-col gap-3">
@@ -430,7 +432,7 @@ export default async function AdminEventPage({
               <input type="hidden" name="location_id" value={locationId} />
               <label className="flex flex-col gap-1 text-sm">
                 Team name
-                <input name="team_name" required className="max-w-sm rounded border px-3 py-2" />
+                <input name="team_name" required className="max-w-sm rounded border border-border px-3 py-2" />
               </label>
               <div className="flex flex-col gap-1">
                 {ungroupedRegistrants.map((reg) => (
@@ -443,7 +445,7 @@ export default async function AdminEventPage({
               </div>
               <button
                 type="submit"
-                className="w-fit rounded bg-black px-4 py-2 text-sm text-white"
+                className={`w-fit ${buttonClass("primary")}`}
               >
                 Create Team
               </button>
@@ -455,15 +457,15 @@ export default async function AdminEventPage({
       {event.fee_cents && (
         <>
           <h2 className="mt-10 text-lg font-medium">Registrants &amp; Payments</h2>
-          <p className="text-sm text-gray-600 dark:text-neutral-400">Fee: {formatCents(event.fee_cents)}</p>
+          <p className="text-sm text-fg-muted">Fee: {formatCents(event.fee_cents)}</p>
           {payment_marked && <SuccessBanner>Payment status updated.</SuccessBanner>}
           {payment_error && (
-            <p className="mt-2 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+            <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
               {payment_error}
             </p>
           )}
           {(!registrations || registrations.length === 0) && (
-            <p className="mt-1 text-sm text-gray-600">No registrants yet.</p>
+            <p className="mt-1 text-sm text-fg-muted">No registrants yet.</p>
           )}
           <ul className="mt-4 flex flex-col gap-2">
             {(registrations ?? []).map((reg) => {
@@ -472,12 +474,12 @@ export default async function AdminEventPage({
               return (
                 <li
                   key={reg.id}
-                  className="flex items-center justify-between rounded border border-gray-300 px-4 py-2 dark:border-neutral-800"
+                  className="flex items-center justify-between rounded border border-border px-4 py-2"
                 >
                   <span className="text-sm">
                     {name}
-                    {reg.status === "cancelled" && <span className="ml-1 text-xs italic text-gray-500">(cancelled)</span>}
-                    {reg.status === "waitlisted" && <span className="ml-1 text-xs italic text-gray-500">(waitlisted)</span>}
+                    {reg.status === "cancelled" && <span className="ml-1 text-xs italic text-fg-muted">(cancelled)</span>}
+                    {reg.status === "waitlisted" && <span className="ml-1 text-xs italic text-fg-muted">(waitlisted)</span>}
                   </span>
                   <span className="flex items-center gap-3">
                     <span
@@ -485,7 +487,7 @@ export default async function AdminEventPage({
                         reg.payment_status === "paid"
                           ? "rounded bg-green-50 px-2 py-1 text-xs text-green-800 dark:bg-green-950 dark:text-green-300"
                           : reg.payment_status === "refunded"
-                            ? "rounded bg-gray-100 px-2 py-1 text-xs text-gray-700 dark:bg-neutral-800 dark:text-neutral-300"
+                            ? "rounded bg-active px-2 py-1 text-xs text-fg-muted"
                             : "rounded bg-yellow-50 px-2 py-1 text-xs text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300"
                       }
                     >
@@ -510,7 +512,7 @@ export default async function AdminEventPage({
                         <input type="hidden" name="registration_id" value={reg.id} />
                         <input type="hidden" name="event_id" value={event.id} />
                         <input type="hidden" name="location_id" value={locationId} />
-                        <button type="submit" className="text-xs text-red-700 underline dark:text-red-400">
+                        <button type="submit" className="text-xs text-error-fg underline">
                           Mark Refunded
                         </button>
                       </form>
