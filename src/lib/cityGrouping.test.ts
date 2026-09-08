@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { groupLocationsByCity, clubsInCity, resolveHomeCity, isKnownCity } from "@/lib/cityGrouping";
+import {
+  groupLocationsByCity,
+  clubsInCity,
+  resolveHomeCity,
+  isKnownCity,
+  featuredClubs,
+  filterCitiesByQuery,
+} from "@/lib/cityGrouping";
 
 describe("groupLocationsByCity", () => {
   it("returns empty groups for no locations", () => {
@@ -124,5 +131,67 @@ describe("isKnownCity", () => {
 
   it("returns false for an empty string", () => {
     expect(isKnownCity("", ["New York"])).toBe(false);
+  });
+});
+
+describe("featuredClubs", () => {
+  it("dedupes by orgId, summing locationCount", () => {
+    const locations = [
+      { city: "Westminster", orgId: "a", orgName: "Ace Volleyball" },
+      { city: "Westminster", orgId: "a", orgName: "Ace Volleyball" },
+      { city: "Camden", orgId: "b", orgName: "Spike Zone" },
+    ];
+    const result = featuredClubs(locations, 10);
+    expect(result).toEqual([
+      { orgId: "a", orgName: "Ace Volleyball", city: "Westminster", locationCount: 2 },
+      { orgId: "b", orgName: "Spike Zone", city: "Camden", locationCount: 1 },
+    ]);
+  });
+
+  it("sorts alphabetically by orgName", () => {
+    const locations = [
+      { city: "A", orgId: "z", orgName: "Zebra Club" },
+      { city: "B", orgId: "a", orgName: "Ace Club" },
+    ];
+    const result = featuredClubs(locations, 10);
+    expect(result.map((c) => c.orgId)).toEqual(["a", "z"]);
+  });
+
+  it("respects the limit", () => {
+    const locations = [
+      { city: "A", orgId: "1", orgName: "One" },
+      { city: "B", orgId: "2", orgName: "Two" },
+      { city: "C", orgId: "3", orgName: "Three" },
+    ];
+    expect(featuredClubs(locations, 2)).toHaveLength(2);
+  });
+
+  it("returns an empty array for empty input", () => {
+    expect(featuredClubs([], 5)).toEqual([]);
+  });
+});
+
+describe("filterCitiesByQuery", () => {
+  const cities = [
+    { city: "City of Westminster", clubCount: 2 },
+    { city: "Camden", clubCount: 1 },
+  ];
+
+  it("filters case-insensitively by substring", () => {
+    expect(filterCitiesByQuery(cities, "west")).toEqual([
+      { city: "City of Westminster", clubCount: 2 },
+    ]);
+  });
+
+  it("returns all cities unchanged for an empty query", () => {
+    expect(filterCitiesByQuery(cities, "")).toEqual(cities);
+  });
+
+  it("returns all cities unchanged for a whitespace-only query", () => {
+    expect(filterCitiesByQuery(cities, "   ")).toEqual(cities);
+  });
+
+  it("returns an empty array when nothing matches", () => {
+    expect(filterCitiesByQuery(cities, "nowhere")).toEqual([]);
   });
 });

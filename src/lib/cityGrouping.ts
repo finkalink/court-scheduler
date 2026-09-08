@@ -92,3 +92,45 @@ export function resolveHomeCity({
 export function isKnownCity(city: string, availableCities: string[]): boolean {
   return availableCities.includes(city);
 }
+
+export interface FeaturedClub {
+  orgId: string;
+  orgName: string;
+  city: string | null;
+  locationCount: number;
+}
+
+// Distinct clubs across every city (not filtered to one), sorted
+// alphabetically, capped to `limit`. Used by the landing page's
+// "Featured clubs" section -- a global sample, not a per-city list.
+export function featuredClubs<T extends { city: string | null; orgId: string; orgName: string }>(
+  locations: T[],
+  limit: number
+): FeaturedClub[] {
+  const countByClub = new Map<string, FeaturedClub>();
+  for (const location of locations) {
+    const existing = countByClub.get(location.orgId);
+    if (existing) {
+      existing.locationCount += 1;
+    } else {
+      countByClub.set(location.orgId, {
+        orgId: location.orgId,
+        orgName: location.orgName,
+        city: location.city,
+        locationCount: 1,
+      });
+    }
+  }
+  return Array.from(countByClub.values())
+    .sort((a, b) => a.orgName.localeCompare(b.orgName))
+    .slice(0, limit);
+}
+
+// Case-insensitive substring filter over already-grouped city counts, for
+// the hero search's `?q=` param. Empty/whitespace query returns `cities`
+// unchanged.
+export function filterCitiesByQuery(cities: CityGroup[], query: string): CityGroup[] {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return cities;
+  return cities.filter((c) => c.city.toLowerCase().includes(trimmed));
+}
