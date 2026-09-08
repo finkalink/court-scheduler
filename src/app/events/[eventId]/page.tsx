@@ -197,15 +197,17 @@ export default async function EventDetailPage({
       <div className="mt-2">
         <EventTypeBadge eventType={event.event_type} />
       </div>
-      <p className="mt-1 text-sm text-fg-muted">
-        {location && <>{location.name}</>}
-        {location && org?.id && " · "}
-        {org?.id && (
-          <Link href={`/clubs/${org.id}`} className="underline decoration-dotted">
-            {org.name}
-          </Link>
-        )}
-      </p>
+      {(location || org?.id) && (
+        <p className="mt-1 text-sm text-fg-muted">
+          {location && <>{location.name}</>}
+          {location && org?.id && " · "}
+          {org?.id && (
+            <Link href={`/clubs/${org.id}`} className="underline decoration-dotted">
+              {org.name}
+            </Link>
+          )}
+        </p>
+      )}
 
       {message && <SuccessBanner>{message}</SuccessBanner>}
 
