@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { formatInTimeZone } from "date-fns-tz";
 import type { Slot } from "@/lib/availability";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export default function TimeBlockPicker({
   slots,
@@ -88,8 +89,8 @@ export default function TimeBlockPicker({
               onClick={() => handleClick(slot)}
               className={
                 selected
-                  ? "rounded border border-black bg-black px-3 py-2 text-center text-sm text-white"
-                  : "rounded border border-gray-300 px-3 py-2 text-center text-sm hover:bg-gray-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800"
+                  ? "rounded border border-accent bg-accent px-3 py-2 text-center text-sm text-accent-fg"
+                  : "rounded border border-border px-3 py-2 text-center text-sm hover:bg-active"
               }
             >
               {label}
@@ -100,15 +101,11 @@ export default function TimeBlockPicker({
 
       <div className="mt-4">
         {bookHref ? (
-          <Link href={bookHref} className="inline-block rounded bg-black px-4 py-2 text-sm text-white">
+          <Link href={bookHref} className={buttonClass("primary")}>
             Continue
           </Link>
         ) : (
-          <button
-            type="button"
-            disabled
-            className="cursor-not-allowed rounded bg-gray-200 px-4 py-2 text-sm text-gray-500"
-          >
+          <button type="button" disabled className={buttonClass("primary", { disabled: true })}>
             Continue
           </button>
         )}
