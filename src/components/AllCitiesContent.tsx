@@ -2,10 +2,12 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { buildMapsUrl } from "@/lib/maps";
-import { groupLocationsByCity } from "@/lib/cityGrouping";
+import { groupLocationsByCity, filterCitiesByQuery } from "@/lib/cityGrouping";
 import { setCityOverride } from "@/app/actions/cityPreference";
 
-export default async function AllCitiesContent() {
+export default async function AllCitiesContent({
+  filterQuery,
+}: { filterQuery?: string } = {}) {
   const supabase = await createClient();
   const userAgent = (await headers()).get("user-agent");
 
@@ -38,16 +40,17 @@ export default async function AllCitiesContent() {
     });
 
   const { cities, otherLocations } = groupLocationsByCity(uniqueLocations);
+  const filteredCities = filterCitiesByQuery(cities, filterQuery ?? "");
   const sortedOtherLocations = [...otherLocations].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <>
-      {cities.length === 0 && sortedOtherLocations.length === 0 && (
+      {filteredCities.length === 0 && sortedOtherLocations.length === 0 && (
         <p className="mt-6 text-sm text-fg-muted">No locations available yet.</p>
       )}
 
       <ul className="mt-6 flex flex-col gap-3">
-        {cities.map((cityGroup) => (
+        {filteredCities.map((cityGroup) => (
           <li key={cityGroup.city}>
             <form action={setCityOverride}>
               <input type="hidden" name="city" value={cityGroup.city} />
