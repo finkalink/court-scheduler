@@ -38,6 +38,9 @@
   --success: #0F7A6B;
   --success-bg: #E6F5F2;
   --success-fg: #0B5D51;
+  --error: #DC2626;
+  --error-bg: #FDECEC;
+  --error-fg: #B91C1C;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -57,6 +60,9 @@
     --success: #2DD4BF;
     --success-bg: #10302B;
     --success-fg: #5EEAD4;
+    --error: #F87171;
+    --error-bg: #2A1414;
+    --error-fg: #FCA5A5;
     color-scheme: dark;
   }
 }
@@ -77,6 +83,9 @@
   --success: #2DD4BF;
   --success-bg: #10302B;
   --success-fg: #5EEAD4;
+  --error: #F87171;
+  --error-bg: #2A1414;
+  --error-fg: #FCA5A5;
   color-scheme: dark;
 }
 
@@ -96,6 +105,9 @@
   --color-success: var(--success);
   --color-success-bg: var(--success-bg);
   --color-success-fg: var(--success-fg);
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
+  --color-error-fg: var(--error-fg);
   --font-sans: var(--font-barlow);
   --font-display: var(--font-barlow-condensed);
 }
