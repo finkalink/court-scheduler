@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getIsPlatformAdmin } from "./platformAdmin";
 
-function mockSupabase(row: { is_platform_admin: boolean } | null) {
+function mockSupabase(row: { is_platform_admin: boolean } | null): SupabaseClient {
   return {
     from: () => ({
       select: () => ({
@@ -10,7 +11,7 @@ function mockSupabase(row: { is_platform_admin: boolean } | null) {
         }),
       }),
     }),
-  } as any;
+  } as unknown as SupabaseClient;
 }
 
 describe("getIsPlatformAdmin", () => {

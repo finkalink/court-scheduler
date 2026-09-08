@@ -24,8 +24,14 @@ function buildUser(overrides: Partial<UserRow> = {}): UserRow {
   };
 }
 
-function chainable(resolveValue: { data: unknown }): any {
-  const obj: any = {
+interface Chainable {
+  ilike: () => Chainable;
+  order: () => Chainable;
+  limit: () => Promise<{ data: unknown }>;
+}
+
+function chainable(resolveValue: { data: unknown }): Chainable {
+  const obj: Chainable = {
     ilike: () => obj,
     order: () => obj,
     limit: () => Promise.resolve(resolveValue),
@@ -97,6 +103,19 @@ describe("SiteAdminUsersPage", () => {
     const ui = await SiteAdminUsersPage({ searchParams: Promise.resolve({ q: "nobody" }) });
     render(ui);
     expect(screen.getByText('No users match "nobody".')).toBeInTheDocument();
+  });
+
+  it("hides the site-admin toggle for the signed-in admin's own row, but keeps the deactivate toggle", async () => {
+    mockClient({
+      isPlatformAdmin: true,
+      users: [buildUser({ id: "user-1", email: "self@example.com" })],
+    });
+    const ui = await SiteAdminUsersPage({ searchParams: Promise.resolve({}) });
+    render(ui);
+    expect(screen.getByText("self@example.com")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Make site admin" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Remove site admin" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Deactivate" })).toBeInTheDocument();
   });
 
   it("renders a role-edit form for a non-owner org membership", async () => {
