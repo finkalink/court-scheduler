@@ -6,6 +6,7 @@ import { resolveHomeCity } from "@/lib/cityGrouping";
 import { clearCityOverride } from "@/app/actions/cityPreference";
 import CityContent from "@/components/CityContent";
 import AllCitiesContent from "@/components/AllCitiesContent";
+import LandingPage from "@/components/LandingPage";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -31,6 +32,9 @@ export default async function Home() {
   const resolvedCity = resolveHomeCity({ overrideCity, defaultCity, availableCities });
 
   if (!resolvedCity) {
+    if (!user) {
+      return <LandingPage />;
+    }
     return (
       <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
         <h1 className="text-xl font-semibold sm:text-2xl">Find a Court</h1>
