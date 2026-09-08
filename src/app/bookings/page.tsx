@@ -42,18 +42,18 @@ export default async function MyBookingsPage({
 
       {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
       {error && (
-        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-4 rounded bg-error-bg p-3 text-sm text-error-fg">
           {error}
         </p>
       )}
 
-      <div className="mt-4 flex gap-4 border-b border-gray-300 dark:border-neutral-800">
+      <div className="mt-4 flex gap-4 border-b border-border">
         <Link
           href="/bookings?tab=upcoming"
           className={
             activeTab === "upcoming"
-              ? "border-b-2 border-black px-1 pb-2 text-sm font-medium dark:border-white"
-              : "px-1 pb-2 text-sm text-gray-600 dark:text-neutral-400"
+              ? "border-b-2 border-accent px-1 pb-2 text-sm font-medium"
+              : "px-1 pb-2 text-sm text-fg-muted"
           }
         >
           Upcoming
@@ -62,8 +62,8 @@ export default async function MyBookingsPage({
           href="/bookings?tab=past"
           className={
             activeTab === "past"
-              ? "border-b-2 border-black px-1 pb-2 text-sm font-medium dark:border-white"
-              : "px-1 pb-2 text-sm text-gray-600 dark:text-neutral-400"
+              ? "border-b-2 border-accent px-1 pb-2 text-sm font-medium"
+              : "px-1 pb-2 text-sm text-fg-muted"
           }
         >
           Past
@@ -71,7 +71,7 @@ export default async function MyBookingsPage({
       </div>
 
       {visibleBookings.length === 0 && (
-        <p className="mt-6 text-sm text-gray-600">
+        <p className="mt-6 text-sm text-fg-muted">
           {activeTab === "past" ? "No past bookings." : "You don't have any upcoming bookings."}
         </p>
       )}
@@ -91,18 +91,18 @@ export default async function MyBookingsPage({
           return (
             <li
               key={booking.id}
-              className="flex items-center justify-between rounded border border-gray-300 px-4 py-3"
+              className="flex items-center justify-between rounded border border-border px-4 py-3"
             >
               <div>
                 <p className="font-medium">
                   {dateLabel} · {timeLabel}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-fg-muted">
                   {court?.name}
                   {organization?.name ? ` · ${organization.name}` : ""}
                 </p>
                 {formatRequestedConfig(booking.requested_net_height, booking.requested_court_lines) && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-fg-muted">
                     {formatRequestedConfig(booking.requested_net_height, booking.requested_court_lines)}
                   </p>
                 )}
@@ -115,13 +115,13 @@ export default async function MyBookingsPage({
                   className={
                     booking.status === "confirmed"
                       ? "rounded bg-green-50 px-2 py-1 text-xs text-green-800 dark:bg-green-950 dark:text-green-300"
-                      : "rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                      : "rounded bg-active px-2 py-1 text-xs text-fg-muted"
                   }
                 >
                   {booking.status}
                 </span>
                 {timeStatus === "in_progress" && booking.status === "confirmed" && (
-                  <span className="text-xs text-gray-500">In progress</span>
+                  <span className="text-xs text-fg-muted">In progress</span>
                 )}
                 {isCancellable(booking.status, timeStatus) && (
                   <form action={cancelBooking}>
@@ -129,7 +129,7 @@ export default async function MyBookingsPage({
                     <input type="hidden" name="location_id" value={location?.id ?? ""} />
                     <input type="hidden" name="court_id" value={court?.id ?? ""} />
                     <input type="hidden" name="redirect_to" value="/bookings" />
-                    <button type="submit" className="text-xs text-red-700 underline">
+                    <button type="submit" className="text-xs text-error-fg underline">
                       Cancel
                     </button>
                   </form>

@@ -6,6 +6,7 @@ import SkillLevelPicker from "@/components/SkillLevelPicker";
 import SuccessBanner from "@/components/SuccessBanner";
 import { isProfileComplete } from "@/lib/userProfile";
 import { isSafeRedirectPath } from "@/lib/redirects";
+import { buttonClass } from "@/lib/buttonStyles";
 
 const FIELD_LABELS: { key: "name" | "gender" | "skill_level"; label: string }[] = [
   { key: "name", label: "Name" },
@@ -50,7 +51,7 @@ export default async function ProfilePage({
       {message && <SuccessBanner>{message}</SuccessBanner>}
       {saved && <SuccessBanner>Profile saved.</SuccessBanner>}
       {error && (
-        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-4 rounded bg-error-bg p-3 text-sm text-error-fg">
           {error}
         </p>
       )}
@@ -64,14 +65,14 @@ export default async function ProfilePage({
         {next && <input type="hidden" name="next" value={next} />}
         <label className="flex flex-col gap-1 text-sm">
           Name
-          <input name="name" defaultValue={profile?.name ?? ""} className="rounded border px-3 py-2" />
+          <input name="name" defaultValue={profile?.name ?? ""} className="rounded border border-border px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Gender
           <select
             name="gender"
             defaultValue={profile?.gender ?? ""}
-            className="rounded border px-3 py-2 dark:bg-neutral-900"
+            className="rounded border border-border bg-card px-3 py-2"
           >
             <option value="">-- select --</option>
             <option value="male">Male</option>
@@ -88,7 +89,7 @@ export default async function ProfilePage({
           <select
             name="default_city"
             defaultValue={profile?.default_city ?? ""}
-            className="rounded border px-3 py-2 dark:bg-neutral-900"
+            className="rounded border border-border bg-card px-3 py-2"
           >
             <option value="">-- none --</option>
             {availableCities.map((city) => (
@@ -97,7 +98,7 @@ export default async function ProfilePage({
               </option>
             ))}
           </select>
-          <span className="text-xs text-gray-600 dark:text-neutral-400">
+          <span className="text-xs text-fg-muted">
             Shown by default when you visit Find a Court.
           </span>
         </label>
@@ -110,13 +111,13 @@ export default async function ProfilePage({
           />
           <span>
             Share my stats publicly
-            <span className="block text-xs text-gray-600 dark:text-neutral-400">
+            <span className="block text-xs text-fg-muted">
               Shows your name, skill level, and win/loss record on a public
               page anyone with the link can view. Off by default.
             </span>
           </span>
         </label>
-        <button type="submit" className="w-fit rounded bg-black px-4 py-2 text-sm text-white">
+        <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
           Save
         </button>
       </form>

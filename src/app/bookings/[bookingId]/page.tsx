@@ -80,16 +80,16 @@ export default async function BookingDetailPage({
       {booked && <SuccessBanner>Booking confirmed.</SuccessBanner>}
       {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
 
-      <div className="mt-6 rounded border border-gray-300 px-4 py-3 dark:border-neutral-800">
+      <div className="mt-6 rounded border border-border px-4 py-3">
         <p className="font-medium">
           {dateLabel} · {timeLabel}
         </p>
-        <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400">
+        <p className="mt-1 text-sm text-fg-muted">
           {court?.name}
           {organization?.name ? ` · ${organization.name}` : ""}
         </p>
         {requestedConfig && (
-          <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400">{requestedConfig}</p>
+          <p className="mt-1 text-sm text-fg-muted">{requestedConfig}</p>
         )}
 
         <div className="mt-3 flex items-center gap-2">
@@ -97,13 +97,13 @@ export default async function BookingDetailPage({
             className={
               booking.status === "confirmed"
                 ? "rounded bg-green-50 px-2 py-1 text-xs text-green-800 dark:bg-green-950 dark:text-green-300"
-                : "rounded bg-gray-100 px-2 py-1 text-xs text-gray-600"
+                : "rounded bg-active px-2 py-1 text-xs text-fg-muted"
             }
           >
             {booking.status}
           </span>
           {timeStatus === "in_progress" && booking.status === "confirmed" && (
-            <span className="text-xs text-gray-500">In progress</span>
+            <span className="text-xs text-fg-muted">In progress</span>
           )}
         </div>
 
@@ -130,7 +130,7 @@ export default async function BookingDetailPage({
             <input type="hidden" name="location_id" value={location?.id ?? ""} />
             <input type="hidden" name="court_id" value={court?.id ?? ""} />
             <input type="hidden" name="redirect_to" value={`/bookings/${booking.id}`} />
-            <button type="submit" className="text-sm text-red-700 underline">
+            <button type="submit" className="text-sm text-error-fg underline">
               Cancel booking
             </button>
           </form>

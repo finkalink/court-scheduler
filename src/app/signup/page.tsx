@@ -1,4 +1,5 @@
 import { signUp } from "@/app/actions/auth";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export default async function SignupPage({
   searchParams,
@@ -12,7 +13,7 @@ export default async function SignupPage({
       <h1 className="text-xl font-semibold sm:text-2xl">Create an Account</h1>
 
       {error && (
-        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-4 rounded bg-error-bg p-3 text-sm text-error-fg">
           {error}
         </p>
       )}
@@ -20,7 +21,7 @@ export default async function SignupPage({
       <form action={signUp} className="mt-6 flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
           Email
-          <input name="email" type="email" required className="rounded border px-3 py-2" />
+          <input name="email" type="email" required className="rounded border border-border px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Password
@@ -29,15 +30,15 @@ export default async function SignupPage({
             type="password"
             required
             minLength={6}
-            className="rounded border px-3 py-2"
+            className="rounded border border-border px-3 py-2"
           />
         </label>
-        <button type="submit" className="rounded bg-black px-4 py-2 text-white">
+        <button type="submit" className={buttonClass("primary")}>
           Sign up
         </button>
       </form>
 
-      <p className="mt-4 text-sm text-gray-600">
+      <p className="mt-4 text-sm text-fg-muted">
         Already have an account?{" "}
         <a href="/login" className="underline">
           Sign in

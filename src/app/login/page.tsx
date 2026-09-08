@@ -1,4 +1,5 @@
 import { signIn } from "@/app/actions/auth";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export default async function LoginPage({
   searchParams,
@@ -12,12 +13,12 @@ export default async function LoginPage({
       <h1 className="text-xl font-semibold sm:text-2xl">Sign In</h1>
 
       {message && (
-        <p className="mt-4 rounded bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+        <p className="mt-4 rounded bg-active p-3 text-sm text-fg">
           {message}
         </p>
       )}
       {error && (
-        <p className="mt-4 rounded bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-4 rounded bg-error-bg p-3 text-sm text-error-fg">
           {error}
         </p>
       )}
@@ -26,18 +27,18 @@ export default async function LoginPage({
         <input type="hidden" name="next" value={next ?? ""} />
         <label className="flex flex-col gap-1 text-sm">
           Email
-          <input name="email" type="email" required className="rounded border px-3 py-2" />
+          <input name="email" type="email" required className="rounded border border-border px-3 py-2" />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Password
-          <input name="password" type="password" required className="rounded border px-3 py-2" />
+          <input name="password" type="password" required className="rounded border border-border px-3 py-2" />
         </label>
-        <button type="submit" className="rounded bg-black px-4 py-2 text-white">
+        <button type="submit" className={buttonClass("primary")}>
           Sign in
         </button>
       </form>
 
-      <p className="mt-4 text-sm text-gray-600">
+      <p className="mt-4 text-sm text-fg-muted">
         No account?{" "}
         <a href="/signup" className="underline">
           Sign up

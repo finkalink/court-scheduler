@@ -19,7 +19,7 @@ export default async function PublicPlayerPage({
   if (!stats) {
     return (
       <div className="mx-auto mt-6 max-w-sm px-4 sm:mt-10 sm:px-0">
-        <p className="text-sm text-gray-600 dark:text-neutral-400">
+        <p className="text-sm text-fg-muted">
           This profile isn&apos;t available.
         </p>
       </div>
@@ -30,12 +30,12 @@ export default async function PublicPlayerPage({
     <div className="mx-auto mt-6 max-w-sm px-4 sm:mt-10 sm:px-0">
       <h1 className="text-xl font-semibold sm:text-2xl">{stats.name ?? "Player"}</h1>
       {stats.skill_level && (
-        <p className="mt-1 text-sm text-gray-600 dark:text-neutral-400">{stats.skill_level}</p>
+        <p className="mt-1 text-sm text-fg-muted">{stats.skill_level}</p>
       )}
       <p className="mt-4 text-lg">
         {stats.wins}&ndash;{stats.losses}
       </p>
-      <p className="text-sm text-gray-600 dark:text-neutral-400">
+      <p className="text-sm text-fg-muted">
         {stats.games_played} game{stats.games_played === 1 ? "" : "s"} played
       </p>
     </div>
