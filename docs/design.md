@@ -6,17 +6,17 @@ Foundational aesthetic rules for any UI work on court-scheduler. These apply on 
 
 - Never ship `font-family: system-ui`, `-apple-system`, `Arial`, `Helvetica`, or the Tailwind default sans stack as the visible typeface. These read as "unstyled."
 - Every screen pairs exactly two typefaces:
-  - **Display font** — headings, hero text, nav wordmark, anything meant to carry personality. Pick something with real character (a serif with contrast, a grotesque with distinctive letterforms, a slab) — not another neutral grotesque. (A condensed cut of the body font's own family — e.g. Barlow Condensed alongside Barlow — is an acceptable exception to "not another neutral grotesque": the compression itself reads as characterful, particularly for an athletic/sports register, even though it's the same type family underneath. This isn't a license to reach for any weight/width variant of the body font and call it a display font — the condensed-cut case specifically is what's exempted.)
+  - **Display font** — headings, hero text, nav wordmark, anything meant to carry personality. Pick something with real character (a serif with contrast, a grotesque with distinctive letterforms, a slab) — not another neutral grotesque.
   - **Body font** — paragraphs, form labels, table data, buttons. Optimized for legibility at small sizes, quiet, gets out of the way.
 - Load both as real font files (Google Fonts via `next/font/google`, or self-hosted) — never rely on the OS default resolving to something reasonable.
 - Wire the pair into Tailwind as named tokens, not ad hoc classes:
   ```css
   @theme {
     --font-display: "Fraunces", "Georgia", serif;
-    --font-sans: "Inter", "Helvetica Neue", sans-serif;
+    --font-body: "Inter", "Helvetica Neue", sans-serif;
   }
   ```
-  Use `font-display` / `font-sans` utility classes everywhere — a component reaching for a raw font name instead of the token is a sign the pairing isn't actually wired up. (Named `--font-sans`/`font-sans` for the body role, matching Tailwind's own built-in token name and this codebase's actual `globals.css` — not `--font-body`/`font-body`.)
+  Use `font-display` / `font-body` utility classes everywhere — a component reaching for a raw font name instead of the token is a sign the pairing isn't actually wired up.
 - Fallback stacks are required (real fonts fail to load on flaky connections) but the fallback should never be what most users see.
 
 ## 2. Color ratio — dominant tone + one sharp accent
@@ -47,7 +47,6 @@ Foundational aesthetic rules for any UI work on court-scheduler. These apply on 
 
 ## 4. Polish — subtle texture, not flat/default
 
-- Scope: this rule targets marketing/landing surfaces (heroes, section backgrounds on public-facing pages), not the functional dashboard — the booking grid, admin tables, and forms stay flat/token-driven per §3's dense-UI carve-out; don't read this as a mandate to add grain overlays or glass panels to working UI.
 - Flat single-color surfaces with no texture read as a wireframe, not a finished product. Add restrained texture to large surface areas (heroes, section backgrounds, cards):
   - **Noise overlays** — a low-opacity grain layer over a flat color/gradient to kill banding and add tactility.
   - **Gradient meshes** — soft, multi-stop gradients (not a single linear two-color fade) behind hero/marketing content.

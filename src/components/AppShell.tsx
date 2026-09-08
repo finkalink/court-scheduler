@@ -18,7 +18,7 @@ export default function AppShell({
   initialTheme: Theme | null;
   children: React.ReactNode;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
   const findCourtActive =
@@ -31,184 +31,128 @@ export default function AppShell({
   const bookingsActive = pathname.startsWith("/bookings");
   const adminActive = pathname.startsWith("/admin");
   const profileActive = pathname.startsWith("/profile");
-  const adminLocationsActive = pathname === "/admin" || pathname.startsWith("/admin/locations");
-  const adminTeamActive = pathname.startsWith("/admin/team");
 
-  const closeMenu = () => setMenuOpen(false);
-
-  const navLinkClass = (active: boolean) =>
-    `text-sm font-semibold ${active ? "text-fg" : "text-fg-muted hover:text-fg"}`;
-
-  const mobileLinkClass = (active: boolean) =>
+  const linkClass = (active: boolean) =>
     `block rounded px-3 py-2 text-sm ${
-      active ? "bg-active font-medium text-fg" : "text-fg-muted hover:bg-active"
-    }`;
-
-  const subNavLinkClass = (active: boolean) =>
-    `text-xs font-semibold uppercase tracking-wide ${
-      active ? "text-status-fg" : "text-fg-muted hover:text-fg"
+      active ? "bg-active font-medium" : "text-fg-muted hover:bg-active"
     }`;
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-border bg-card">
-        <div className="flex items-center justify-between px-4 py-3 sm:px-6">
-          <Link
-            href="/"
-            className="font-display text-lg uppercase tracking-wide text-fg"
-            onClick={closeMenu}
-          >
-            Court Scheduler<span className="text-accent">.</span>
+      <div className="flex items-center justify-between border-b border-border bg-card px-4 py-3 text-fg sm:hidden">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Open navigation"
+          className="text-xl leading-none"
+        >
+          &#9776;
+        </button>
+        <span className="font-semibold">Court Scheduler</span>
+        <span className="w-6" />
+      </div>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/30 sm:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-card text-fg transition-transform sm:translate-x-0 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between px-4 py-3 sm:py-4">
+          <Link href="/" className="font-semibold" onClick={() => setOpen(false)}>
+            Court Scheduler
           </Link>
-
-          <nav aria-label="Primary" className="hidden items-center gap-6 sm:flex">
-            <Link href="/" className={navLinkClass(findCourtActive)}>
-              Find a Court
-            </Link>
-            <Link href="/events" className={navLinkClass(eventsActive)}>
-              Events
-            </Link>
-            {userEmail && (
-              <Link href="/bookings" className={navLinkClass(bookingsActive)}>
-                My Bookings
-              </Link>
-            )}
-            {userEmail && (
-              <Link href="/events/registrations" className={navLinkClass(myEventsActive)}>
-                My Events
-              </Link>
-            )}
-            {userEmail && (
-              <Link href="/profile" className={navLinkClass(profileActive)}>
-                Profile
-              </Link>
-            )}
-            {isOrgMember && (
-              <Link href="/admin" className={navLinkClass(adminActive)}>
-                Admin Dashboard
-              </Link>
-            )}
-          </nav>
-
-          <div className="hidden items-center gap-4 sm:flex">
-            <ThemeToggle initialTheme={initialTheme} />
-            {userEmail ? (
-              <div className="flex items-center gap-3 text-sm">
-                <span className="max-w-[12rem] truncate text-fg-muted">{userEmail}</span>
-                <form action={signOut}>
-                  <button type="submit" className="text-link underline">
-                    Sign out
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 text-sm">
-                <Link href="/login" className="text-link underline">
-                  Sign In
-                </Link>
-                <Link href="/signup" className="text-link underline">
-                  Sign Up
-                </Link>
-              </div>
-            )}
-          </div>
-
           <button
             type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-            aria-expanded={menuOpen}
-            className="text-xl leading-none text-fg sm:hidden"
+            onClick={() => setOpen(false)}
+            aria-label="Close navigation"
+            className="text-lg leading-none sm:hidden"
           >
-            {menuOpen ? "✕" : "☰"}
+            &#10005;
           </button>
         </div>
 
-        {isOrgMember && adminActive && (
-          <div className="hidden border-t border-border px-4 py-2 sm:flex sm:gap-5 sm:px-6">
-            <Link href="/admin" className={subNavLinkClass(adminLocationsActive)}>
-              Locations
+        <nav className="flex flex-1 flex-col gap-1 px-2">
+          <Link href="/" className={linkClass(findCourtActive)} onClick={() => setOpen(false)}>
+            Find a Court
+          </Link>
+          <Link href="/events" className={linkClass(eventsActive)} onClick={() => setOpen(false)}>
+            Events
+          </Link>
+          {userEmail && (
+            <Link
+              href="/bookings"
+              className={linkClass(bookingsActive)}
+              onClick={() => setOpen(false)}
+            >
+              My Bookings
             </Link>
-            <Link href="/admin/team" className={subNavLinkClass(adminTeamActive)}>
-              Team
+          )}
+          {userEmail && (
+            <Link
+              href="/events/registrations"
+              className={linkClass(myEventsActive)}
+              onClick={() => setOpen(false)}
+            >
+              My Events
             </Link>
-          </div>
-        )}
-
-        {menuOpen && (
-          <div role="region" aria-label="Mobile menu" className="border-t border-border px-2 py-2 sm:hidden">
-            <Link href="/" className={mobileLinkClass(findCourtActive)} onClick={closeMenu}>
-              Find a Court
+          )}
+          {userEmail && (
+            <Link
+              href="/profile"
+              className={linkClass(profileActive)}
+              onClick={() => setOpen(false)}
+            >
+              Profile
             </Link>
-            <Link href="/events" className={mobileLinkClass(eventsActive)} onClick={closeMenu}>
-              Events
-            </Link>
-            {userEmail && (
-              <Link href="/bookings" className={mobileLinkClass(bookingsActive)} onClick={closeMenu}>
-                My Bookings
-              </Link>
-            )}
-            {userEmail && (
+          )}
+          {isOrgMember && (
+            <>
+              <div className="my-2 border-t border-border" />
               <Link
-                href="/events/registrations"
-                className={mobileLinkClass(myEventsActive)}
-                onClick={closeMenu}
+                href="/admin"
+                className={linkClass(adminActive)}
+                onClick={() => setOpen(false)}
               >
-                My Events
+                Admin Dashboard
               </Link>
-            )}
-            {userEmail && (
-              <Link href="/profile" className={mobileLinkClass(profileActive)} onClick={closeMenu}>
-                Profile
-              </Link>
-            )}
-            {isOrgMember && (
-              <>
-                <div className="my-2 border-t border-border" />
-                <Link
-                  href="/admin"
-                  className={mobileLinkClass(adminLocationsActive)}
-                  onClick={closeMenu}
-                >
-                  Admin: Locations
-                </Link>
-                <Link
-                  href="/admin/team"
-                  className={mobileLinkClass(adminTeamActive)}
-                  onClick={closeMenu}
-                >
-                  Admin: Team
-                </Link>
-              </>
-            )}
-            <div className="my-2 border-t border-border" />
-            <div className="px-3 py-2">
-              <ThemeToggle initialTheme={initialTheme} />
-            </div>
-            {userEmail ? (
-              <div className="flex flex-col gap-2 px-3 py-2 text-sm">
-                <span className="truncate text-fg-muted">{userEmail}</span>
-                <form action={signOut}>
-                  <button type="submit" className="text-left text-link underline">
-                    Sign out
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 px-3 py-2 text-sm">
-                <Link href="/login" className="text-link underline" onClick={closeMenu}>
-                  Sign In
-                </Link>
-                <Link href="/signup" className="text-link underline" onClick={closeMenu}>
-                  Sign Up
-                </Link>
-              </div>
-            )}
-          </div>
-        )}
-      </header>
+            </>
+          )}
+        </nav>
 
-      <div>{children}</div>
+        <div className="border-t border-border px-4 py-3 text-sm">
+          <div className="mb-3">
+            <ThemeToggle initialTheme={initialTheme} />
+          </div>
+          {userEmail ? (
+            <div className="flex flex-col gap-2">
+              <span className="truncate text-fg-muted">{userEmail}</span>
+              <form action={signOut}>
+                <button type="submit" className="text-left text-link underline">
+                  Sign out
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <Link href="/login" className="text-link underline" onClick={() => setOpen(false)}>
+                Sign In
+              </Link>
+              <Link href="/signup" className="text-link underline" onClick={() => setOpen(false)}>
+                Sign Up
+              </Link>
+            </div>
+          )}
+        </div>
+      </aside>
+
+      <div className="sm:pl-64">{children}</div>
     </div>
   );
 }

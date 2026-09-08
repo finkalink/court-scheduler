@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Barlow, Barlow_Condensed } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
@@ -7,15 +7,13 @@ import { isValidTheme, THEME_COOKIE_NAME } from "@/lib/theme";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 
-const barlow = Barlow({
-  variable: "--font-barlow",
-  weight: ["400", "500", "600", "700"],
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const barlowCondensed = Barlow_Condensed({
-  variable: "--font-barlow-condensed",
-  weight: ["600", "700", "800"],
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -40,7 +38,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-theme={initialTheme ?? undefined}
-      className={`${barlow.variable} ${barlowCondensed.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">
         <AppShell userEmail={user?.email ?? null} isOrgMember={!!membership} initialTheme={initialTheme}>
