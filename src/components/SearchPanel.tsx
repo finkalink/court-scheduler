@@ -12,7 +12,7 @@ export default function SearchPanel({
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handlePointerDown(event: MouseEvent) {
+    function handleOutsideClick(event: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
         onClose();
       }
@@ -22,10 +22,10 @@ export default function SearchPanel({
         onClose();
       }
     }
-    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("click", handleOutsideClick);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("click", handleOutsideClick);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose]);

@@ -39,7 +39,7 @@ describe("SearchPanel", () => {
         <SearchPanel isPlatformAdmin={false} onClose={onClose} />
       </div>
     );
-    fireEvent.mouseDown(screen.getByTestId("outside"));
+    fireEvent.click(screen.getByTestId("outside"));
     expect(onClose).toHaveBeenCalled();
   });
 });

@@ -186,6 +186,19 @@ describe("AppShell", () => {
     expect(screen.getByRole("region", { name: "Search" })).toBeInTheDocument();
   });
 
+  it("closes the search panel when the search button is clicked again", () => {
+    render(
+      <AppShell userEmail={null} isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
+        <div />
+      </AppShell>
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Open search" }));
+    expect(screen.getByRole("region", { name: "Search" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close search" }));
+    expect(screen.queryByRole("region", { name: "Search" })).not.toBeInTheDocument();
+  });
+
   it("renders children", () => {
     render(
       <AppShell userEmail={null} isOrgMember={false} isPlatformAdmin={false} initialTheme="light">
