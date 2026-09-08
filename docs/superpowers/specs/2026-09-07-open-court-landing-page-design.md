@@ -36,8 +36,8 @@ above this page; the landing page itself starts below the header.
   to `/cities?q=<text>`, which server-side substring-filters the existing
   city list. No client-side JS, no autocomplete dropdown.
 - **No new icon library.** "How it works" steps use numbered circles
-  (`1`/`2`/`3` in `--accent`), matching this codebase's existing
-  no-icon-dependency convention.
+  (`1`/`2`/`3` in `bg-status`/`text-status-fg`), matching this codebase's
+  existing no-icon-dependency convention.
 - **No image assets.** All visual interest comes from color, type, and
   layout — consistent with the rest of the app (no photography anywhere
   today).
@@ -233,7 +233,7 @@ export default async function LandingPage() {
               type="text"
               name="q"
               placeholder="City of Westminster"
-              className="h-12 flex-1 rounded-lg border-0 bg-white/10 px-4 text-sm text-white placeholder:text-white/50 focus:outline-2 focus:outline-accent"
+              className="h-12 flex-1 rounded-lg border-0 bg-white/10 px-4 text-sm text-white placeholder:text-white/60 focus:outline-2 focus:outline-accent"
             />
             <button
               type="submit"
@@ -301,7 +301,7 @@ export default async function LandingPage() {
                 }`}
               >
                 <p className="text-sm font-medium">{club.orgName}</p>
-                <p className={`text-xs ${i === 1 ? "text-accent-fg/70" : "text-white/55"}`}>
+                <p className={`text-xs ${i === 1 ? "text-accent-fg" : "text-white/55"}`}>
                   {club.locationCount} location{club.locationCount === 1 ? "" : "s"}
                 </p>
               </Link>

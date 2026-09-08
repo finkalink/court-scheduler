@@ -46,7 +46,11 @@ export default async function AllCitiesContent({
   return (
     <>
       {filteredCities.length === 0 && sortedOtherLocations.length === 0 && (
-        <p className="mt-6 text-sm text-fg-muted">No locations available yet.</p>
+        <p className="mt-6 text-sm text-fg-muted">
+          {filterQuery && filterQuery.trim()
+            ? `No cities match "${filterQuery}".`
+            : "No locations available yet."}
+        </p>
       )}
 
       <ul className="mt-6 flex flex-col gap-3">

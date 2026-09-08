@@ -66,7 +66,8 @@ export default async function LandingPage() {
               type="text"
               name="q"
               placeholder="City of Westminster"
-              className="h-12 flex-1 rounded-lg border-0 bg-white/10 px-4 text-sm text-white placeholder:text-white/50 focus:outline-2 focus:outline-accent"
+              aria-label="Search cities"
+              className="h-12 flex-1 rounded-lg border-0 bg-white/10 px-4 text-sm text-white placeholder:text-white/60 focus:outline-2 focus:outline-accent"
             />
             <button
               type="submit"
@@ -96,7 +97,7 @@ export default async function LandingPage() {
 
       {upcomingEvents.length > 0 && (
         <section className="mx-auto max-w-3xl px-4 pb-10 sm:px-6">
-          <p className="mb-3 text-sm font-medium text-fg">Upcoming events</p>
+          <h2 className="mb-3 text-sm font-medium text-fg">Upcoming events</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {upcomingEvents.map((event, i) => (
               <div key={event.id} className="relative">
@@ -123,7 +124,7 @@ export default async function LandingPage() {
 
       {clubs.length > 0 && (
         <section className="mx-auto max-w-3xl px-4 pb-16 sm:px-6">
-          <p className="mb-3 text-sm font-medium text-fg">Featured clubs</p>
+          <h2 className="mb-3 text-sm font-medium text-fg">Featured clubs</h2>
           <div className="grid grid-cols-3 gap-3">
             {clubs.map((club, i) => (
               <Link
@@ -134,7 +135,7 @@ export default async function LandingPage() {
                 }`}
               >
                 <p className="text-sm font-medium">{club.orgName}</p>
-                <p className={`text-xs ${i === 1 ? "text-accent-fg/70" : "text-white/55"}`}>
+                <p className={`text-xs ${i === 1 ? "text-accent-fg" : "text-white/55"}`}>
                   {club.locationCount} location{club.locationCount === 1 ? "" : "s"}
                 </p>
               </Link>

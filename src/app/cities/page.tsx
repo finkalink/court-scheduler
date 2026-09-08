@@ -5,7 +5,8 @@ export default async function CitiesPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const { q } = await searchParams;
+  const rawQ = (await searchParams).q;
+  const q = Array.isArray(rawQ) ? rawQ[0] : rawQ;
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <h1 className="text-xl font-semibold sm:text-2xl">Find a Court</h1>

@@ -98,4 +98,20 @@ describe("AllCitiesContent", () => {
     expect(screen.getByText("City of Westminster")).toBeInTheDocument();
     expect(screen.getByText("Camden")).toBeInTheDocument();
   });
+
+  it("shows a search-specific empty state when filterQuery matches no cities", async () => {
+    mockLocations([
+      buildLocation({
+        id: "loc-1",
+        city: "City of Westminster",
+        organization: { id: "org-1", name: "Org 1" },
+      }),
+    ]);
+
+    const ui = await AllCitiesContent({ filterQuery: "nonexistent-city" });
+    render(ui);
+
+    expect(screen.getByText('No cities match "nonexistent-city".')).toBeInTheDocument();
+    expect(screen.queryByText("No locations available yet.")).not.toBeInTheDocument();
+  });
 });
