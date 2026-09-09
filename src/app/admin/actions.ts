@@ -479,6 +479,10 @@ export async function createOrganization(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: org, error: orgError } = await supabase
     .from("organizations")
     .insert({ name, is_active: false })
@@ -488,10 +492,6 @@ export async function createOrganization(formData: FormData) {
   if (orgError || !org) {
     redirect(`/create-club?error=${encodeURIComponent(orgError?.message ?? "Couldn't create the club.")}`);
   }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const { error: memberError } = await supabase
     .from("org_members")
