@@ -72,6 +72,8 @@ git add supabase/migrations/0035_org_creation.sql
 git commit -m "Add RLS policies for self-serve organization creation"
 ```
 
+**Addendum (found by the Task 1 review, fixed in migration `0036_fix_org_takeover.sql`):** the `"org_members insert self as first member"` policy's "zero members" check must not be a raw subquery on `org_members` itself — it gets filtered through that table's own SELECT policy (`is_org_member`), so it reads "zero members" for every org a non-member can't see, not just genuinely empty ones. This let any signed-in user insert themselves as `owner` of an existing, populated club. Fixed with a `security definer` helper, `org_has_members(uuid)`, matching `is_org_member`/`is_org_admin`'s own established pattern in `0002_rls.sql` for this exact hazard. See the spec's "Security note" section for the full writeup. Confirmed live: the takeover is blocked (`42501`) and the legitimate self-serve happy path still succeeds.
+
 ## Task 2: Self-serve creation — action + page
 
 **Files:**
