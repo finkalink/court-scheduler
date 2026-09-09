@@ -9,7 +9,7 @@ export default function NotFound() {
         Out of bounds<span className="text-accent">.</span>
       </h1>
       <p className="mt-4 text-sm text-fg-muted">
-        That page doesn&apos;t exist -- it may have moved, or the link's out of date.
+        That page doesn&apos;t exist -- it may have moved, or the link&apos;s out of date.
       </p>
       <Link href="/" className={`mt-6 inline-block ${buttonClass("primary")}`}>
         Back to courts
