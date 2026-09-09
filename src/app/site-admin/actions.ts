@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function toggleOrgActive(formData: FormData) {
@@ -35,6 +36,52 @@ export async function updateAnyOrgMemberRole(formData: FormData) {
   const supabase = await createClient();
   await supabase.from("org_members").update({ role }).eq("org_id", orgId).eq("user_id", userId);
   revalidatePath("/site-admin/users");
+}
+
+export async function createOrganizationForUser(formData: FormData) {
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("owner_email") || "").trim().toLowerCase();
+
+  if (!name || !email) {
+    redirect(`/site-admin/orgs/new?error=${encodeURIComponent("Club name and owner email are both required.")}`);
+  }
+
+  const supabase = await createClient();
+
+  const { data: owner } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (!owner) {
+    redirect(`/site-admin/orgs/new?error=${encodeURIComponent(`No user found with email "${email}".`)}`);
+  }
+
+  const { data: org, error: orgError } = await supabase
+    .from("organizations")
+    .insert({ name, is_active: true })
+    .select("id")
+    .single();
+
+  if (orgError || !org) {
+    redirect(`/site-admin/orgs/new?error=${encodeURIComponent(orgError?.message ?? "Couldn't create the club.")}`);
+  }
+
+  const { error: memberError } = await supabase
+    .from("org_members")
+    .insert({ org_id: org.id, user_id: owner!.id, role: "owner" });
+
+  if (memberError) {
+    // Unlike createOrganization's self-serve path, this cleanup works:
+    // the caller here is a platform admin, whose session has DELETE on
+    // organizations via their own blanket ALL policy.
+    await supabase.from("organizations").delete().eq("id", org.id);
+    redirect(`/site-admin/orgs/new?error=${encodeURIComponent("Couldn't finish setting up the club. Try again.")}`);
+  }
+
+  revalidatePath("/site-admin/orgs");
+  redirect("/site-admin/orgs?club_created=1");
 }
 
 export async function updateSiteSetting(formData: FormData) {
