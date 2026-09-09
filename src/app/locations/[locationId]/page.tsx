@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
@@ -5,6 +6,21 @@ import { createClient } from "@/lib/supabase/server";
 import { buildMapsUrl } from "@/lib/maps";
 import { sortBySoonestSession } from "@/lib/eventGrouping";
 import EventTypeBadge from "@/components/EventTypeBadge";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locationId: string }>;
+}): Promise<Metadata> {
+  const { locationId } = await params;
+  const supabase = await createClient();
+  const { data: location } = await supabase
+    .from("locations")
+    .select("name")
+    .eq("id", locationId)
+    .maybeSingle();
+  return { title: location?.name ?? "Location" };
+}
 
 export default async function LocationPage({
   params,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
@@ -8,6 +9,8 @@ import SuccessBanner from "@/components/SuccessBanner";
 import EventTypeBadge from "@/components/EventTypeBadge";
 import { formatCents } from "@/lib/money";
 import { buildVenmoPaymentUrl } from "@/lib/venmoLink";
+
+export const metadata: Metadata = { title: "My Events" };
 
 export default async function MyEventsPage({
   searchParams,

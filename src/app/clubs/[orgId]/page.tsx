@@ -1,8 +1,24 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { buildMapsUrl } from "@/lib/maps";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ orgId: string }>;
+}): Promise<Metadata> {
+  const { orgId } = await params;
+  const supabase = await createClient();
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("name")
+    .eq("id", orgId)
+    .maybeSingle();
+  return { title: org?.name ?? "Club" };
+}
 
 export default async function ClubPage({
   params,

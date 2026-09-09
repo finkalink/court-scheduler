@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -12,6 +13,8 @@ import { nextPowerOf2 } from "@/lib/bracketGeneration";
 import SuccessBanner from "@/components/SuccessBanner";
 import InteractiveBracket from "@/components/bracket/InteractiveBracket";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export const metadata: Metadata = { title: "Bracket" };
 
 export default async function AdminBracketPage({
   params,

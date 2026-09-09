@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
@@ -7,6 +8,8 @@ import { formatBookingDate } from "@/lib/dateFormat";
 import { cancelBooking } from "@/app/actions/bookings";
 import { categorizeBookingTime, groupBookingsByTime, isCancellable } from "@/lib/bookingStatus";
 import SuccessBanner from "@/components/SuccessBanner";
+
+export const metadata: Metadata = { title: "My Bookings" };
 
 export default async function MyBookingsPage({
   searchParams,

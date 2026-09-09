@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateProfile } from "@/app/actions/profile";
@@ -7,6 +8,8 @@ import SuccessBanner from "@/components/SuccessBanner";
 import { isProfileComplete } from "@/lib/userProfile";
 import { isSafeRedirectPath } from "@/lib/redirects";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export const metadata: Metadata = { title: "Profile" };
 
 const FIELD_LABELS: { key: "name" | "gender" | "skill_level"; label: string }[] = [
   { key: "name", label: "Name" },

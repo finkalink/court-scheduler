@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import AllCitiesContent from "@/components/AllCitiesContent";
+
+export const metadata: Metadata = { title: "Find a Court" };
 
 export default async function CitiesPage({
   searchParams,

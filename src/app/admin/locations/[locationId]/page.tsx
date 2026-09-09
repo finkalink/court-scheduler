@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -7,6 +8,21 @@ import LocationFormFields from "@/components/LocationFormFields";
 import { getRoleForOrg } from "@/lib/orgMembership";
 import { isOwnerOrAdmin } from "@/lib/orgRoles";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locationId: string }>;
+}): Promise<Metadata> {
+  const { locationId } = await params;
+  const supabase = await createClient();
+  const { data: location } = await supabase
+    .from("locations")
+    .select("name")
+    .eq("id", locationId)
+    .maybeSingle();
+  return { title: location?.name ?? "Location" };
+}
 
 export default async function AdminLocationPage({
   params,

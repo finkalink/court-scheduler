@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
@@ -11,6 +12,21 @@ import { buttonClass } from "@/lib/buttonStyles";
 import { isProfileComplete } from "@/lib/userProfile";
 import { formatCents } from "@/lib/money";
 import { buildVenmoPaymentUrl } from "@/lib/venmoLink";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}): Promise<Metadata> {
+  const { eventId } = await params;
+  const supabase = await createClient();
+  const { data: event } = await supabase
+    .from("events")
+    .select("title")
+    .eq("id", eventId)
+    .maybeSingle();
+  return { title: event?.title ?? "Event" };
+}
 
 function PlayerNameLink({
   href,

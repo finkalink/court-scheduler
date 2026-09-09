@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { groupEventsByCity } from "@/lib/eventGrouping";
 import { formatEventDateRange } from "@/lib/dateFormat";
 import EventTypeBadge from "@/components/EventTypeBadge";
+
+export const metadata: Metadata = { title: "Events" };
 
 export default async function EventsPage() {
   const supabase = await createClient();

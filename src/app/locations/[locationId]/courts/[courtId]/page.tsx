@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
@@ -15,6 +16,26 @@ import { formatCalendarDate, formatTimeOfDay } from "@/lib/dateFormat";
 import { buildMapsUrl } from "@/lib/maps";
 import { fetchHourlyForecast, filterHoursToWindow, describeWeatherCode } from "@/lib/weather";
 import TimeBlockPicker from "./TimeBlockPicker";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locationId: string; courtId: string }>;
+}): Promise<Metadata> {
+  const { locationId, courtId } = await params;
+  const supabase = await createClient();
+  const { data: court } = await supabase
+    .from("courts")
+    .select("name, location:locations(name)")
+    .eq("id", courtId)
+    .eq("location_id", locationId)
+    .maybeSingle();
+  if (!court) {
+    return { title: "Court" };
+  }
+  const location = Array.isArray(court.location) ? court.location[0] : court.location;
+  return { title: `${court.name} — ${location?.name}` };
+}
 
 export default async function CourtPage({
   params,

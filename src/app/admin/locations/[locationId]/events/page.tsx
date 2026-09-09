@@ -1,9 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createEvent } from "@/app/admin/eventActions";
 import EventTypeBadge from "@/components/EventTypeBadge";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export const metadata: Metadata = { title: "Manage Events" };
 
 export default async function AdminEventsPage({
   params,

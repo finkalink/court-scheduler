@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getIsPlatformAdmin } from "@/lib/platformAdmin";
 import {
@@ -5,6 +6,8 @@ import {
   togglePlatformAdmin,
   updateAnyOrgMemberRole,
 } from "@/app/site-admin/actions";
+
+export const metadata: Metadata = { title: "Users" };
 
 export default async function SiteAdminUsersPage({
   searchParams,

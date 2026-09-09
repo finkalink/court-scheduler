@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { signUp } from "@/app/actions/auth";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export const metadata: Metadata = { title: "Sign Up" };
 
 export default async function SignupPage({
   searchParams,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
@@ -16,6 +17,21 @@ import { resolveDayHours, type AvailabilityRule, type SlotOverride } from "@/lib
 import { buildSlotGrid } from "@/lib/blockedSlots";
 import SuccessBanner from "@/components/SuccessBanner";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locationId: string; courtId: string }>;
+}): Promise<Metadata> {
+  const { courtId } = await params;
+  const supabase = await createClient();
+  const { data: court } = await supabase
+    .from("courts")
+    .select("name")
+    .eq("id", courtId)
+    .maybeSingle();
+  return { title: court?.name ?? "Court" };
+}
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 

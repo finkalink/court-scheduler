@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { listActiveCities } from "@/lib/cities";
 import { setDefaultCity, skipCityPrompt } from "@/app/actions/cityPreference";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export const metadata: Metadata = { title: "Choose a City" };
 
 export default async function ChooseCityPage({
   searchParams,

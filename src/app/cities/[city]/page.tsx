@@ -1,5 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import CityContent from "@/components/CityContent";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
+  const { city } = await params;
+  return { title: city };
+}
 
 export default async function CityPage({
   params,

@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getIsPlatformAdmin } from "@/lib/platformAdmin";
 import { toggleOrgActive } from "@/app/site-admin/actions";
+
+export const metadata: Metadata = { title: "Organizations" };
 
 export default async function SiteAdminOrgsPage() {
   const supabase = await createClient();

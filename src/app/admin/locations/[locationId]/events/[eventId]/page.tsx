@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
@@ -15,6 +16,21 @@ import EventTypeBadge from "@/components/EventTypeBadge";
 import { buttonClass } from "@/lib/buttonStyles";
 import { formatBookingDate } from "@/lib/dateFormat";
 import { formatCents } from "@/lib/money";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locationId: string; eventId: string }>;
+}): Promise<Metadata> {
+  const { eventId } = await params;
+  const supabase = await createClient();
+  const { data: event } = await supabase
+    .from("events")
+    .select("title")
+    .eq("id", eventId)
+    .maybeSingle();
+  return { title: event?.title ?? "Event" };
+}
 
 export default async function AdminEventPage({
   params,

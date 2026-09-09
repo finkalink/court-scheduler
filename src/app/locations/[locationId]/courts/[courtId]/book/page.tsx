@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
@@ -6,6 +7,8 @@ import { createBooking } from "@/app/actions/bookings";
 import { NET_HEIGHT_OPTIONS, COURT_LINES_OPTIONS } from "@/lib/courtConfig";
 import { formatBookingDate } from "@/lib/dateFormat";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export const metadata: Metadata = { title: "Confirm Booking" };
 
 export default async function BookCourtPage({
   params,

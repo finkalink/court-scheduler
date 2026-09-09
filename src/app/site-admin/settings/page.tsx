@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getIsPlatformAdmin } from "@/lib/platformAdmin";
 import { updateSiteSetting } from "@/app/site-admin/actions";
+
+export const metadata: Metadata = { title: "Settings" };
 
 export default async function SiteAdminSettingsPage() {
   const supabase = await createClient();

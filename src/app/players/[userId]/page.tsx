@@ -1,6 +1,20 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata = { title: "Player Profile" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ userId: string }>;
+}): Promise<Metadata> {
+  const { userId } = await params;
+  const supabase = await createClient();
+  const { data: player } = await supabase
+    .from("users")
+    .select("name")
+    .eq("id", userId)
+    .maybeSingle();
+  return { title: player?.name ?? "Player" };
+}
 
 export default async function PublicPlayerPage({
   params,

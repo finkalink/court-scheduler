@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { formatInTimeZone } from "date-fns-tz";
@@ -9,6 +10,8 @@ import { categorizeBookingTime, isCancellable } from "@/lib/bookingStatus";
 import { buildGoogleCalendarUrl, buildOutlookCalendarUrl } from "@/lib/calendarLinks";
 import { getAppUrl } from "@/lib/appUrl";
 import SuccessBanner from "@/components/SuccessBanner";
+
+export const metadata: Metadata = { title: "Booking Details" };
 
 export default async function BookingDetailPage({
   params,

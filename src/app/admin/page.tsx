@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
@@ -6,6 +7,8 @@ import { createLocation, updateOrganization } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
 import LocationFormFields from "@/components/LocationFormFields";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export const metadata: Metadata = { title: "Club Admin" };
 
 export default async function AdminPage({
   searchParams,

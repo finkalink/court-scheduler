@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
@@ -5,6 +6,8 @@ import { canActOnMember, isOwnerOrAdmin, type OrgRole } from "@/lib/orgRoles";
 import { addOrgMember, updateOrgMemberRole, removeOrgMember } from "@/app/admin/actions";
 import SuccessBanner from "@/components/SuccessBanner";
 import { buttonClass } from "@/lib/buttonStyles";
+
+export const metadata: Metadata = { title: "Team" };
 
 export default async function TeamPage({
   searchParams,
