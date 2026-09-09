@@ -83,7 +83,7 @@ export default function MatchResultSheet({
             <button
               type="button"
               onClick={onClose}
-              className="mt-4 w-full rounded border border-border px-3 py-2 text-sm"
+              className={`mt-4 w-full ${buttonClass("secondary")}`}
             >
               Close
             </button>
@@ -152,14 +152,14 @@ export default function MatchResultSheet({
               <button
                 type="submit"
                 disabled={isPending}
-                className={`flex-1 text-xs disabled:opacity-50 ${buttonClass("primary")}`}
+                className={`flex-1 disabled:opacity-50 ${buttonClass("primary")}`}
               >
                 {isPending ? "Saving..." : "Save Result"}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded border border-border px-3 py-2 text-xs"
+                className={buttonClass("secondary")}
               >
                 Cancel
               </button>
