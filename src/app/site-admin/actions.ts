@@ -48,11 +48,15 @@ export async function createOrganizationForUser(formData: FormData) {
 
   const supabase = await createClient();
 
-  const { data: owner } = await supabase
+  const { data: owner, error: lookupError } = await supabase
     .from("users")
     .select("id")
-    .eq("email", email)
+    .ilike("email", email)
     .maybeSingle();
+
+  if (lookupError) {
+    redirect(`/site-admin/orgs/new?error=${encodeURIComponent("Couldn't look up that email. Try again.")}`);
+  }
 
   if (!owner) {
     redirect(`/site-admin/orgs/new?error=${encodeURIComponent(`No user found with email "${email}".`)}`);

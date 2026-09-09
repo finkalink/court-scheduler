@@ -47,7 +47,7 @@ export default async function NewOrgPage({
             required
             className="rounded border border-border px-3 py-2"
           />
-          <span className="text-xs text-fg-muted">Must be an existing user's account email.</span>
+          <span className="text-xs text-fg-muted">Must be an existing user&apos;s account email.</span>
         </label>
         <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
           Create organization
