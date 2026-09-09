@@ -298,7 +298,7 @@ export default async function EventDetailPage({
                   <input type="hidden" name="event_id" value={event.id} />
                   <label className="flex flex-col gap-1 text-sm">
                     Team name
-                    <input name="team_name" required className="rounded border px-3 py-2" />
+                    <input name="team_name" required className="rounded border border-border px-3 py-2" />
                   </label>
                   <label className="flex flex-col gap-1 text-sm">
                     Your display name (shown on the roster)
@@ -306,7 +306,7 @@ export default async function EventDetailPage({
                       name="captain_display_name"
                       defaultValue={profileName ?? ""}
                       required
-                      className="rounded border px-3 py-2"
+                      className="rounded border border-border px-3 py-2"
                     />
                   </label>
                   <p className="text-xs text-fg-muted">
@@ -319,17 +319,17 @@ export default async function EventDetailPage({
                       <input
                         name={`teammate_name_${n}`}
                         placeholder={`Teammate ${n} name`}
-                        className="w-1/2 rounded border px-3 py-2 text-sm"
+                        className="w-1/2 rounded border border-border px-3 py-2 text-sm"
                       />
                       <input
                         name={`teammate_email_${n}`}
                         type="email"
                         placeholder={`Teammate ${n} email`}
-                        className="w-1/2 rounded border px-3 py-2 text-sm"
+                        className="w-1/2 rounded border border-border px-3 py-2 text-sm"
                       />
                     </div>
                   ))}
-                  <button type="submit" className={buttonClass("primary")}>
+                  <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
                     {isFull ? "Join Waitlist" : "Register Team"}
                   </button>
                 </form>
@@ -342,10 +342,10 @@ export default async function EventDetailPage({
                       name="display_name"
                       defaultValue={profileName ?? ""}
                       required
-                      className="rounded border px-3 py-2"
+                      className="rounded border border-border px-3 py-2"
                     />
                   </label>
-                  <button type="submit" className={buttonClass("primary")}>
+                  <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
                     {isFull ? "Join Waitlist" : "Register"}
                   </button>
                 </form>

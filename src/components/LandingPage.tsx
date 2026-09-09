@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { sortBySoonestSession } from "@/lib/eventGrouping";
 import { featuredClubs } from "@/lib/cityGrouping";
-import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
+import EventTypeBadge from "@/components/EventTypeBadge";
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -110,9 +110,9 @@ export default async function LandingPage() {
                   href={`/events/${event.id}`}
                   className="relative block rounded-xl border-2 border-fg bg-card p-5"
                 >
-                  <p className="mb-2 inline-block rounded-full bg-status px-3 py-0.5 text-xs font-medium text-status-fg">
-                    {EVENT_TYPE_LABELS[event.eventType]}
-                  </p>
+                  <div className="mb-2">
+                    <EventTypeBadge eventType={event.eventType} />
+                  </div>
                   <p className="text-lg font-medium text-fg">{event.title}</p>
                   {event.city && <p className="text-sm text-fg-muted">{event.city}</p>}
                 </Link>

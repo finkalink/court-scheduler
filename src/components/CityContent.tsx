@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { clubsInCity } from "@/lib/cityGrouping";
 import { sortBySoonestSession } from "@/lib/eventGrouping";
-import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
+import EventTypeBadge from "@/components/EventTypeBadge";
 
 export default async function CityContent({ city }: { city: string }) {
   const supabase = await createClient();
@@ -67,7 +67,9 @@ export default async function CityContent({ city }: { city: string }) {
                   className="block rounded border border-border bg-card px-4 py-3 hover:bg-active"
                 >
                   <p className="font-medium">{event.title}</p>
-                  <p className="text-sm text-fg-muted">{EVENT_TYPE_LABELS[event.eventType]}</p>
+                  <div className="mt-1">
+                    <EventTypeBadge eventType={event.eventType} />
+                  </div>
                 </Link>
               </li>
             ))}

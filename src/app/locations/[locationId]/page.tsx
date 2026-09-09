@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { buildMapsUrl } from "@/lib/maps";
 import { sortBySoonestSession } from "@/lib/eventGrouping";
-import { EVENT_TYPE_LABELS } from "@/lib/eventTypes";
+import EventTypeBadge from "@/components/EventTypeBadge";
 
 export default async function LocationPage({
   params,
@@ -89,7 +89,9 @@ export default async function LocationPage({
                   className="block rounded border border-border px-4 py-3 hover:bg-active"
                 >
                   <p className="font-medium">{event.title}</p>
-                  <p className="text-sm text-fg-muted">{EVENT_TYPE_LABELS[event.eventType]}</p>
+                  <div className="mt-1">
+                    <EventTypeBadge eventType={event.eventType} />
+                  </div>
                 </Link>
               </li>
             ))}
