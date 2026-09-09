@@ -417,7 +417,7 @@ export default async function AdminCourtAvailabilityPage({
                 <button type="submit" className="text-xs underline">
                   Save
                 </button>
-                {config_saved === booking.id && <span className="text-xs text-green-800">Saved.</span>}
+                {config_saved === booking.id && <span className="text-xs text-success-fg">Saved.</span>}
               </form>
             </li>
           );

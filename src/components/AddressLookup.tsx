@@ -128,7 +128,7 @@ export default function AddressLookup({
       )}
 
       {geocode ? (
-        <p className="text-xs text-green-800 dark:text-green-400">
+        <p className="text-xs text-success-fg">
           Address verified{geocode.postalCode ? ` · ZIP ${geocode.postalCode}` : ""}.
         </p>
       ) : (

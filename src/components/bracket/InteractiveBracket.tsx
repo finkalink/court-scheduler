@@ -49,7 +49,7 @@ export default function InteractiveBracket({
   return (
     <div className="flex flex-col gap-8">
       {reviewNeededIds.length > 0 && (
-        <div className="rounded bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300">
+        <div className="rounded bg-status p-3 text-sm text-status-fg">
           <p>
             This correction fed into {reviewNeededIds.length} match{reviewNeededIds.length > 1 ? "es" : ""} that{" "}
             {reviewNeededIds.length > 1 ? "were" : "was"} already completed, so it wasn&apos;t auto-updated. Tap it

@@ -125,8 +125,8 @@ export default async function MyEventsPage({
                 <span
                   className={
                     row.status === "registered"
-                      ? "rounded bg-green-50 px-2 py-1 text-xs text-green-800 dark:bg-green-950 dark:text-green-300"
-                      : "rounded bg-yellow-50 px-2 py-1 text-xs text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300"
+                      ? "rounded bg-success-bg px-2 py-1 text-xs text-success-fg"
+                      : "rounded bg-status px-2 py-1 text-xs text-status-fg"
                   }
                 >
                   {row.status === "waitlisted" ? "Waitlisted" : "Registered"}
@@ -136,7 +136,7 @@ export default async function MyEventsPage({
                   event.fee_cents &&
                   org?.venmo_handle && (
                   <div className="text-right">
-                    <p className="text-xs text-yellow-800 dark:text-yellow-300">
+                    <p className="text-xs text-status-fg">
                       {formatCents(event.fee_cents)} due to @{org.venmo_handle}
                     </p>
                     <a
@@ -147,14 +147,14 @@ export default async function MyEventsPage({
                       })}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-xs text-yellow-800 underline dark:text-yellow-300"
+                      className="text-xs text-status-fg underline"
                     >
                       Pay with Venmo
                     </a>
                   </div>
                 )}
                 {row.payment_status === "paid" && (
-                  <span className="text-xs text-green-700 dark:text-green-400">Paid ✓</span>
+                  <span className="text-xs text-success-fg">Paid ✓</span>
                 )}
                 {row.payment_status === "refunded" && (
                   <span className="text-xs text-fg-muted">Refunded</span>

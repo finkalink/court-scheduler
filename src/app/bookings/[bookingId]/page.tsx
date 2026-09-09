@@ -96,7 +96,7 @@ export default async function BookingDetailPage({
           <span
             className={
               booking.status === "confirmed"
-                ? "rounded bg-green-50 px-2 py-1 text-xs text-green-800 dark:bg-green-950 dark:text-green-300"
+                ? "rounded bg-success-bg px-2 py-1 text-xs text-success-fg"
                 : "rounded bg-active px-2 py-1 text-xs text-fg-muted"
             }
           >

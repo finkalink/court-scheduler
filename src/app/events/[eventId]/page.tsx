@@ -234,7 +234,13 @@ export default async function EventDetailPage({
             </p>
           ) : alreadyRegistered ? (
             <>
-              <p className="mt-4 rounded bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-300">
+              <p
+                className={
+                  myRegistration?.status === "waitlisted"
+                    ? "mt-4 rounded bg-status p-3 text-sm text-status-fg"
+                    : "mt-4 rounded bg-success-bg p-3 text-sm text-success-fg"
+                }
+              >
                 {myTeamName
                   ? `Your team, ${myTeamName}, is ${myRegistration?.status === "waitlisted" ? "on the waitlist" : "registered"}.`
                   : myRegistration?.status === "waitlisted"
@@ -245,8 +251,8 @@ export default async function EventDetailPage({
                 myRegistration?.status === "registered" &&
                 event.fee_cents &&
                 venmoHandle && (
-                <div className="mt-2 rounded border border-yellow-300 bg-yellow-50 p-3 text-sm dark:border-yellow-900 dark:bg-yellow-950">
-                  <p className="text-yellow-800 dark:text-yellow-300">
+                <div className="mt-2 rounded border border-border bg-status p-3 text-sm">
+                  <p className="text-status-fg">
                     Payment due: {formatCents(event.fee_cents)} to @{venmoHandle}
                   </p>
                   <a
@@ -257,14 +263,14 @@ export default async function EventDetailPage({
                     })}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-1 inline-block text-yellow-800 underline dark:text-yellow-300"
+                    className="mt-1 inline-block text-status-fg underline"
                   >
                     Pay with Venmo
                   </a>
                 </div>
               )}
               {myRegistration?.payment_status === "paid" && (
-                <p className="mt-2 text-sm text-green-700 dark:text-green-400">Paid ✓</p>
+                <p className="mt-2 text-sm text-success-fg">Paid ✓</p>
               )}
               {myRegistration?.payment_status === "refunded" && (
                 <p className="mt-2 text-sm text-fg-muted">Refunded</p>

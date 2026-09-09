@@ -114,7 +114,7 @@ export default async function AdminBracketPage({
       {sp.review_needed && (() => {
         const reviewNeededIds = sp.review_needed!.split(",");
         return (
-          <div className="mt-2 rounded bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300">
+          <div className="mt-2 rounded bg-status p-3 text-sm text-status-fg">
             <p>
               This correction fed into {reviewNeededIds.length} match{reviewNeededIds.length > 1 ? "es" : ""} that{" "}
               {reviewNeededIds.length > 1 ? "were" : "was"} already completed, so it wasn&apos;t auto-updated. Review

@@ -485,10 +485,10 @@ export default async function AdminEventPage({
                     <span
                       className={
                         reg.payment_status === "paid"
-                          ? "rounded bg-green-50 px-2 py-1 text-xs text-green-800 dark:bg-green-950 dark:text-green-300"
+                          ? "rounded bg-success-bg px-2 py-1 text-xs text-success-fg"
                           : reg.payment_status === "refunded"
                             ? "rounded bg-active px-2 py-1 text-xs text-fg-muted"
-                            : "rounded bg-yellow-50 px-2 py-1 text-xs text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300"
+                            : "rounded bg-status px-2 py-1 text-xs text-status-fg"
                       }
                     >
                       {reg.payment_status === "paid"

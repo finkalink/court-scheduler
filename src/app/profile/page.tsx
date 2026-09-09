@@ -56,7 +56,7 @@ export default async function ProfilePage({
         </p>
       )}
       {profileIncomplete && (
-        <p className="mt-4 rounded bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300">
+        <p className="mt-4 rounded bg-status p-3 text-sm text-status-fg">
           Still missing: {missingFields.join(", ")}
         </p>
       )}

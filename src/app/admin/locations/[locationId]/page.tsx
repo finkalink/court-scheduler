@@ -66,7 +66,7 @@ export default async function AdminLocationPage({
       {hours_pushed && <SuccessBanner>Hours applied to all courts.</SuccessBanner>}
 
       {canManage && (location.latitude == null || location.longitude == null || location.city == null) && (
-        <p className="mt-2 rounded bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300">
+        <p className="mt-2 rounded bg-status p-3 text-sm text-status-fg">
           This location&apos;s address hasn&apos;t been verified, so players won&apos;t see
           weather forecasts and it won&apos;t show up in the city-based search on the home
           page. Verify it below.
@@ -99,7 +99,7 @@ export default async function AdminLocationPage({
             <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
               Save
             </button>
-            {location_saved && <p className="text-xs text-green-800">Location saved.</p>}
+            {location_saved && <p className="text-xs text-success-fg">Location saved.</p>}
           </form>
         </details>
       )}
@@ -142,7 +142,7 @@ export default async function AdminLocationPage({
             </div>
 
             {active_changed === court.id && (
-              <p className="mt-2 text-xs text-green-800">
+              <p className="mt-2 text-xs text-success-fg">
                 {court.is_active ? "Court activated." : "Court deactivated."}
               </p>
             )}
@@ -196,7 +196,7 @@ export default async function AdminLocationPage({
                   >
                     Save
                   </button>
-                  {court_saved === court.id && <p className="text-xs text-green-800">Saved.</p>}
+                  {court_saved === court.id && <p className="text-xs text-success-fg">Saved.</p>}
                 </form>
               </details>
             )}
