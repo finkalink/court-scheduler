@@ -19,7 +19,7 @@ Two ways to create an organization, both enforced entirely through RLS (this cod
 - No support for a user creating more than one org via self-serve in the same session/account (see Role model below) — an admin can still make a user own more than one org via the admin-assisted path.
 - No first-location/first-court creation bundled into org creation — the org starts empty; the existing "Add a location" flow on `/admin` handles that immediately afterward.
 - No Stripe/payment integration (that's v4, unrelated to this feature; `organizations.stripe_account_id` stays untouched).
-- No atomicity guarantee between the two inserts a self-serve creation performs (org row, then membership row) beyond a best-effort compensating cleanup — see **Accepted risk** below.
+- No atomicity guarantee between the two inserts a self-serve creation performs (org row, then membership row) — see **Accepted risk** below. (An earlier draft of this spec described a "best-effort compensating cleanup" that would delete the org row if the second insert failed; a live probe found there is no DELETE policy on `organizations` for ordinary users, so that cleanup silently deletes zero rows. Removed from the design rather than shipped as dead code — see the Server actions section.)
 
 ## Role model
 
@@ -66,7 +66,9 @@ An adversarial review of the first draft of this migration found a critical hole
 
 A second, deeper adversarial review found that migration `0036`'s fix, while correctly closing the original hole, was reasoning from a false premise: an org's member count going to zero is not proof it was *never* owned. `org_members.user_id references auth.users(id) on delete cascade`, so a sole owner deleting their own auth account silently empties the org with no attacker involved at all; separately, the existing `org_members delete admin` policy already lets any owner remove every member row, including their own. Confirmed live: draining a real, populated, active org's membership and then inserting a stranger as its new owner succeeded — not as a millisecond race, but as a standing, indefinite exposure for any org that ever loses its last member.
 
-Fixed by tracking the actual invariant directly instead of inferring it from a count that can revert to zero: `organizations.ownership_claimed`, a boolean that starts `false` on every new org and is flipped to `true` **permanently** — via an `after insert on org_members` trigger, so it can never be forgotten by app code or reset by later member removal — the instant any member is ever added. The `org_members` insert policy now checks this flag (readable to everyone anyway, since `organizations select all` is `using (true)` — org ids and names are not a secret, correcting an earlier wrong claim in this doc that they were "not enumerable") instead of a live member count. `org_has_members()` (0036) is superseded and dropped; nothing else referenced it.
+Fixed by tracking the actual invariant directly instead of inferring it from a count that can revert to zero: `organizations.ownership_claimed`, a boolean that starts `false` on every new org and is flipped to `true` — via an `after insert on org_members` trigger, so it can never be forgotten by app code or reset by later *member removal* — the instant any member is ever added. The `org_members` insert policy now checks this flag (readable to everyone anyway, since `organizations select all` is `using (true)` — org ids and names are not a secret, correcting an earlier wrong claim in this doc that they were "not enumerable") instead of a live member count. `org_has_members()` (0036) is superseded and dropped; nothing else referenced it.
+
+**A third adversarial review found the flag itself was not actually tamper-proof:** nothing pinned `ownership_claimed` against a direct `UPDATE`, so any existing org admin could flip it back to `false` on their own org via `organizations update admin` — reopening it to a takeover by an unrelated stranger, or, combined with self-demotion, letting an admin escalate to sole owner and evict the real owners (exactly the boundary `0029_owner_row_protection.sql` exists to defend, and the same bug class `0034` already had to fix once for `is_active` — on a column that didn't exist yet when `0034` was written, so its fix didn't and couldn't cover it). Confirmed live, on both variants, before being closed (migration `0038`) the same way `0034` closed it for `is_active`: pin `ownership_claimed` to its current stored value in that policy's `with_check` too. The same migration also tightened `"org_members insert self as first member"` to additionally require `not user_has_any_membership()` — an existing member could otherwise still claim ownership of any *other* unclaimed org (even a legitimately brand-new one that isn't theirs), a related but separate asymmetry the same review pointed out.
 
 The same review flagged that `organizations insert self`'s own "no existing membership" check (0035) was a raw subquery on `org_members`, safe only because the rows it happens to need are exactly the rows that table's SELECT policy already exposes to the caller — fragile by the same shape that caused the original bug, one policy change away from silently breaking. Hardened with a `security definer` helper, `user_has_any_membership()`, matching `is_org_member`/`is_org_admin`'s own established pattern.
 
@@ -74,7 +76,7 @@ Also added: `"org_members select own"` (`using (user_id = auth.uid())`) — with
 
 ### Accepted risk: creation-time window (narrowed to just that)
 
-With the fix above, the only remaining gap is the genuine creation-time one: the few milliseconds between the `organizations` insert committing (`ownership_claimed = false`) and the `org_members` insert committing (which flips it to `true`, permanently, via the trigger). During that window, and only that window, the org is claimable by anyone who submits an `org_members` insert for that exact id first — after which it can never be reopened by any later member removal. Applies to both paths (an admin-assisted org is `is_active = true`, so a successful race there hands the racer an immediately-public, still location/court-empty club). Accepted as a low-severity, low-likelihood timing race rather than justifying a transaction/RPC for it. The best-effort compensating cleanup (delete the org row if the membership insert fails) still only shrinks the window on the *failure* path and was never the security boundary.
+With both fixes above (the trigger-set flag, and pinning it against direct tampering), the only remaining gap is the genuine creation-time one: the few milliseconds between the `organizations` insert committing (`ownership_claimed = false`) and the `org_members` insert committing (which flips it to `true` via the trigger). During that window, the org is claimable by anyone who submits an `org_members` insert for that exact id first, and (per the fix above) the flag cannot be reopened afterward by any legitimate org admin's own action — only by never being set in the first place. Applies to both paths (an admin-assisted org is `is_active = true`, so a successful race there hands the racer an immediately-public, still location/court-empty club). Accepted as a low-severity, low-likelihood timing race rather than justifying a transaction/RPC for it. There is no compensating cleanup on the failure path — see the Server actions section — the shell it would have deleted is inert and this was never the actual security boundary anyway.
 
 ### Accepted risk: one user can create more than one self-served org, no race required
 
@@ -111,7 +113,12 @@ export async function createOrganization(formData: FormData) {
     .insert({ org_id: org.id, user_id: user!.id, role: "owner" });
 
   if (memberError) {
-    await supabase.from("organizations").delete().eq("id", org.id); // best-effort cleanup, see spec's Accepted risk
+    // No cleanup call here: ordinary users have no DELETE policy on
+    // organizations, so a delete attempt would silently affect zero
+    // rows. The orphaned org row is inert (is_active=false,
+    // ownership_claimed=false, no locations/courts) and stays that way
+    // unless someone else's own creation attempt happens to claim it --
+    // see the spec's Accepted risk section.
     redirect(`/create-club?error=${encodeURIComponent("Couldn't finish setting up the club. Try again.")}`);
   }
 
@@ -158,6 +165,9 @@ export async function createOrganizationForUser(formData: FormData) {
     .insert({ org_id: org.id, user_id: owner!.id, role: "owner" });
 
   if (memberError) {
+    // Unlike createOrganization's self-serve path, this cleanup actually
+    // works: the caller here is a platform admin, whose session has
+    // DELETE on organizations via their own blanket ALL policy.
     await supabase.from("organizations").delete().eq("id", org.id);
     redirect(`/site-admin/orgs/new?error=${encodeURIComponent("Couldn't finish setting up the club. Try again.")}`);
   }
