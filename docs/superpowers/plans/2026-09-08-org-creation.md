@@ -82,7 +82,9 @@ git commit -m "Add RLS policies for self-serve organization creation"
 
 **This migration survived four real, live-confirmed findings across four adversarial review rounds before being trusted.** That is the process working as intended for a change to the two tables every other authorization boundary in this app is built on top of — not a sign the design was rushed. Task 2 proceeded only once a review round came back with no further findings.
 
-**Addendum 5 (found by the FINAL whole-branch review, after Tasks 2-4 were also complete, fixed in migration `0040_org_creation_final_review_fixes.sql`):** looking at the completed feature as a whole (not one task's diff at a time) surfaced a fifth real RLS gap plus two smaller app-layer ones no single task's reviewer could have seen: (1) neither new insert policy called `is_current_user_active()` — established in `0032` for exactly this, applied to bookings/event registrations, never applied here — so a platform-admin-deactivated user could still self-serve create a pending org; (2) Task 3's `.ilike("email", ...)` lookup (added in its own earlier fix round) treated `%`/`_` as wildcards rather than literal characters, risking assignment to the wrong owner; (3) `createOrganization` (Task 2) dereferenced a possibly-null `user` with no guard and only gated on profile completeness in the page, unlike the identical established pattern in `registerForEvent`; neither creation path's success redirect was ever rendered as a confirmation banner; and the pending-review banner's wording was inaccurate for an org a platform admin deactivated for cause rather than one still awaiting its first review. All fixed in one bundled pass (per this process's "no second fix wave" rule) and confirmed live. See the spec's corresponding "Security note" subsections and its final "consolidated RLS" block for the version to actually use.
+**Addendum 5 (found by the FINAL whole-branch review, after Tasks 2-4 were also complete, fixed in migration `0040_org_creation_final_review_fixes.sql`):** looking at the completed feature as a whole (not one task's diff at a time) surfaced a fifth real RLS gap plus two smaller app-layer ones no single task's reviewer could have seen: (1) neither new insert policy called `is_current_user_active()` — established in `0032` for exactly this, applied to bookings/event registrations, never applied here — so a platform-admin-deactivated user could still self-serve create a pending org; (2) Task 3's `.ilike("email", ...)` lookup (added in its own earlier fix round) treated `%`/`_` as wildcards rather than literal characters, risking assignment to the wrong owner; (3) `createOrganization` (Task 2) dereferenced a possibly-null `user` with no guard and only gated on profile completeness in the page, unlike the identical established pattern in `registerForEvent`; neither creation path's success redirect was ever rendered as a confirmation banner; and the pending-review banner's wording was inaccurate for an org a platform admin deactivated for cause rather than one still awaiting its first review. All fixed in one bundled pass and confirmed live.
+
+A scoped re-review of that fix wave then found finding (2)'s escaping was one character short: PostgREST rewrites a bare `*` into `%` of its own accord, independent of SQL's own `%`/`_`, and `*` is legal in an email's local part too. Added to the same escape set and re-confirmed live via a real PostgREST request. The same re-review also caught the spec's Pages section still describing the pre-Addendum-5 banner text and claiming `site-admin/orgs/page.tsx` had "no other change" — both corrected there. All of this stayed inside the same fix-wave/re-review cycle (per this process's "no second fix wave" rule for the *feature*, not a ban on iterating a re-review's own small residual findings to a clean result). See the spec's corresponding "Security note" subsections and its final "consolidated RLS" block for the version to actually use.
 
 ## Task 2: Self-serve creation — action + page
 
@@ -289,7 +291,7 @@ export async function createOrganizationForUser(formData: FormData) {
 }
 ```
 
-**Note (added by the Task 3 fix round, and by Addendum 5 afterward):** the shipped version differs from the snippet above in two ways: the email lookup checks its own `lookupError` before dereferencing `owner`, and escapes `%`/`_`/`\` before calling `.ilike()` so the match is a case-insensitive equals rather than a wildcard pattern (an unescaped `_` or `%` in a legitimate email could otherwise match a different account). Read the spec's final version for the current code.
+**Note (added by the Task 3 fix round, and by Addendum 5 afterward):** the shipped version differs from the snippet above in two ways: the email lookup checks its own `lookupError` before dereferencing `owner`, and escapes `%`/`_`/`*`/`\` before calling `.ilike()` so the match is a case-insensitive equals rather than a wildcard pattern (an unescaped `_`, `%`, or PostgREST's own `*` wildcard in a legitimate email could otherwise match a different account). Read the spec's final version for the current code.
 
 - [ ] **Step 2: Create the page**
 
@@ -376,6 +378,8 @@ git commit -m "Add admin-assisted club creation"
 - Modify: `src/app/admin/page.tsx`
 - Modify: `src/app/site-admin/orgs/page.tsx`
 
+(Addendum 5's fix wave, dispatched after this task was already done and reviewed, also touched `src/app/site-admin/orgs/page.test.tsx` — three pre-existing test cases needed updating for that page's new `searchParams` prop, plus one new case for the confirmation banner Addendum 5 added.)
+
 **Interfaces:** None new — wiring existing pieces together, plus the manual verification pass.
 
 - [ ] **Step 1: Add the "Create a club" link to `admin/layout.tsx`**
@@ -458,7 +462,7 @@ git commit -m "Wire up entry points and pending-review banner for club creation"
 
 - [ ] **Step 6: Manual live-session verification**
 
-Run the dev server from this worktree. Using the Supabase Admin API's `generateLink({ type: "magiclink", email })` + `verifyOtp` technique (service-role key used only to *generate* the link, never to bypass RLS on the actual test calls — this mirrors every prior RLS verification in this codebase's history) against real, disposable test accounts, verify all five scenarios in the spec's Testing section:
+Run the dev server from this worktree. Using the Supabase Admin API's `generateLink({ type: "magiclink", email })` + `verifyOtp` technique (service-role key used only to *generate* the link, never to bypass RLS on the actual test calls — this mirrors every prior RLS verification in this codebase's history) against real, disposable test accounts, verify all scenarios in the spec's Testing section (5 originally listed here; the final whole-branch review's Addendum 5 fix wave added 2 more — 7 total, all of which were actually run, not just planned):
 
 1. A profile-complete test account creates a club via `/create-club`; confirm via a real PostgREST `select` (using that account's own access token) that the resulting org row has `is_active = false`; confirm the account can immediately use `/admin` for it (e.g. add a location).
 2. The same account attempts a second `organizations` insert directly via PostgREST (simulating a repeat/bypassed-UI attempt) — confirm it's rejected with `42501`, not silently allowed.

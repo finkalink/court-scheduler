@@ -94,7 +94,7 @@ A fourth adversarial review, run specifically to confirm `0038`'s fix held up, f
 The final, whole-branch review (which looks at the completed feature as a unit rather than one task's diff at a time) found three more things no single task's review could have:
 
 1. **A platform-admin-deactivated user could still self-serve create a pending org.** `is_current_user_active()` (`0032_platform_admin.sql`) exists for exactly this — it already gates `bookings insert own` and `event_registrations insert own or captain or member` — but was never applied to either of this feature's two new insert policies. Confirmed live: a test account with `users.is_active = false` could still insert an `organizations` row. Fixed by adding `public.is_current_user_active()` to both `organizations insert self` and `org_members insert self as first member`.
-2. **The admin-assisted email lookup's `.ilike("email", email)` treated `%`/`_` as wildcards, not literal characters.** An owner email containing either (both legal, `_` not uncommon) could silently match a *different* account than the one a platform admin typed, handing club ownership to the wrong person. Fixed by escaping `\`, `%`, and `_` before the `ilike` call, turning it into a case-insensitive exact match rather than a pattern match. Confirmed live: an unescaped decoy address matched via the wildcard; the escaped version no longer does, while a real case-difference on the intended address still matches correctly.
+2. **The admin-assisted email lookup's `.ilike("email", email)` treated `%`/`_` as wildcards, not literal characters.** An owner email containing either (both legal, `_` not uncommon) could silently match a *different* account than the one a platform admin typed, handing club ownership to the wrong person. Fixed by escaping `\`, `%`, and `_` before the `ilike` call, turning it into a case-insensitive exact match rather than a pattern match. Confirmed live: an unescaped decoy address matched via the wildcard; the escaped version no longer does, while a real case-difference on the intended address still matches correctly. **A follow-up scoped re-review found this was one character short:** PostgREST itself rewrites a bare `*` into `%` before the SQL is even built — a separate, PostgREST-level wildcard convention on top of SQL's own `%`/`_`, and `*` is legal in an email's local part too. The initial escape regex didn't cover it. Added `*` to the same escape set; confirmed live via a real PostgREST request that the residual gap is closed.
 3. Two smaller app-layer gaps visible only from comparing Task 2 and Task 3 side by side: `createOrganization` dereferenced a possibly-null `user` with no guard, and only gated on profile completeness in the page rather than the action itself (unlike the identical, established pattern in `registerForEvent`) — both fixed to match. Neither creation path's success redirect was ever rendered as a confirmation banner, and the pending-review banner's wording specifically said "pending review," which is inaccurate for a club a platform admin later deactivated for cause rather than one still awaiting its first look — both fixed.
 
 ### Final consolidated RLS (the version to actually use)
@@ -229,11 +229,12 @@ export async function createOrganizationForUser(formData: FormData) {
 
   const supabase = await createClient();
 
-  // ilike's %/_ are wildcards, not literal characters -- an email
-  // containing either (legal and not uncommon) would silently match a
-  // different account than the one typed. Escape them so this is a
-  // case-insensitive EQUALS, not a pattern match.
-  const escapedEmail = email.replace(/[\\%_]/g, (c) => `\\${c}`);
+  // ilike's %/_ are SQL wildcards, and PostgREST additionally rewrites
+  // a bare * into % of its own accord before the SQL is even built --
+  // all three are legal characters in an email's local part and not
+  // uncommon. Escape all three so this is a case-insensitive EQUALS,
+  // not a pattern match.
+  const escapedEmail = email.replace(/[\\%_*]/g, (c) => `\\${c}`);
 
   const { data: owner, error: lookupError } = await supabase
     .from("users")
@@ -296,11 +297,13 @@ The existing "not a member" block gets a "Create a club" link to `/create-club`,
 
 ### `src/app/admin/page.tsx` — modified
 
-When the signed-in user's org has `is_active = false`, show a status-style banner near the top: "This club is pending review by a platform admin. You can set up locations and courts now — it won't be visible to players until it's approved." Uses the existing `bg-status`/`text-status-fg` tokens (the same ones used for the homepage's event-type pill and the admin sub-nav's active-tab styling) — no new token needed.
+When the signed-in user's org has `is_active = false`, show a status-style banner near the top, using the existing `bg-status`/`text-status-fg` tokens (the same ones used for the homepage's event-type pill and the admin sub-nav's active-tab styling) — no new token needed. Also renders `<SuccessBanner>Club created.</SuccessBanner>` when `?club_created=1` is present (added by Addendum 5 — the original draft of this task specified the redirect but never wired up anything to render it).
+
+**Current banner copy (reworded by Addendum 5's fix wave):** "This club isn't visible to players right now. You can still set up locations and courts — contact a platform admin if you believe this is a mistake." The original draft's wording — "This club is pending review by a platform admin..." — was accurate for a newly-self-served club but wrong for one a platform admin later deactivated for cause; the reworded version covers both without claiming which case applies.
 
 ### `src/app/site-admin/orgs/page.tsx` — modified
 
-Add an "Add organization" link at the top, to `/site-admin/orgs/new`. No other change — the existing Active/Inactive toggle is exactly the "review and approve" mechanism a newly-self-served pending org needs; no separate "pending" visual state is introduced (an inactive org already reads as "Inactive" in the existing badge, which is accurate).
+Add an "Add organization" link at the top, to `/site-admin/orgs/new`. The existing Active/Inactive toggle is exactly the "review and approve" mechanism a newly-self-served pending org needs; no separate "pending" visual state is introduced (an inactive org already reads as "Inactive" in the existing badge, which is accurate). Also renders `<SuccessBanner>Organization created.</SuccessBanner>` when `?club_created=1` is present (added by Addendum 5, same reasoning as `/admin/page.tsx` above) — this page's `searchParams` prop, which didn't exist in the original draft, was added for this.
 
 ## Testing
 
@@ -312,6 +315,6 @@ Add an "Add organization" link at the top, to `/site-admin/orgs/new`. No other c
   4. A platform-admin session creates an org via `/site-admin/orgs/new` for a third, already-existing test user's email; the resulting org is immediately `is_active = true`; that third user can access `/admin` for it as owner without ever touching `/site-admin/orgs/new` themselves.
   5. The admin-assisted form rejects an email with no matching user, with a friendly message, not a raw error.
   6. A test account with `users.is_active = false` cannot self-serve create an org — `42501`, not a silent success.
-  7. The admin-assisted email lookup treats `%` and `_` in the typed address as literal characters, not wildcards — a decoy address that would match under raw `ilike` semantics does not match after escaping, while a genuine case difference on the intended address still does.
+  7. The admin-assisted email lookup treats `%`, `_`, and `*` in the typed address as literal characters, not wildcards (SQL's and PostgREST's own, respectively) — a decoy address that would match under raw `ilike`/PostgREST semantics does not match after escaping, while a genuine case difference on the intended address still does.
 
 All 7 scenarios above were actually run against the live database as part of this feature's development (not merely planned) — see the ledger for the exact accounts, results, and cleanup.
