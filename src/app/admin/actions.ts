@@ -472,6 +472,43 @@ export async function removeOrgMember(formData: FormData) {
   redirect("/admin/team?member_removed=1");
 }
 
+export async function createOrganization(formData: FormData) {
+  const name = String(formData.get("name") || "").trim();
+  if (!name) {
+    redirect(`/create-club?error=${encodeURIComponent("Club name is required.")}`);
+  }
+
+  const supabase = await createClient();
+  const { data: org, error: orgError } = await supabase
+    .from("organizations")
+    .insert({ name, is_active: false })
+    .select("id")
+    .single();
+
+  if (orgError || !org) {
+    redirect(`/create-club?error=${encodeURIComponent(orgError?.message ?? "Couldn't create the club.")}`);
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error: memberError } = await supabase
+    .from("org_members")
+    .insert({ org_id: org.id, user_id: user!.id, role: "owner" });
+
+  if (memberError) {
+    // No cleanup here: ordinary users have no DELETE policy on
+    // organizations, so this would silently affect zero rows. The
+    // orphaned row is inert (is_active=false, ownership_claimed=false,
+    // no locations/courts) -- see the spec's Accepted risk section.
+    redirect(`/create-club?error=${encodeURIComponent("Couldn't finish setting up the club. Try again.")}`);
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?club_created=1");
+}
+
 export async function toggleBlockedSlot(formData: FormData) {
   const courtId = String(formData.get("court_id"));
   const locationId = String(formData.get("location_id"));
