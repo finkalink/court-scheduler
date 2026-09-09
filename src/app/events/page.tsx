@@ -29,7 +29,9 @@ export default async function EventsPage() {
 
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-      <h1 className="text-xl font-semibold sm:text-2xl">Events</h1>
+      <h1 className="text-xl font-semibold sm:text-2xl">
+        Events<span className="text-accent">.</span>
+      </h1>
 
       {cities.length === 0 && otherEvents.length === 0 && (
         <p className="mt-6 text-sm text-fg-muted">No upcoming events yet.</p>

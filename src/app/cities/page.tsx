@@ -9,7 +9,9 @@ export default async function CitiesPage({
   const q = Array.isArray(rawQ) ? rawQ[0] : rawQ;
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-      <h1 className="text-xl font-semibold sm:text-2xl">Find a Court</h1>
+      <h1 className="text-xl font-semibold sm:text-2xl">
+        Find a Court<span className="text-accent">.</span>
+      </h1>
       <AllCitiesContent filterQuery={q} />
     </div>
   );

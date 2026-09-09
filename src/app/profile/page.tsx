@@ -46,7 +46,9 @@ export default async function ProfilePage({
 
   return (
     <div className="mx-auto mt-6 max-w-sm px-4 sm:mt-10 sm:px-0">
-      <h1 className="text-xl font-semibold sm:text-2xl">Profile</h1>
+      <h1 className="text-xl font-semibold sm:text-2xl">
+        Profile<span className="text-accent">.</span>
+      </h1>
 
       {message && <SuccessBanner>{message}</SuccessBanner>}
       {saved && <SuccessBanner>Profile saved.</SuccessBanner>}

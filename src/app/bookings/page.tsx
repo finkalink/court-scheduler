@@ -38,7 +38,9 @@ export default async function MyBookingsPage({
 
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
-      <h1 className="text-xl font-semibold sm:text-2xl">My Bookings</h1>
+      <h1 className="text-xl font-semibold sm:text-2xl">
+        My Bookings<span className="text-accent">.</span>
+      </h1>
 
       {cancelled && <SuccessBanner>Booking cancelled.</SuccessBanner>}
       {error && (

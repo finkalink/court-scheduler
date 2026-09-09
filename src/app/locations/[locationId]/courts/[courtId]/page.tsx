@@ -158,24 +158,27 @@ export default async function CourtPage({
       </div>
 
       {hourlyForecast.length > 0 && (
-        <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
-          {hourlyForecast.map((hour) => {
-            const { emoji, label } = describeWeatherCode(hour.weatherCode);
-            return (
-              <div
-                key={hour.time}
-                className="flex shrink-0 flex-col items-center rounded border border-border px-3 py-2 text-center text-xs"
-              >
-                <span className="font-medium">{formatTimeOfDay(hour.time.slice(11, 16))}</span>
-                <span className="mt-1 text-lg" title={label}>
-                  {emoji}
-                </span>
-                <span>{Math.round(hour.temperature)}°F</span>
-                <span className="text-fg-muted">{Math.round(hour.precipitationProbability)}%</span>
-              </div>
-            );
-          })}
-        </div>
+        <>
+          <p className="mt-4 text-xs text-fg-muted">Forecast for this court</p>
+          <div className="mt-1 flex gap-3 overflow-x-auto pb-1">
+            {hourlyForecast.map((hour) => {
+              const { emoji, label } = describeWeatherCode(hour.weatherCode);
+              return (
+                <div
+                  key={hour.time}
+                  className="flex shrink-0 flex-col items-center rounded border border-border px-3 py-2 text-center text-xs"
+                >
+                  <span className="font-medium">{formatTimeOfDay(hour.time.slice(11, 16))}</span>
+                  <span className="mt-1 text-lg" title={label}>
+                    {emoji}
+                  </span>
+                  <span>{Math.round(hour.temperature)}°F</span>
+                  <span className="text-fg-muted">{Math.round(hour.precipitationProbability)}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <div className="mt-6">
