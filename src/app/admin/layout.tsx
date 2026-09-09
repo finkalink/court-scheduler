@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMembership } from "@/lib/orgMembership";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -17,7 +18,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!membership) {
     return (
       <div className="mx-auto mt-16 max-w-lg text-center text-fg-muted">
-        Your account ({user.email}) isn&apos;t a member of any organization.
+        <p>Your account ({user.email}) isn&apos;t a member of any organization.</p>
+        <a href="/create-club" className={`mt-4 inline-block ${buttonClass("primary")}`}>
+          Create a club
+        </a>
       </div>
     );
   }

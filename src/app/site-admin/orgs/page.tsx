@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getIsPlatformAdmin } from "@/lib/platformAdmin";
 import { toggleOrgActive } from "@/app/site-admin/actions";
+import { buttonClass } from "@/lib/buttonStyles";
 
 export const metadata: Metadata = { title: "Organizations" };
 
@@ -28,6 +29,10 @@ export default async function SiteAdminOrgsPage() {
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <h1 className="text-xl font-semibold sm:text-2xl">Organizations</h1>
+
+      <a href="/site-admin/orgs/new" className={`mt-2 inline-block ${buttonClass("primary")}`}>
+        Add organization
+      </a>
 
       {(!orgs || orgs.length === 0) && (
         <p className="mt-6 text-sm text-fg-muted">No organizations yet.</p>

@@ -29,7 +29,7 @@ export default async function AdminPage({
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("venmo_handle")
+    .select("venmo_handle, is_active")
     .eq("id", membership.orgId)
     .single();
 
@@ -42,6 +42,13 @@ export default async function AdminPage({
   return (
     <div>
       <h1 className="text-lg font-medium">{membership.orgName} — Locations</h1>
+
+      {org && !org.is_active && (
+        <p className="mt-4 rounded bg-status p-3 text-sm text-status-fg">
+          This club is pending review by a platform admin. You can set up locations and courts
+          now — it won&apos;t be visible to players until it&apos;s approved.
+        </p>
+      )}
 
       {isOwnerOrAdmin(membership.role) && (
         <Link href="/admin/team" className="mt-2 block w-fit text-sm underline">
