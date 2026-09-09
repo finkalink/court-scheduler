@@ -59,7 +59,7 @@ export default async function CityContent({ city }: { city: string }) {
       {upcomingEvents.length > 0 && (
         <>
           <h2 className="mt-6 text-sm font-medium">Events in {city}</h2>
-          <ul className="mt-2 flex flex-col gap-3">
+          <ul className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {upcomingEvents.map((event) => (
               <li key={event.id}>
                 <Link
@@ -79,7 +79,7 @@ export default async function CityContent({ city }: { city: string }) {
 
       <h2 className="mt-8 text-sm font-medium">Clubs</h2>
 
-      <ul className="mt-2 flex flex-col gap-3">
+      <ul className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {clubs.map((club) => (
           <li key={club.orgId}>
             <Link

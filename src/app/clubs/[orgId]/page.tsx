@@ -59,14 +59,14 @@ export default async function ClubPage({
   }
 
   return (
-    <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
+    <div className="mx-auto mt-6 max-w-4xl px-4 sm:mt-10 sm:px-0">
       <Link href="/cities" className="text-sm underline">
         &larr; All cities
       </Link>
 
       <h1 className="mt-4 text-xl font-semibold sm:text-2xl">{org.name}</h1>
 
-      <ul className="mt-6 flex flex-col gap-3">
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {uniqueLocations.map((location) => {
           const mapsUrl = buildMapsUrl({
             latitude: location.latitude ?? null,

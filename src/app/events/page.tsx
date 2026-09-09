@@ -31,7 +31,7 @@ export default async function EventsPage() {
   const { cities, otherEvents } = groupEventsByCity(eventsForGrouping, new Date());
 
   return (
-    <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
+    <div className="mx-auto mt-6 max-w-4xl px-4 sm:mt-10 sm:px-0">
       <h1 className="text-xl font-semibold sm:text-2xl">
         Events<span className="text-accent">.</span>
       </h1>
@@ -44,7 +44,7 @@ export default async function EventsPage() {
         {cities.map((cityGroup) => (
           <div key={cityGroup.city}>
             <h2 className="text-sm font-medium">{cityGroup.city}</h2>
-            <ul className="mt-2 flex flex-col gap-3">
+            <ul className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {cityGroup.events.map((event) => (
                 <li key={event.id}>
                   <Link
@@ -52,10 +52,12 @@ export default async function EventsPage() {
                     className="block rounded border border-border px-4 py-3 hover:bg-active"
                   >
                     <p className="font-medium">{event.title}</p>
+                    <div className="mt-1">
+                      <EventTypeBadge eventType={event.eventType} />
+                    </div>
                     {event.dateRange && (
-                      <p className="text-sm text-fg-muted">{event.dateRange}</p>
+                      <p className="mt-1 text-sm text-fg-muted">{event.dateRange}</p>
                     )}
-                    <EventTypeBadge eventType={event.eventType} />
                   </Link>
                 </li>
               ))}
@@ -67,7 +69,7 @@ export default async function EventsPage() {
       {otherEvents.length > 0 && (
         <>
           <h2 className="mt-8 text-sm font-medium">Other events</h2>
-          <ul className="mt-2 flex flex-col gap-3">
+          <ul className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {otherEvents.map((event) => (
               <li key={event.id}>
                 <Link
@@ -75,10 +77,12 @@ export default async function EventsPage() {
                   className="block rounded border border-border px-4 py-3 hover:bg-active"
                 >
                   <p className="font-medium">{event.title}</p>
+                  <div className="mt-1">
+                    <EventTypeBadge eventType={event.eventType} />
+                  </div>
                   {event.dateRange && (
-                    <p className="text-sm text-fg-muted">{event.dateRange}</p>
+                    <p className="mt-1 text-sm text-fg-muted">{event.dateRange}</p>
                   )}
-                  <EventTypeBadge eventType={event.eventType} />
                 </Link>
               </li>
             ))}

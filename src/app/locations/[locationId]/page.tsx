@@ -76,7 +76,7 @@ export default async function LocationPage({
   );
 
   return (
-    <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
+    <div className="mx-auto mt-6 max-w-4xl px-4 sm:mt-10 sm:px-0">
       <Link href={`/clubs/${org?.id ?? ""}`} className="text-sm underline">
         &larr; {org?.name ?? "Club"}
       </Link>
@@ -97,7 +97,7 @@ export default async function LocationPage({
       {upcomingEvents.length > 0 && (
         <>
           <h2 className="mt-6 text-sm font-medium">Upcoming Events</h2>
-          <ul className="mt-2 flex flex-col gap-3">
+          <ul className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {upcomingEvents.map((event) => (
               <li key={event.id}>
                 <Link
@@ -121,7 +121,7 @@ export default async function LocationPage({
         <p className="mt-2 text-sm text-fg-muted">No courts available at this location yet.</p>
       )}
 
-      <ul className="mt-2 flex flex-col gap-3">
+      <ul className="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {(courts ?? []).map((court) => (
           <li key={court.id}>
             <Link

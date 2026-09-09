@@ -53,7 +53,7 @@ export default async function AllCitiesContent({
         </p>
       )}
 
-      <ul className="mt-6 flex flex-col gap-3">
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {filteredCities.map((cityGroup) => (
           <li key={cityGroup.city}>
             <form action={setCityOverride}>
@@ -75,7 +75,7 @@ export default async function AllCitiesContent({
       {sortedOtherLocations.length > 0 && (
         <>
           <h2 className="mt-8 text-sm font-medium">Other locations</h2>
-          <ul className="mt-4 flex flex-col gap-3">
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {sortedOtherLocations.map((location) => {
               const mapsUrl = buildMapsUrl({
                 latitude: location.latitude ?? null,

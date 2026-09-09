@@ -20,7 +20,7 @@ export default async function CityPage({
   const city = decodeURIComponent(cityParam);
 
   return (
-    <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
+    <div className="mx-auto mt-6 max-w-4xl px-4 sm:mt-10 sm:px-0">
       <Link href="/cities" className="text-sm underline">
         &larr; All cities
       </Link>
