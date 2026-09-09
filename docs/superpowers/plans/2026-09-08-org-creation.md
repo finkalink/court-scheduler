@@ -23,7 +23,7 @@
 ## Task 1: RLS migration
 
 **Files:**
-- Create: `supabase/migrations/0035_org_creation.sql`
+- Create: `supabase/migrations/0035_org_creation.sql` (the original, broken draft — see Addenda 1-4 below; also `0036`, `0037`, `0038`, `0039`, `0040`, all created and applied during this task's own review loop, not as separate later tasks)
 
 **Interfaces:**
 - Produces: two new policies, `"organizations insert self"` on `organizations` and `"org_members insert self as first member"` on `org_members`. No functions, no schema changes.
@@ -78,7 +78,11 @@ git commit -m "Add RLS policies for self-serve organization creation"
 
 **Addendum 3 (found by a THIRD adversarial review, fixed in migration `0038_pin_ownership_claimed.sql`):** Addendum 2's flag was durable against member removal but not against being set directly — nothing pinned `ownership_claimed` in `"organizations update admin"`'s `with_check`, the same gap `0034` had already fixed once for `is_active`, just on a column that didn't exist when `0034` was written. Any org admin could `UPDATE` their own org's `ownership_claimed` back to `false`, reopening it to a takeover by a stranger, or — combined with self-demotion — escalate themselves from admin to sole owner and evict the real owners, exactly the boundary `0029_owner_row_protection.sql` exists to defend. Confirmed live on both variants before being closed the same way `0034` closed it: pin the column to its current stored value, same as `is_active`. The same migration also tightened `"org_members insert self as first member"` to require `not user_has_any_membership()`, closing a related asymmetry (an existing member could otherwise still claim any *other* unclaimed org). Confirmed live: both attack variants now reject with `42501`, and the DB is unchanged. See the spec's third "Security note" subsection for the full writeup, and its "Accepted risk" sections (corrected in the same pass — a stated "best-effort compensating cleanup" in the self-serve path was found to be non-functional, since ordinary users have no DELETE policy on `organizations`, and was removed from that action's code; the admin-assisted path's own cleanup is genuinely functional, since a platform admin's session does have that DELETE access, and was kept).
 
-**This migration has now survived three real, live-confirmed findings across three adversarial review rounds before being trusted.** That is the process working as intended for a change to the two tables every other authorization boundary in this app is built on top of — not a sign the design was rushed. Task 2 proceeds only once a review comes back with no further findings.
+**Addendum 4 (found by a fourth adversarial review, run specifically to confirm Addendum 3's fix held up, fixed in migration `0039_require_authenticated_for_org_insert.sql`):** `"organizations insert self"` never required `auth.uid() is not null`. With no session at all (the `anon` role), `user_has_any_membership()` returns `false` and the rest of the check passed, letting an anonymous, unauthenticated request insert `organizations` rows. Bounded (the rows are inert and `anon` can never insert `org_members` to claim one), but no reason to allow it. Confirmed live: `anon` now rejects with `42501`; the authenticated happy path is unaffected. This fourth review round otherwise came back clean — genuinely nothing else found after real effort, reported plainly rather than manufacturing a fifth finding to seem thorough.
+
+**This migration survived four real, live-confirmed findings across four adversarial review rounds before being trusted.** That is the process working as intended for a change to the two tables every other authorization boundary in this app is built on top of — not a sign the design was rushed. Task 2 proceeded only once a review round came back with no further findings.
+
+**Addendum 5 (found by the FINAL whole-branch review, after Tasks 2-4 were also complete, fixed in migration `0040_org_creation_final_review_fixes.sql`):** looking at the completed feature as a whole (not one task's diff at a time) surfaced a fifth real RLS gap plus two smaller app-layer ones no single task's reviewer could have seen: (1) neither new insert policy called `is_current_user_active()` — established in `0032` for exactly this, applied to bookings/event registrations, never applied here — so a platform-admin-deactivated user could still self-serve create a pending org; (2) Task 3's `.ilike("email", ...)` lookup (added in its own earlier fix round) treated `%`/`_` as wildcards rather than literal characters, risking assignment to the wrong owner; (3) `createOrganization` (Task 2) dereferenced a possibly-null `user` with no guard and only gated on profile completeness in the page, unlike the identical established pattern in `registerForEvent`; neither creation path's success redirect was ever rendered as a confirmation banner; and the pending-review banner's wording was inaccurate for an org a platform admin deactivated for cause rather than one still awaiting its first review. All fixed in one bundled pass (per this process's "no second fix wave" rule) and confirmed live. See the spec's corresponding "Security note" subsections and its final "consolidated RLS" block for the version to actually use.
 
 ## Task 2: Self-serve creation — action + page
 
@@ -132,6 +136,8 @@ export async function createOrganization(formData: FormData) {
   redirect("/admin?club_created=1");
 }
 ```
+
+**Note (added by Addendum 5, after this task was already implemented and reviewed):** the shipped version of this action differs from the snippet above — it guards against a null `user`, re-checks `isProfileComplete` inside the action rather than trusting only the page's gate, and correctly `user.id` (not `user!.id`). The spec's own code sample was updated to match; this plan's snippet is left as originally written, as the historical record of what Task 2 was dispatched with — read the spec for the current version.
 
 - [ ] **Step 2: Create the page**
 
@@ -282,6 +288,8 @@ export async function createOrganizationForUser(formData: FormData) {
   redirect("/site-admin/orgs?club_created=1");
 }
 ```
+
+**Note (added by the Task 3 fix round, and by Addendum 5 afterward):** the shipped version differs from the snippet above in two ways: the email lookup checks its own `lookupError` before dereferencing `owner`, and escapes `%`/`_`/`\` before calling `.ilike()` so the match is a case-insensitive equals rather than a wildcard pattern (an unescaped `_` or `%` in a legitimate email could otherwise match a different account). Read the spec's final version for the current code.
 
 - [ ] **Step 2: Create the page**
 
@@ -462,8 +470,9 @@ Delete/deactivate every test account and test org created during this verificati
 
 ## Final Check
 
-- [ ] `npm test` — full suite green.
-- [ ] `npx tsc --noEmit` — clean.
-- [ ] `npm run lint` — clean.
-- [ ] All 5 manual verification scenarios from Task 4 Step 6 passed, using real sessions, not `DATABASE_URL`/service-role bypass for the actual access-control assertions.
-- [ ] No test accounts, test orgs, or scratch scripts left behind from verification.
+- [x] `npm test` — full suite green (258 tests — 257 from the original plan plus one added during the final fix wave for the new success banner).
+- [x] `npx tsc --noEmit` — clean.
+- [x] `npm run lint` — clean (one pre-existing, unrelated warning in `src/lib/email.ts`).
+- [x] All 7 manual verification scenarios from the spec's Testing section passed (5 original + 2 added by Addendum 5), using real sessions generated via the Supabase Admin API, not `DATABASE_URL`/service-role bypass for the actual access-control assertions.
+- [x] No test accounts, test orgs, or scratch scripts left behind from verification.
+- [x] Final whole-branch review (opus) — one bundled fix wave (migration `0040` plus five small app-layer/doc fixes), one scoped re-review, confirmed clean. See Addendum 5.

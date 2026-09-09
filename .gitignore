@@ -45,6 +45,8 @@ next-env.d.ts
 
 # superpowers SDD scratch workspace (briefs, reports, review packages)
 /.superpowers/
+.superpowers-ledger.md
+/.review-packages/
 
 # git worktrees for isolated feature work
 /.worktrees/

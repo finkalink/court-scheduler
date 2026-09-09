@@ -19,6 +19,7 @@ Two ways to create an organization, both enforced entirely through RLS (this cod
 - No support for a user creating more than one org via self-serve in the same session/account (see Role model below) — an admin can still make a user own more than one org via the admin-assisted path.
 - No first-location/first-court creation bundled into org creation — the org starts empty; the existing "Add a location" flow on `/admin` handles that immediately afterward.
 - No Stripe/payment integration (that's v4, unrelated to this feature; `organizations.stripe_account_id` stays untouched).
+- Neither creation path sets `organizations.owner_user_id`. Nothing in the app reads that column today — the real ownership model is entirely `org_members.role = 'owner'` — but `CLAUDE.md` and `0001_init.sql` both frame it as the future payout-routing column for v4. Deliberately left null rather than guessing which owner (self-serve always has exactly one; admin-assisted always names exactly one, so there's no real ambiguity today) — a decision for whoever builds v4 payouts, not this feature.
 - No atomicity guarantee between the two inserts a self-serve creation performs (org row, then membership row) — see **Accepted risk** below. (An earlier draft of this spec described a "best-effort compensating cleanup" that would delete the org row if the second insert failed; a live probe found there is no DELETE policy on `organizations` for ordinary users, so that cleanup silently deletes zero rows. Removed from the design rather than shipped as dead code — see the Server actions section.)
 
 ## Role model
@@ -30,11 +31,13 @@ Two ways to create an organization, both enforced entirely through RLS (this cod
 
 A self-serve creator who already belongs to an org is blocked both in the UI (the entry point only renders for a user with no membership — see Entry points) and in RLS (defense in depth — see below), so this is not just a UI-level assumption.
 
-## RLS changes (migration `0035_org_creation.sql`)
+## RLS changes (migration `0035_org_creation.sql`, superseded by `0036`–`0040` below)
+
+**The SQL immediately below is the ORIGINAL design and is known to be broken — do not copy it.** It shipped with a critical, live-confirmed hole (any signed-in user could take over an existing populated club) and, after that was fixed, a second, deeper one (the fix's own premise was unsound), and after *that* was fixed, a missing moderation check and a few smaller gaps — five real findings in total, fixed across migrations `0036` through `0040`. It is kept here, unedited, as the "what we tried first and why it didn't work" record the four "Security note" subsections below walk through one at a time. **The final, correct policy text is consolidated at the end of this section, after all five fixes — that is the version to actually use or copy.**
 
 Current state (verified against the live database before writing this spec): `organizations` has no INSERT policy for ordinary users at all — only the platform-admin `ALL` policy permits INSERT today. `org_members` has an INSERT policy (`org_members insert admin`) that requires the actor already be an admin of that org, which is circular for a brand-new org with zero members.
 
-Two new, additive policies:
+Two new, additive policies (original, broken draft):
 
 ```sql
 create policy "organizations insert self" on organizations
@@ -82,6 +85,75 @@ With both fixes above (the trigger-set flag, and pinning it against direct tampe
 
 A live probe found this doesn't need concurrency at all: a single bulk `INSERT` (e.g. `insert into organizations (name, is_active) values (...), (...), (...)`) creates N org rows in one statement, all passing `organizations insert self`'s check identically, since none of them touch `org_members` — then a second bulk statement makes the caller `owner` of all N. This is a spam/row-growth vector bounded only by request size, not a two-request race as an earlier draft of this doc claimed. Still accepted as low severity — this codebase's own `createOrganization` server action only ever sends one row per request, so exploiting this requires bypassing the app and hand-crafting a raw PostgREST request; every resulting shell is `is_active = false` and dataless, with no privilege or data exposure. Closing it properly would need either a statement-level row-count trigger or per-user rate limiting, neither of which this feature's scope calls for.
 
+### Security note: the self-serve policy never required the caller be signed in (migration `0039`)
+
+A fourth adversarial review, run specifically to confirm `0038`'s fix held up, found one more thing: `organizations insert self`'s `with check` never included `auth.uid() is not null`. With no session at all (the `anon` Postgres role), `user_has_any_membership()` returns `false` and the rest of the check passed, so an anonymous, unauthenticated request could insert `organizations` rows. Bounded in practice (the rows are inert and `anon` can never insert into `org_members` to claim one — that policy requires `user_id = auth.uid()`, which is `null` for `anon`), but there was never a reason to allow it. Fixed by adding `auth.uid() is not null` to the check. Confirmed live: `anon` now rejects with `42501`; the legitimate authenticated happy path is unaffected.
+
+### Security note: missing moderation check, plus two whole-branch-only findings (migration `0040`)
+
+The final, whole-branch review (which looks at the completed feature as a unit rather than one task's diff at a time) found three more things no single task's review could have:
+
+1. **A platform-admin-deactivated user could still self-serve create a pending org.** `is_current_user_active()` (`0032_platform_admin.sql`) exists for exactly this — it already gates `bookings insert own` and `event_registrations insert own or captain or member` — but was never applied to either of this feature's two new insert policies. Confirmed live: a test account with `users.is_active = false` could still insert an `organizations` row. Fixed by adding `public.is_current_user_active()` to both `organizations insert self` and `org_members insert self as first member`.
+2. **The admin-assisted email lookup's `.ilike("email", email)` treated `%`/`_` as wildcards, not literal characters.** An owner email containing either (both legal, `_` not uncommon) could silently match a *different* account than the one a platform admin typed, handing club ownership to the wrong person. Fixed by escaping `\`, `%`, and `_` before the `ilike` call, turning it into a case-insensitive exact match rather than a pattern match. Confirmed live: an unescaped decoy address matched via the wildcard; the escaped version no longer does, while a real case-difference on the intended address still matches correctly.
+3. Two smaller app-layer gaps visible only from comparing Task 2 and Task 3 side by side: `createOrganization` dereferenced a possibly-null `user` with no guard, and only gated on profile completeness in the page rather than the action itself (unlike the identical, established pattern in `registerForEvent`) — both fixed to match. Neither creation path's success redirect was ever rendered as a confirmation banner, and the pending-review banner's wording specifically said "pending review," which is inaccurate for a club a platform admin later deactivated for cause rather than one still awaiting its first look — both fixed.
+
+### Final consolidated RLS (the version to actually use)
+
+After migrations `0036`–`0040`, the two policies from this section's original, broken draft read as follows. This — not the text at the top of this section — is the design of record:
+
+```sql
+-- organizations.ownership_claimed (added by 0037) starts false and is
+-- flipped to true, permanently, by an after-insert-on-org_members
+-- trigger (mark_org_claimed) -- never by app code, never reset by
+-- later member removal.
+
+create function public.user_has_any_membership()
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select exists (select 1 from org_members where user_id = auth.uid());
+$$;
+
+create policy "organizations insert self" on organizations
+  for insert
+  with check (
+    auth.uid() is not null
+    and public.is_current_user_active()
+    and is_active = false
+    and not public.user_has_any_membership()
+  );
+
+create policy "org_members insert self as first member" on org_members
+  for insert
+  with check (
+    user_id = auth.uid()
+    and public.is_current_user_active()
+    and role = 'owner'
+    and not public.user_has_any_membership()
+    and exists (
+      select 1 from organizations o where o.id = org_id and o.ownership_claimed = false
+    )
+  );
+
+create policy "org_members select own" on org_members
+  for select
+  using (user_id = auth.uid());
+
+-- organizations update admin (pre-existing since 0002, amended by 0034
+-- for is_active and 0038 for ownership_claimed) must pin BOTH:
+create policy "organizations update admin" on organizations
+  for update
+  using (is_org_admin(id))
+  with check (
+    is_org_admin(id)
+    and is_active = (select o2.is_active from organizations o2 where o2.id = organizations.id)
+    and ownership_claimed = (select o2.ownership_claimed from organizations o2 where o2.id = organizations.id)
+  );
+```
+
 ## Server actions
 
 ### `createOrganization` (self-serve) — new, in `src/app/admin/actions.ts`
@@ -94,6 +166,27 @@ export async function createOrganization(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect(`/create-club?error=${encodeURIComponent("Your session expired. Sign in and try again.")}`);
+  }
+
+  // Re-checked here, not just on the page: matches the established
+  // pattern in registerForEvent, which re-checks isProfileComplete
+  // inside the action rather than trusting the page's own gate.
+  const { data: profile } = await supabase
+    .from("users")
+    .select("name, gender, skill_level")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile || !isProfileComplete(profile)) {
+    redirect(`/create-club?error=${encodeURIComponent("Complete your profile before creating a club.")}`);
+  }
+
   const { data: org, error: orgError } = await supabase
     .from("organizations")
     .insert({ name, is_active: false })
@@ -104,13 +197,9 @@ export async function createOrganization(formData: FormData) {
     redirect(`/create-club?error=${encodeURIComponent(orgError?.message ?? "Couldn't create the club.")}`);
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { error: memberError } = await supabase
     .from("org_members")
-    .insert({ org_id: org.id, user_id: user!.id, role: "owner" });
+    .insert({ org_id: org.id, user_id: user.id, role: "owner" });
 
   if (memberError) {
     // No cleanup call here: ordinary users have no DELETE policy on
@@ -140,11 +229,21 @@ export async function createOrganizationForUser(formData: FormData) {
 
   const supabase = await createClient();
 
-  const { data: owner } = await supabase
+  // ilike's %/_ are wildcards, not literal characters -- an email
+  // containing either (legal and not uncommon) would silently match a
+  // different account than the one typed. Escape them so this is a
+  // case-insensitive EQUALS, not a pattern match.
+  const escapedEmail = email.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+  const { data: owner, error: lookupError } = await supabase
     .from("users")
     .select("id")
-    .eq("email", email)
+    .ilike("email", escapedEmail)
     .maybeSingle();
+
+  if (lookupError) {
+    redirect(`/site-admin/orgs/new?error=${encodeURIComponent("Couldn't look up that email. Try again.")}`);
+  }
 
   if (!owner) {
     redirect(`/site-admin/orgs/new?error=${encodeURIComponent(`No user found with email "${email}".`)}`);
@@ -212,3 +311,7 @@ Add an "Add organization" link at the top, to `/site-admin/orgs/new`. No other c
   3. A different real account attempts to `INSERT` into `org_members` claiming ownership of the *first* account's now-non-empty org — rejected (confirms the "zero members" check actually blocks a takeover of an existing club, not just a hypothetical one).
   4. A platform-admin session creates an org via `/site-admin/orgs/new` for a third, already-existing test user's email; the resulting org is immediately `is_active = true`; that third user can access `/admin` for it as owner without ever touching `/site-admin/orgs/new` themselves.
   5. The admin-assisted form rejects an email with no matching user, with a friendly message, not a raw error.
+  6. A test account with `users.is_active = false` cannot self-serve create an org — `42501`, not a silent success.
+  7. The admin-assisted email lookup treats `%` and `_` in the typed address as literal characters, not wildcards — a decoy address that would match under raw `ilike` semantics does not match after escaping, while a genuine case difference on the intended address still does.
+
+All 7 scenarios above were actually run against the live database as part of this feature's development (not merely planned) — see the ledger for the exact accounts, results, and cleanup.
