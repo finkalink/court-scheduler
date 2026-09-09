@@ -21,7 +21,10 @@ const barlowCondensed = Barlow_Condensed({
 });
 
 export const metadata: Metadata = {
-  title: "Court Scheduler",
+  title: {
+    default: "Court Scheduler",
+    template: "%s | Court Scheduler",
+  },
   description: "Book open court time slots",
 };
 
