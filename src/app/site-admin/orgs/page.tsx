@@ -3,10 +3,16 @@ import { createClient } from "@/lib/supabase/server";
 import { getIsPlatformAdmin } from "@/lib/platformAdmin";
 import { toggleOrgActive } from "@/app/site-admin/actions";
 import { buttonClass } from "@/lib/buttonStyles";
+import SuccessBanner from "@/components/SuccessBanner";
 
 export const metadata: Metadata = { title: "Organizations" };
 
-export default async function SiteAdminOrgsPage() {
+export default async function SiteAdminOrgsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ club_created?: string }>;
+}) {
+  const { club_created } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -29,6 +35,8 @@ export default async function SiteAdminOrgsPage() {
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <h1 className="text-xl font-semibold sm:text-2xl">Organizations</h1>
+
+      {club_created && <SuccessBanner>Organization created.</SuccessBanner>}
 
       <a href="/site-admin/orgs/new" className={`mt-2 inline-block ${buttonClass("primary")}`}>
         Add organization

@@ -58,14 +58,14 @@ beforeEach(() => {
 describe("SiteAdminOrgsPage", () => {
   it("shows an access-denied message for a non-platform-admin", async () => {
     mockClient({ isPlatformAdmin: false, orgs: [] });
-    const ui = await SiteAdminOrgsPage();
+    const ui = await SiteAdminOrgsPage({ searchParams: Promise.resolve({}) });
     render(ui);
     expect(screen.getByText("You don't have access to site admin.")).toBeInTheDocument();
   });
 
   it("lists organizations with member, location, and court counts for a platform admin", async () => {
     mockClient({ isPlatformAdmin: true, orgs: [buildOrg()] });
-    const ui = await SiteAdminOrgsPage();
+    const ui = await SiteAdminOrgsPage({ searchParams: Promise.resolve({}) });
     render(ui);
     expect(screen.getByText("Ace Volleyball Club")).toBeInTheDocument();
     expect(screen.getByText("1 member · 1 location · 1 court")).toBeInTheDocument();
@@ -75,9 +75,16 @@ describe("SiteAdminOrgsPage", () => {
 
   it("shows an Inactive badge and Activate button for a deactivated org", async () => {
     mockClient({ isPlatformAdmin: true, orgs: [buildOrg({ is_active: false })] });
-    const ui = await SiteAdminOrgsPage();
+    const ui = await SiteAdminOrgsPage({ searchParams: Promise.resolve({}) });
     render(ui);
     expect(screen.getByText("Inactive")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Activate" })).toBeInTheDocument();
+  });
+
+  it("shows a success banner after creating an organization", async () => {
+    mockClient({ isPlatformAdmin: true, orgs: [buildOrg()] });
+    const ui = await SiteAdminOrgsPage({ searchParams: Promise.resolve({ club_created: "1" }) });
+    render(ui);
+    expect(screen.getByText("Organization created.")).toBeInTheDocument();
   });
 });

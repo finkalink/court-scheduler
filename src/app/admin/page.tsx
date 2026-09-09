@@ -13,9 +13,14 @@ export const metadata: Metadata = { title: "Club Admin" };
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ location_added?: string; org_updated?: string; org_error?: string }>;
+  searchParams: Promise<{
+    location_added?: string;
+    org_updated?: string;
+    org_error?: string;
+    club_created?: string;
+  }>;
 }) {
-  const { location_added, org_updated, org_error } = await searchParams;
+  const { location_added, org_updated, org_error, club_created } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,10 +48,12 @@ export default async function AdminPage({
     <div>
       <h1 className="text-lg font-medium">{membership.orgName} — Locations</h1>
 
+      {club_created && <SuccessBanner>Club created.</SuccessBanner>}
+
       {org && !org.is_active && (
         <p className="mt-4 rounded bg-status p-3 text-sm text-status-fg">
-          This club is pending review by a platform admin. You can set up locations and courts
-          now — it won&apos;t be visible to players until it&apos;s approved.
+          This club isn&apos;t visible to players right now. You can still set up locations and
+          courts — contact a platform admin if you believe this is a mistake.
         </p>
       )}
 

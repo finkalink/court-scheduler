@@ -48,10 +48,16 @@ export async function createOrganizationForUser(formData: FormData) {
 
   const supabase = await createClient();
 
+  // ilike's %/_ are wildcards, not literal characters -- an email
+  // containing either (legal and not uncommon) would silently match a
+  // different account than the one typed. Escape them so this is a
+  // case-insensitive EQUALS, not a pattern match.
+  const escapedEmail = email.replace(/[\\%_]/g, (c) => `\\${c}`);
+
   const { data: owner, error: lookupError } = await supabase
     .from("users")
     .select("id")
-    .ilike("email", email)
+    .ilike("email", escapedEmail)
     .maybeSingle();
 
   if (lookupError) {

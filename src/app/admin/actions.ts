@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { validateSlotOverride } from "@/lib/slotOverride";
 import { canActOnMember, wouldRemoveLastOwner, type OrgRole } from "@/lib/orgRoles";
 import { getRoleForOrg } from "@/lib/orgMembership";
+import { isProfileComplete } from "@/lib/userProfile";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 const DAYS = [0, 1, 2, 3, 4, 5, 6];
@@ -483,6 +484,20 @@ export async function createOrganization(formData: FormData) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) {
+    redirect(`/create-club?error=${encodeURIComponent("Your session expired. Sign in and try again.")}`);
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("name, gender, skill_level")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile || !isProfileComplete(profile)) {
+    redirect(`/create-club?error=${encodeURIComponent("Complete your profile before creating a club.")}`);
+  }
+
   const { data: org, error: orgError } = await supabase
     .from("organizations")
     .insert({ name, is_active: false })
@@ -495,7 +510,7 @@ export async function createOrganization(formData: FormData) {
 
   const { error: memberError } = await supabase
     .from("org_members")
-    .insert({ org_id: org.id, user_id: user!.id, role: "owner" });
+    .insert({ org_id: org.id, user_id: user.id, role: "owner" });
 
   if (memberError) {
     // No cleanup here: ordinary users have no DELETE policy on
