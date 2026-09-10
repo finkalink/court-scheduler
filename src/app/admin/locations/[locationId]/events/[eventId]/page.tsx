@@ -11,6 +11,7 @@ import {
   markRegistrationRefunded,
 } from "@/app/admin/eventActions";
 import { assembleEventTeam } from "@/app/admin/eventTeamActions";
+import BlindDraw from "@/components/BlindDraw";
 import SuccessBanner from "@/components/SuccessBanner";
 import EventTypeBadge from "@/components/EventTypeBadge";
 import { buttonClass } from "@/lib/buttonStyles";
@@ -46,6 +47,8 @@ export default async function AdminEventPage({
     session_error?: string;
     team_assembled?: string;
     assemble_error?: string;
+    blind_draw_committed?: string;
+    blind_draw_error?: string;
     payment_marked?: string;
     payment_error?: string;
   }>;
@@ -60,6 +63,8 @@ export default async function AdminEventPage({
     session_error,
     team_assembled,
     assemble_error,
+    blind_draw_committed,
+    blind_draw_error,
     payment_marked,
     payment_error,
   } = await searchParams;
@@ -107,6 +112,16 @@ export default async function AdminEventPage({
       : { data: null };
   const emailByUserId = new Map(
     (registrantEmails ?? []).map((r: { user_id: string; email: string }) => [r.user_id, r.email])
+  );
+
+  const { data: registrantProfiles } =
+    event.registration_mode === "team" && event.team_formation === "admin_assembled"
+      ? await supabase.rpc("list_event_registrant_profiles", { check_event_id: eventId })
+      : { data: null };
+  const skillLevelByUserId = new Map(
+    (registrantProfiles ?? []).map(
+      (r: { user_id: string; skill_level: string | null }) => [r.user_id, r.skill_level]
+    )
   );
 
   const { data: courts } = await supabase
@@ -466,6 +481,34 @@ export default async function AdminEventPage({
                 Create Team
               </button>
             </form>
+          )}
+        </>
+      )}
+
+      {event.registration_mode === "team" && event.team_formation === "admin_assembled" && (
+        <>
+          <h2 className="mt-10 text-lg font-medium">Blind Draw</h2>
+          {blind_draw_committed && (
+            <SuccessBanner>Drew {blind_draw_committed} team{blind_draw_committed === "1" ? "" : "s"}.</SuccessBanner>
+          )}
+          {blind_draw_error && (
+            <p className="mt-2 rounded bg-error-bg p-3 text-sm text-error-fg">
+              {blind_draw_error}
+            </p>
+          )}
+          {(!ungroupedRegistrants || ungroupedRegistrants.length === 0) && (
+            <p className="mt-1 text-sm text-fg-muted">No ungrouped registrants right now.</p>
+          )}
+          {ungroupedRegistrants && ungroupedRegistrants.length > 0 && (
+            <BlindDraw
+              eventId={event.id}
+              locationId={locationId}
+              registrants={ungroupedRegistrants.map((reg) => ({
+                id: reg.id,
+                displayName: reg.user_id ? emailByUserId.get(reg.user_id) ?? reg.user_id : "Unknown",
+                skillLevel: (reg.user_id && skillLevelByUserId.get(reg.user_id)) || null,
+              }))}
+            />
           )}
         </>
       )}
