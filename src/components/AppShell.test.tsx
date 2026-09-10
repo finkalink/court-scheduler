@@ -69,8 +69,22 @@ describe("AppShell", () => {
         <div />
       </AppShell>
     );
-    expect(screen.getByRole("link", { name: "Locations" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Team" })).toBeInTheDocument();
+    const adminSubNav = screen.getByRole("navigation", { name: "Admin sections" });
+    expect(within(adminSubNav).getByRole("link", { name: "Locations" })).toBeInTheDocument();
+    expect(within(adminSubNav).getByRole("link", { name: "Events" })).toBeInTheDocument();
+    expect(within(adminSubNav).getByRole("link", { name: "Team" })).toBeInTheDocument();
+  });
+
+  it("marks the Events sub-nav pill active on an /admin/events route", () => {
+    mockUsePathname.mockReturnValue("/admin/events");
+    render(
+      <AppShell userEmail="admin@example.com" isOrgMember={true} isPlatformAdmin={false} initialTheme="light">
+        <div />
+      </AppShell>
+    );
+    const adminSubNav = screen.getByRole("navigation", { name: "Admin sections" });
+    expect(within(adminSubNav).getByRole("link", { name: "Events" })).toHaveClass("bg-status");
+    expect(within(adminSubNav).getByRole("link", { name: "Locations" })).not.toHaveClass("bg-status");
   });
 
   it("does not show the admin sub-nav for org members off an admin route", () => {
@@ -157,6 +171,7 @@ describe("AppShell", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
     const mobileMenu = screen.getByRole("region", { name: "Mobile menu" });
     expect(within(mobileMenu).getByRole("link", { name: "Admin: Locations" })).toBeInTheDocument();
+    expect(within(mobileMenu).getByRole("link", { name: "Admin: Events" })).toBeInTheDocument();
     expect(within(mobileMenu).getByRole("link", { name: "Admin: Team" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Locations" })).not.toBeInTheDocument();
   });

@@ -36,6 +36,7 @@ export default function AppShell({
   const adminActive = pathname.startsWith("/admin");
   const profileActive = pathname.startsWith("/profile");
   const adminLocationsActive = pathname === "/admin" || pathname.startsWith("/admin/locations");
+  const adminEventsActive = pathname.startsWith("/admin/events");
   const adminTeamActive = pathname.startsWith("/admin/team");
   const siteAdminActive = pathname.startsWith("/site-admin");
   const siteAdminOrgsActive = pathname === "/site-admin" || pathname.startsWith("/site-admin/orgs");
@@ -163,14 +164,20 @@ export default function AppShell({
         </div>
 
         {isOrgMember && adminActive && (
-          <div className="hidden border-t border-border px-4 py-2 sm:flex sm:gap-2 sm:px-6">
+          <nav
+            aria-label="Admin sections"
+            className="hidden border-t border-border px-4 py-2 sm:flex sm:gap-2 sm:px-6"
+          >
             <Link href="/admin" className={subNavPillClass(adminLocationsActive)}>
               Locations
+            </Link>
+            <Link href="/admin/events" className={subNavPillClass(adminEventsActive)}>
+              Events
             </Link>
             <Link href="/admin/team" className={subNavPillClass(adminTeamActive)}>
               Team
             </Link>
-          </div>
+          </nav>
         )}
 
         {isPlatformAdmin && siteAdminActive && (
@@ -223,6 +230,13 @@ export default function AppShell({
                   onClick={closeMenu}
                 >
                   Admin: Locations
+                </Link>
+                <Link
+                  href="/admin/events"
+                  className={mobileLinkClass(adminEventsActive)}
+                  onClick={closeMenu}
+                >
+                  Admin: Events
                 </Link>
                 <Link
                   href="/admin/team"
