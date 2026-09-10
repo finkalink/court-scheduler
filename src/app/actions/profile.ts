@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSafeRedirectPath } from "@/lib/redirects";
 import { listActiveCities, CITY_OVERRIDE_COOKIE } from "@/lib/cities";
 import { isKnownCity } from "@/lib/cityGrouping";
+import { parseSocialHandle } from "@/lib/socialLinks";
 
 const VALID_GENDERS = new Set(["male", "female", "prefer_not_to_say"]);
 const VALID_SKILL_LEVELS = new Set(["Recreational", "B", "BB", "A", "AA", "Open"]);
@@ -17,6 +18,9 @@ export async function updateProfile(formData: FormData) {
   const skillLevel = String(formData.get("skill_level") || "").trim();
   const shareStatsPublicly = formData.get("share_stats_publicly") === "on";
   const defaultCity = String(formData.get("default_city") || "").trim();
+  const instagramHandle = parseSocialHandle("instagram", String(formData.get("instagram_handle") || ""));
+  const facebookHandle = parseSocialHandle("facebook", String(formData.get("facebook_handle") || ""));
+  const twitterHandle = parseSocialHandle("twitter", String(formData.get("twitter_handle") || ""));
   const rawNext = String(formData.get("next") || "");
   const next = isSafeRedirectPath(rawNext) ? rawNext : "";
 
@@ -55,6 +59,9 @@ export async function updateProfile(formData: FormData) {
       skill_level: skillLevel || null,
       share_stats_publicly: shareStatsPublicly,
       default_city: defaultCity || null,
+      instagram_handle: instagramHandle || null,
+      facebook_handle: facebookHandle || null,
+      twitter_handle: twitterHandle || null,
     })
     .eq("id", user.id)
     .select("id");

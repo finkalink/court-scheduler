@@ -5,6 +5,7 @@ import { updateProfile } from "@/app/actions/profile";
 import { listActiveCities } from "@/lib/cities";
 import SkillLevelPicker from "@/components/SkillLevelPicker";
 import SuccessBanner from "@/components/SuccessBanner";
+import AvatarUploader from "@/components/AvatarUploader";
 import { isProfileComplete } from "@/lib/userProfile";
 import { isSafeRedirectPath } from "@/lib/redirects";
 import { buttonClass } from "@/lib/buttonStyles";
@@ -36,7 +37,9 @@ export default async function ProfilePage({
 
   const { data: profile } = await supabase
     .from("users")
-    .select("name, gender, skill_level, share_stats_publicly, default_city")
+    .select(
+      "name, gender, skill_level, share_stats_publicly, default_city, avatar_url, instagram_handle, facebook_handle, twitter_handle"
+    )
     .eq("id", user.id)
     .single();
 
@@ -65,6 +68,10 @@ export default async function ProfilePage({
           Still missing: {missingFields.join(", ")}
         </p>
       )}
+
+      <div className="mt-6">
+        <AvatarUploader avatarUrl={profile?.avatar_url ?? null} />
+      </div>
 
       <form action={updateProfile} className="mt-6 flex flex-col gap-4">
         {next && <input type="hidden" name="next" value={next} />}
@@ -122,10 +129,45 @@ export default async function ProfilePage({
             </span>
           </span>
         </label>
+        <fieldset className="flex flex-col gap-2 border-t border-border pt-4">
+          <legend className="mb-1 px-0 text-sm font-medium">Social links</legend>
+          <span className="text-xs text-fg-muted">
+            Shown on your public player page, if you&apos;ve turned that on
+            above. A handle, @handle, or full profile link all work.
+          </span>
+          <label className="flex flex-col gap-1 text-sm">
+            Instagram
+            <input
+              name="instagram_handle"
+              defaultValue={profile?.instagram_handle ?? ""}
+              className="rounded border border-border px-3 py-2"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Facebook
+            <input
+              name="facebook_handle"
+              defaultValue={profile?.facebook_handle ?? ""}
+              className="rounded border border-border px-3 py-2"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm">
+            X
+            <input
+              name="twitter_handle"
+              defaultValue={profile?.twitter_handle ?? ""}
+              className="rounded border border-border px-3 py-2"
+            />
+          </label>
+        </fieldset>
         <button type="submit" className={`w-fit ${buttonClass("primary")}`}>
           Save
         </button>
       </form>
+
+      <a href="/terms" className="mt-6 block text-sm text-link underline">
+        View Terms of Service
+      </a>
     </div>
   );
 }

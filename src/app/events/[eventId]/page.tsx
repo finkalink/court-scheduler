@@ -8,6 +8,7 @@ import { registerForEvent } from "@/app/actions/events";
 import InteractiveBracket from "@/components/bracket/InteractiveBracket";
 import SuccessBanner from "@/components/SuccessBanner";
 import EventTypeBadge from "@/components/EventTypeBadge";
+import Avatar from "@/components/Avatar";
 import { buttonClass } from "@/lib/buttonStyles";
 import { isProfileComplete } from "@/lib/userProfile";
 import { formatCents } from "@/lib/money";
@@ -203,6 +204,21 @@ export default async function EventDetailPage({
     (publicProfiles ?? []).map((p: { id: string }) => p.id)
   );
 
+  // Avatars are unconditional on rosters (unlike sharingUserIds above,
+  // which gates the public-stats link) -- see the profile-photos spec.
+  const { data: avatarRows, error: avatarRowsError } =
+    candidateUserIds.length > 0
+      ? await supabase.rpc("get_avatar_urls", { p_user_ids: candidateUserIds })
+      : { data: [], error: null };
+  if (avatarRowsError) {
+    console.error("get_avatar_urls failed:", avatarRowsError);
+  }
+  const avatarByUserId: Map<string, string> = new Map(
+    (avatarRows ?? []).map(
+      (r: { user_id: string; avatar_url: string }): [string, string] => [r.user_id, r.avatar_url]
+    )
+  );
+
   return (
     <div className="mx-auto mt-6 max-w-2xl px-4 sm:mt-10 sm:px-0">
       <Link href="/events" className="text-sm underline">
@@ -386,15 +402,18 @@ export default async function EventDetailPage({
                 className="rounded border border-border px-4 py-3"
               >
                 <p className="text-sm font-medium">{team.name}</p>
-                <ul className="mt-1 flex flex-col gap-0.5">
+                <ul className="mt-1 flex flex-col gap-1.5">
                   {team.members.map((m) => (
-                    <li key={m.id} className="text-sm text-fg-muted">
-                      <PlayerNameLink
-                        href={m.user_id && sharingUserIds.has(m.user_id) ? `/players/${m.user_id}` : null}
-                      >
-                        {m.display_name}
-                      </PlayerNameLink>
-                      {!m.user_id && <span className="ml-1 text-xs italic">(pending)</span>}
+                    <li key={m.id} className="flex items-center gap-2 text-sm text-fg-muted">
+                      <Avatar url={m.user_id ? (avatarByUserId.get(m.user_id) ?? null) : null} size="sm" />
+                      <span>
+                        <PlayerNameLink
+                          href={m.user_id && sharingUserIds.has(m.user_id) ? `/players/${m.user_id}` : null}
+                        >
+                          {m.display_name}
+                        </PlayerNameLink>
+                        {!m.user_id && <span className="ml-1 text-xs italic">(pending)</span>}
+                      </span>
                     </li>
                   ))}
                 </ul>

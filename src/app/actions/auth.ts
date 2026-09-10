@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { isSafeRedirectPath } from "@/lib/redirects";
+import { hasAcceptedCurrentTerms } from "@/lib/terms";
+import { resolvePostAuthRedirect } from "@/lib/authRedirect";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email"));
@@ -23,41 +24,32 @@ export async function signIn(formData: FormData) {
   // no-op when nothing's pending.
   await supabase.rpc("claim_pending_team_invites");
 
-  if (next && isSafeRedirectPath(next)) {
-    redirect(next);
-  }
-
-  const { data: membership } = await supabase
-    .from("org_members")
-    .select("org_id")
-    .eq("user_id", data.user.id)
-    .limit(1)
-    .maybeSingle();
-
-  if (membership) {
-    redirect("/admin");
-  }
-
-  // This check must stay here, after both redirects above -- moving it
-  // before the `next` check would hijack every deep-link login into
-  // /choose-city instead, and moving it before the membership check would
-  // start showing the city prompt to org admins, who should never see it.
-  const { data: profile } = await supabase
+  // This check must come before even the `next` redirect below -- unlike
+  // the city prompt (deliberately skippable via a deep link), a legal
+  // consent gate must not be bypassable by one. Covers every account that
+  // predates this feature too, since they all start with
+  // tos_accepted_version IS NULL.
+  const { data: termsProfile } = await supabase
     .from("users")
-    .select("default_city, city_prompt_dismissed")
+    .select("tos_accepted_version")
     .eq("id", data.user.id)
     .maybeSingle();
 
-  if (profile && !profile.default_city && !profile.city_prompt_dismissed) {
-    redirect("/choose-city");
+  if (!termsProfile || !hasAcceptedCurrentTerms(termsProfile)) {
+    redirect(`/accept-terms?next=${encodeURIComponent(next)}`);
   }
 
-  redirect("/");
+  redirect(await resolvePostAuthRedirect(supabase, data.user.id, next));
 }
 
 export async function signUp(formData: FormData) {
   const email = String(formData.get("email"));
   const password = String(formData.get("password"));
+  const agreedToTerms = formData.get("agreed_to_terms") === "on";
+
+  if (!agreedToTerms) {
+    redirect(`/signup?error=${encodeURIComponent("You must agree to the Terms of Service to create an account.")}`);
+  }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signUp({ email, password });
