@@ -4,8 +4,35 @@ import { useEffect, useRef } from "react";
 import { createBracket } from "bracketry";
 import { toBracketryData, type EventMatchSetRow } from "@/lib/bracketryData";
 import { isMatchTappable } from "@/lib/activeRounds";
-import type { BracketryClickedMatch } from "@/lib/bracketryTypes";
+import type { BracketryClickedMatch, BracketryThemeOptions } from "@/lib/bracketryTypes";
 import type { EventMatch } from "@/lib/matchAdvancement";
+
+// Every value is a CSS custom-property reference rather than a resolved
+// color/font -- bracketry writes these straight into inline styles, and a
+// var() reference re-resolves on every paint, so the bracket picks up a
+// light/dark theme toggle for free with no re-render or recreation needed.
+// Left unset here (falling back to bracketry's own hard-coded defaults, e.g.
+// matchStatusBgColor "#fff"), a match card stayed white-on-black regardless
+// of the site's theme -- the actual cause of the bracket looking out of
+// place against the rest of the app.
+const BRACKETRY_THEME: BracketryThemeOptions = {
+  rootBgColor: "transparent",
+  rootBorderColor: "var(--border)",
+  matchStatusBgColor: "var(--card)",
+  matchTextColor: "var(--fg)",
+  roundTitleColor: "var(--fg-muted)",
+  connectionLinesColor: "var(--border)",
+  highlightedConnectionLinesColor: "var(--accent)",
+  highlightedPlayerTitleColor: "var(--accent)",
+  liveMatchBgColor: "var(--active)",
+  liveMatchBorderColor: "var(--accent)",
+  hoveredMatchBorderColor: "var(--accent)",
+  navButtonSvgColor: "var(--fg-muted)",
+  scrollButtonSvgColor: "var(--fg-muted)",
+  scrollbarColor: "var(--border)",
+  rootFontFamily: "var(--font-sans)",
+  roundTitlesFontFamily: "var(--font-display)",
+};
 
 interface BracketryTreeViewProps {
   matches: EventMatch[];
@@ -51,6 +78,7 @@ export default function BracketryTreeView({
     if (!wrapperRef.current) return;
     const data = toBracketryData(matchesRef.current, sets, nameByRegistrationId);
     instanceRef.current = createBracket(data, wrapperRef.current, {
+      ...BRACKETRY_THEME,
       onMatchClick: (clicked: BracketryClickedMatch) => {
         const match = matchesRef.current.find(
           (m) => m.round_number - 1 === clicked.roundIndex && m.slot_in_round - 1 === clicked.order
@@ -74,5 +102,8 @@ export default function BracketryTreeView({
     instanceRef.current.replaceData(toBracketryData(matches, sets, nameByRegistrationId));
   }, [matches, sets, nameByRegistrationId]);
 
+  // No border/background classes here -- bracketry's own .bracket-root
+  // element already paints both (rootBgColor/rootBorderColor above), so
+  // adding a second set on this wrapper would just double the border.
   return <div ref={wrapperRef} style={{ height: "480px" }} />;
 }
